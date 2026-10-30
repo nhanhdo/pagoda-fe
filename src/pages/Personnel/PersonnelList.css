@@ -1,0 +1,102 @@
+.personnel-list-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+.personnel-name-cell__main {
+  font-weight: 600;
+}
+
+.personnel-name-cell__dharm {
+  font-size: 12px;
+  color: #888;
+}
+
+.personnel-type-tag {
+  min-width: 90px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* ── View toggle ── */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Card grid ── */
+.personnel-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.personnel-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #f0ebe3;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.personnel-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(139, 69, 19, 0.12);
+  border-color: #d4a017;
+}
+
+.personnel-card__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #5c3317;
+  margin: 4px 0 0;
+  word-break: break-word;
+}
+
+.personnel-card__subname {
+  font-size: 12px;
+  color: #888;
+}
+
+.personnel-card__position {
+  font-size: 12px;
+  color: #aaa;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.personnel-card__status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.personnel-card__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.personnel-card:hover .personnel-card__actions {
+  opacity: 1;
+}

@@ -1,0 +1,145 @@
+/* ── Banner ─────────────────────────────────────────────── */
+.news-banner {
+  border-radius: 16px;
+  margin-bottom: 20px;
+  padding: 22px 28px;
+  background: linear-gradient(135deg, #2c0f00 0%, #5c2800 45%, #8B4513 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 30px rgba(80,30,0,.30);
+  position: relative;
+  overflow: hidden;
+  border: none;
+}
+
+.news-banner::before {
+  content: '';
+  position: absolute;
+  right: -50px; top: -50px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,196,77,.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.news-banner::after {
+  content: '';
+  position: absolute;
+  left: 25%; bottom: -70px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,160,40,.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.news-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.news-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Feed Tabs ───────────────────────────────────────────── */
+.news-feed-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #8B4513 !important;
+  font-weight: 700 !important;
+}
+.news-feed-tabs .ant-tabs-ink-bar {
+  background: #8B4513 !important;
+}
+.news-feed-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: #a0522d !important;
+}
+
+/* ── Post card ───────────────────────────────────────────── */
+.news-post-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  border: 1px solid #f0e8df;
+  margin-bottom: 14px;
+  overflow: hidden;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.news-post-card:hover {
+  box-shadow: 0 4px 16px rgba(139,69,19,.12), 0 8px 28px rgba(0,0,0,.08);
+  transform: translateY(-1px);
+}
+
+/* ── Sidebar widgets ─────────────────────────────────────── */
+.news-widget {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f0e8df;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  overflow: hidden;
+}
+.news-widget-header {
+  padding: 13px 16px;
+  border-bottom: 1px solid #f5ede5;
+  font-weight: 700;
+  font-size: 13px;
+  color: #3d1a06;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fdf8f2;
+}
+
+/* ── Stat row inside widget ──────────────────────────────── */
+.news-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 6px 12px;
+  transition: filter .15s;
+}
+.news-stat-row:hover {
+  filter: brightness(.96);
+}
+
+/* ── Calendar overrides ──────────────────────────────────── */
+.news-calendar-wrap .ant-picker-cell:not(.ant-picker-cell-in-view) {
+  pointer-events: none;
+}
+.news-calendar-wrap .ant-picker-cell:not(.ant-picker-cell-in-view) .ant-picker-calendar-date-value,
+.news-calendar-wrap .ant-picker-cell:not(.ant-picker-cell-in-view) .ant-picker-calendar-date-content * {
+  color: #d9d9d9 !important;
+}
+.news-calendar-wrap .ant-picker-cell-today .ant-picker-cell-inner {
+  background-color: #fff8ee !important;
+  border: 1.5px solid #8B4513 !important;
+}
+.news-calendar-wrap .ant-picker-cell-today .ant-picker-calendar-date-value {
+  color: #8B4513 !important;
+  font-weight: 800 !important;
+}
+
+.today-chip {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: #8B4513;
+  border-radius: 3px;
+  padding: 0 4px;
+  line-height: 14px;
+  margin-bottom: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .news-layout { flex-direction: column; }
+  .news-sidebar { width: 100%; }
+  .news-banner { padding: 16px 18px; }
+}

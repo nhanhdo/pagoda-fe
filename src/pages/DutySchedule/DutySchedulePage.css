@@ -1,0 +1,30 @@
+.duty-schedule-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.duty-calendar-wrap .ant-picker-calendar-date-content {
+  height: 72px !important;
+  overflow: hidden;
+}
+
+.duty-calendar-wrap .ant-picker-calendar .ant-picker-cell-selected .ant-picker-calendar-date {
+  background: #e3f2fd !important;
+}
+
+.duty-calendar-wrap .ant-picker-calendar-date-value {
+  font-size: 13px;
+}
+
+/* Lịch nhỏ hơn trên mobile */
+@media (max-width: 767px) {
+  .duty-calendar-wrap .ant-picker-calendar-date-content {
+    height: 48px !important;
+  }
+  .duty-calendar-wrap li {
+    font-size: 10px !important;
+  }
+}

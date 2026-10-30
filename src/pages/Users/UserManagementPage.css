@@ -1,0 +1,17 @@
+.user-banner {
+  background: linear-gradient(120deg, #6b2c0a 0%, #9c4a1a 40%, #c4723a 100%);
+  border-radius: 14px;
+  padding: 20px 28px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 24px rgba(93, 46, 0, 0.2);
+}
+
+.user-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}

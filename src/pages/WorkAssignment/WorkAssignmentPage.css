@@ -1,0 +1,112 @@
+.page-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── View toggle ── */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Kanban board ── */
+.kanban-board {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  min-height: 320px;
+}
+
+.kanban-col {
+  flex: 1 1 240px;
+  min-width: 240px;
+  max-width: 320px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 2px solid transparent;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.kanban-col--over {
+  background: rgba(46, 125, 50, 0.06);
+  border: 2px dashed #2e7d32;
+}
+
+.kanban-col__header {
+  font-weight: 700;
+  font-size: 13px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+/* ── Kanban card ── */
+.kanban-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  cursor: grab;
+  transition: box-shadow 0.2s, transform 0.15s;
+  border: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.kanban-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: #d9d9d9;
+  transform: translateY(-1px);
+}
+
+.kanban-card--dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+  transform: rotate(2deg);
+}
+
+.kanban-card__actions {
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.18s;
+  flex-shrink: 0;
+}
+
+.kanban-card:hover .kanban-card__actions {
+  opacity: 1;
+}
+
+.kanban-card__desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Priority dot ── */
+.priority-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .kanban-col {
+    min-width: 200px;
+  }
+}

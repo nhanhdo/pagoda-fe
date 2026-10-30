@@ -1,0 +1,9 @@
+.page-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.participant-modal-add {
+  margin-bottom: 16px;
+}
