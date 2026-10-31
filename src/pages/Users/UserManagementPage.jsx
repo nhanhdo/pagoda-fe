@@ -571,7 +571,7 @@ export default function UserManagementPage() {
           rowKey="id"
           loading={loading}
           pagination={{
-            pageSize: 10,
+            pageSize: 15,
             showSizeChanger: false,
             showTotal: (total) => `${total} ${t.users.totalLabel}`,
           }}

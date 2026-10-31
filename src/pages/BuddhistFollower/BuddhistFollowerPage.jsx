@@ -453,7 +453,7 @@ export default function BuddhistFollowerPage() {
         pagination={{
           current: page,
           total,
-          pageSize: 10,
+          pageSize: 15,
           onChange: setPage,
           showTotal: (total) => `${total} ${t.buddhistFollower.totalLabel}`,
         }}

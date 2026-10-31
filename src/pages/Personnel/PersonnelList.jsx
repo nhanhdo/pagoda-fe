@@ -294,7 +294,7 @@ export default function PersonnelList() {
           pagination={{
             current: page,
             total,
-            pageSize: 10,
+            pageSize: 15,
             onChange: setPage,
             showTotal: (total) => `${total} ${tt.personnel.totalLabel}`,
           }}
