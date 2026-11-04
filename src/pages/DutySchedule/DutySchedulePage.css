@@ -1,30 +1,288 @@
+/* ─── Toolbar ─── */
 .duty-schedule-toolbar {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* ─── Calendar wrapper ─── */
+.duty-calendar-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 16px rgba(139,69,19,.08);
+}
+
+/* ─── AntD calendar overrides ─── */
+.duty-calendar-wrap .ant-picker-calendar {
+  border-radius: 0;
+  border: none;
+}
+
+/* Header row (weekday labels) */
+.duty-calendar-wrap .ant-picker-calendar .ant-picker-panel .ant-picker-content thead th {
+  background: linear-gradient(135deg, #8B4513 0%, #a0522d 100%);
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  padding: 6px 0 !important;
+  text-align: center;
+}
+
+/* Shrink the table itself */
+.duty-calendar-wrap .ant-picker-calendar .ant-picker-panel .ant-picker-content {
+  font-size: 11px !important;
+}
+
+/* Calendar grid cells */
+.duty-calendar-wrap .ant-picker-calendar-date {
+  border-top: 1px solid #f0e8e0 !important;
+  margin: 0 !important;
+  padding: 2px 4px !important;
+  border-radius: 0 !important;
+  transition: background 0.15s;
+}
+
+/* Date number */
+.duty-calendar-wrap .ant-picker-calendar-date-value {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #4a3020 !important;
+  margin-bottom: 1px !important;
+  line-height: 1.4 !important;
+}
+
+/* Grey-out dates not in current month */
+.duty-calendar-wrap .ant-picker-cell:not(.ant-picker-cell-in-view) .ant-picker-calendar-date-value {
+  color: #ccc !important;
+}
+.duty-calendar-wrap .ant-picker-cell:not(.ant-picker-cell-in-view) .duty-cell-events {
+  display: none;
+}
+
+/* Today cell highlight */
+.duty-calendar-wrap .ant-picker-cell-today .ant-picker-calendar-date {
+  background: #fffbf0 !important;
+  border-top: 2px solid #f59e0b !important;
+}
+.duty-calendar-wrap .ant-picker-cell-today .ant-picker-calendar-date-value {
+  color: #8B4513 !important;
+  position: relative;
+}
+.duty-calendar-wrap .ant-picker-cell-today .ant-picker-calendar-date-value::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #f59e0b;
+  margin: 1px auto 0;
+}
+
+/* Selected cell */
+.duty-calendar-wrap .ant-picker-cell-selected .ant-picker-calendar-date {
+  background: #fdf0e8 !important;
+}
+
+/* Hover */
+.duty-calendar-wrap .ant-picker-cell-in-view:hover .ant-picker-calendar-date {
+  background: #faf4ee !important;
+  cursor: pointer;
+}
+
+/* Cell content height */
 .duty-calendar-wrap .ant-picker-calendar-date-content {
-  height: 72px !important;
+  height: 58px !important;
   overflow: hidden;
 }
 
-.duty-calendar-wrap .ant-picker-calendar .ant-picker-cell-selected .ant-picker-calendar-date {
-  background: #e3f2fd !important;
+/* ─── Duty event cards ─── */
+.duty-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.duty-calendar-wrap .ant-picker-calendar-date-value {
+.duty-event {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 3px;
+  padding: 1px 4px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+  font-size: 10px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  border-left: 2px solid transparent;
+}
+.duty-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  filter: brightness(0.96);
+  z-index: 1;
+  position: relative;
+}
+
+/* Sáng — amber */
+.duty-shift-sáng {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+.duty-shift-sáng .duty-event-pill {
+  background: #f59e0b;
+}
+
+/* Chiều — orange */
+.duty-shift-chiều {
+  background: #fff7ed;
+  border-left-color: #f97316;
+}
+.duty-shift-chiều .duty-event-pill {
+  background: #f97316;
+}
+
+/* Tối — indigo */
+.duty-shift-tối {
+  background: #eef2ff;
+  border-left-color: #6366f1;
+}
+.duty-shift-tối .duty-event-pill {
+  background: #6366f1;
+}
+
+/* Cả ngày — green */
+.duty-shift-cả-ngày {
+  background: #f0fdf4;
+  border-left-color: #22c55e;
+}
+.duty-shift-cả-ngày .duty-event-pill {
+  background: #22c55e;
+}
+
+/* Pill (shift letter badge) */
+.duty-event-pill {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Name */
+.duty-event-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #2d2d2d;
+  font-weight: 500;
+}
+
+/* Time */
+.duty-event-time {
+  flex-shrink: 0;
+  color: #888;
+  font-size: 10px;
+}
+
+/* "+N more" */
+.duty-event-more {
+  font-size: 10px;
+  color: #8B4513;
+  font-weight: 600;
+  padding-left: 5px;
+}
+
+/* ─── Stats row (above calendar) ─── */
+.duty-stats-row {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0e8e0;
+  flex-wrap: wrap;
+}
+
+.duty-stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #faf5ef;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: #4a3020;
+  font-weight: 500;
+  border: 1px solid #ecdfd5;
+  transition: box-shadow 0.15s;
+}
+.duty-stat-chip:hover {
+  box-shadow: 0 2px 6px rgba(139,69,19,.12);
+}
+
+.duty-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.duty-stat-count {
+  font-weight: 700;
   font-size: 13px;
 }
 
-/* Lịch nhỏ hơn trên mobile */
+/* ─── Legend bar ─── */
+.duty-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid #f0e8e0;
+  flex-wrap: wrap;
+  background: #fdfaf7;
+}
+
+.duty-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #5a4030;
+}
+
+.duty-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.duty-legend-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: #aaa;
+  font-style: italic;
+}
+
+/* ─── Mobile ─── */
 @media (max-width: 767px) {
   .duty-calendar-wrap .ant-picker-calendar-date-content {
-    height: 48px !important;
+    height: 40px !important;
   }
-  .duty-calendar-wrap li {
+  .duty-event {
     font-size: 10px !important;
+  }
+  .duty-event-time {
+    display: none;
   }
 }

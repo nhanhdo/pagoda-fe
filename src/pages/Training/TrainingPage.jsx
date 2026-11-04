@@ -62,7 +62,7 @@ export default function TrainingPage() {
     {
       title: t.training.colName,
       dataIndex: 'name',
-      width: 230,
+      width: 220,
       render: (v, r) => (
         <div>
           <div style={{ fontWeight: 600 }}>{v}</div>
@@ -137,7 +137,6 @@ export default function TrainingPage() {
         loading={loading}
         size="small"
         className="personnel-table"
-        scroll={{ x: 890 }}
         expandable={{
           expandedRowRender: (r) => (
             <div style={{ padding: '8px 0' }}>

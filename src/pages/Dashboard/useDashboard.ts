@@ -43,17 +43,20 @@ export interface DutyRecord {
 
 export function useDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [dutyToday, setDutyToday] = useState<DutyRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats]           = useState(null as DashboardStats | null);
+  const [dutyToday, setDutyToday]   = useState([] as DutyRecord[]);
+  const [upcomingEvents, setUpcomingEvents] = useState([] as any[]);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     Promise.all([
       api.get('/dashboard/stats'),
       api.get('/dashboard/duty-today'),
-    ]).then(([statsRes, dutyRes]) => {
+      api.get('/dashboard/events-upcoming'),
+    ]).then(([statsRes, dutyRes, eventsRes]) => {
       setStats(statsRes.data);
       setDutyToday(dutyRes.data);
+      setUpcomingEvents(eventsRes.data);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -62,5 +65,5 @@ export function useDashboard() {
     (user as any)?.personnel?.fullName ||
     (user as any)?.username;
 
-  return { stats, dutyToday, loading, displayName };
+  return { stats, dutyToday, upcomingEvents, loading, displayName };
 }

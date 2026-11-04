@@ -9,7 +9,7 @@ import {
   AppstoreFilled, TeamOutlined, CalendarFilled, CheckSquareFilled,
   BookFilled, HeartFilled, TrophyFilled, BankFilled, NotificationFilled,
   LogoutOutlined, UserOutlined, KeyOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  BellOutlined, SafetyCertificateFilled, GlobalOutlined,
+  BellOutlined, SafetyCertificateFilled, GlobalOutlined, DollarCircleOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/axios';
@@ -61,7 +61,7 @@ function NotificationPanel({ notifications, onNavigate }) {
 
   if (!notifications.length) {
     return (
-      <div style={{ width: 320 }}>
+      <div style={{ width: 'min(320px, calc(100vw - 24px))' }}>
         <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 14, borderBottom: '1px solid #f0f0f0', color: '#333' }}>
           {t.layout.notifications}
         </div>
@@ -85,7 +85,7 @@ function NotificationPanel({ notifications, onNavigate }) {
   };
 
   return (
-    <div style={{ width: 320 }}>
+    <div style={{ width: 'min(320px, calc(100vw - 24px))' }}>
       <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 14, borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ color: '#333' }}>{t.layout.notifications}</span>
         <span style={{ fontSize: 11, color: '#999', fontWeight: 400 }}>{notifications.length} {t.layout.notifItems}</span>
@@ -163,16 +163,23 @@ function NotificationBell() {
 
       // 2. Today's duties
       try {
-        const res = await api.get(`/duty-schedules?date=${todayStr}`);
+        const res = await api.get(`/duty-schedules?startDate=${todayStr}&endDate=${todayStr}`);
         const duties = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
-        duties.forEach(d => items.push({
-          id: `duty-${d.id}`,
-          type: 'today_duty',
-          icon: '📅',
-          title: d.dutyType?.replace(/_/g, ' ') || t.layout.dutyFallback,
-          subtitle: `${t.layout.shiftPrefix} ${d.shift || '—'} · ${d.personnel?.dharmName || d.personnel?.fullName || '—'}`,
-          time: t.layout.today,
-        }));
+        duties.forEach(d => {
+          const timeLabel = d.startTime && d.endTime
+            ? `${d.startTime} – ${d.endTime}`
+            : d.startTime
+              ? `${d.startTime}`
+              : t.layout.today;
+          items.push({
+            id: `duty-${d.id}`,
+            type: 'today_duty',
+            icon: '📅',
+            title: d.dutyType?.replace(/_/g, ' ') || t.layout.dutyFallback,
+            subtitle: `${t.layout.shiftPrefix} ${d.shift || '—'} · ${d.personnel?.dharmName || d.personnel?.fullName || '—'}`,
+            time: timeLabel,
+          });
+        });
       } catch { /* silent */ }
 
       // 3. Buddhist holidays in next 7 days
@@ -377,6 +384,8 @@ export default function MainLayout() {
 
   const screens = useBreakpoint();
   const isMobile = screens.md === false;
+  const isTablet = screens.md === true && screens.lg === false;
+  const isPhone  = screens.sm === false;
 
   const PAGE_TITLES = {
     '/app/dashboard':          { label: t.layout.pageTitle.dashboard,        icon: '☸' },
@@ -386,14 +395,15 @@ export default function MainLayout() {
     '/app/work-assignment':    { label: t.layout.pageTitle.workAssignment,    icon: '✅' },
     '/app/training':           { label: t.layout.pageTitle.training,          icon: '📖' },
     '/app/buddhist-followers': { label: t.layout.pageTitle.buddhistFollowers, icon: '🙏' },
+    '/app/donations':          { label: t.layout.pageTitle.donations,          icon: '💰' },
     '/app/reward-discipline':  { label: t.layout.pageTitle.rewardDiscipline,  icon: '🏆' },
     '/app/news':               { label: t.layout.pageTitle.news,              icon: '📰' },
     '/app/users':              { label: t.layout.pageTitle.users,             icon: '🔐' },
   };
 
   useEffect(() => {
-    if (isMobile) setCollapsed(true);
-  }, [isMobile]);
+    if (isMobile || isTablet) setCollapsed(true);
+  }, [isMobile, isTablet]);
 
   useEffect(() => {
     const name = PAGE_TITLES[location.pathname]?.label || t.layout.defaultPageTitle;
@@ -412,6 +422,9 @@ export default function MainLayout() {
     { key: '/app/work-assignment',    icon: <CheckSquareFilled />,    label: t.nav.workAssignment },
     { key: '/app/training',           icon: <BookFilled />,           label: t.nav.training },
     { key: '/app/buddhist-followers', icon: <HeartFilled />,          label: t.nav.buddhistFollowers },
+    ...(['admin', 'thuki'].includes(user?.role) ? [
+      { key: '/app/donations', icon: <DollarCircleOutlined />, label: t.nav.donations },
+    ] : []),
     { key: '/app/reward-discipline',  icon: <TrophyFilled />,         label: t.nav.rewardDiscipline },
     { key: '/app/news',               icon: <NotificationFilled />,   label: t.nav.news },
     ...(user?.role === 'admin' ? [
@@ -501,10 +514,10 @@ export default function MainLayout() {
   );
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       {!isMobile && (
         <Sider trigger={null} collapsible collapsed={collapsed} width={240}
-          style={{ background: SIDEBAR_BG, boxShadow: '3px 0 16px rgba(0,0,0,0.35)', position: 'relative', overflow: 'hidden' }}>
+          style={{ background: SIDEBAR_BG, boxShadow: '3px 0 16px rgba(0,0,0,0.35)', position: 'relative', overflow: 'hidden', height: '100vh' }}>
           {sidebarContent}
         </Sider>
       )}
@@ -520,20 +533,21 @@ export default function MainLayout() {
         {sidebarContent}
       </Drawer>
 
-      <Layout>
-        <Header style={{ background: '#fdf8f2', padding: '0 16px', height: 72, lineHeight: '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(139,69,19,.15)', boxShadow: '0 1px 8px rgba(139,69,19,.06)', zIndex: 10, position: 'relative' }}>
+      <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Header style={{ background: '#fdf8f2', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(139,69,19,.15)', boxShadow: '0 1px 8px rgba(139,69,19,.06)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
           <div onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 18, cursor: 'pointer', color: '#5c3317', padding: '0 8px' }}>
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </div>
 
-          {currentPage && (
+          {currentPage && !isPhone && (
             <div style={{
               position: 'absolute', left: '50%', transform: 'translateX(-50%)',
               display: 'flex', alignItems: 'center', gap: 8,
               pointerEvents: 'none', userSelect: 'none',
+              maxWidth: isMobile ? 180 : 320, overflow: 'hidden',
             }}>
-              <span style={{ fontSize: 18, lineHeight: 1 }}>{currentPage.icon}</span>
-              <Text style={{ fontWeight: 700, fontSize: 15, color: '#5c3317', letterSpacing: 0.3 }}>
+              <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{currentPage.icon}</span>
+              <Text style={{ fontWeight: 700, fontSize: isMobile ? 13 : 15, color: '#5c3317', letterSpacing: 0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {currentPage.label}
               </Text>
             </div>
@@ -544,11 +558,11 @@ export default function MainLayout() {
               value={lang}
               onChange={setLang}
               size="small"
-              style={{ width: isMobile ? 90 : 120 }}
-              suffixIcon={<GlobalOutlined style={{ color: '#888' }} />}
+              style={{ width: 64 }}
+              suffixIcon={<GlobalOutlined style={{ color: '#888', fontSize: 12 }} />}
               options={[
-                { value: 'vi', label: isMobile ? '🇻🇳 VI' : '🇻🇳 Tiếng Việt' },
-                { value: 'en', label: isMobile ? '🇬🇧 EN' : '🇬🇧 English' },
+                { value: 'vi', label: 'VN' },
+                { value: 'en', label: 'EN' },
               ]}
             />
 
@@ -568,7 +582,7 @@ export default function MainLayout() {
           </Space>
         </Header>
 
-        <Content style={{ margin: isMobile ? '8px' : '16px', overflow: 'auto', position: 'relative', zIndex: 1 }}>
+        <Content style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
           <Outlet />
         </Content>
       </Layout>

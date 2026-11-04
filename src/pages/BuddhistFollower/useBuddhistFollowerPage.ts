@@ -26,7 +26,7 @@ export function useBuddhistFollowerPage() {
     setLoading(true);
     try {
       const { data: r } = await api.get('/buddhist-followers', {
-        params: { page, limit: 15, search, type: filterType },
+        params: { page, limit: 10, search, type: filterType },
       });
       setData((r as any).data);
       setTotal((r as any).total);

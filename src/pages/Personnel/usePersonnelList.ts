@@ -32,7 +32,7 @@ export function usePersonnelList() {
     setLoading(true);
     try {
       const { data: res } = await api.get('/personnel', {
-        params: { page, limit: 15, search, type: filterType, status: filterStatus },
+        params: { page, limit: 10, search, type: filterType, status: filterStatus },
       });
       setData(res.data);
       setTotal(res.total);

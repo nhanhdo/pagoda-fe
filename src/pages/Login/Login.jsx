@@ -129,6 +129,14 @@ export default function Login() {
   const didDrag  = useRef(false); // track whether pointer actually moved
 
   const isLit = lit;
+
+  // Show idle-logout notice if user was auto-logged out
+  React.useEffect(() => {
+    if (sessionStorage.getItem('logoutReason') === 'idle') {
+      sessionStorage.removeItem('logoutReason');
+      message.warning('Phiên làm việc đã hết hạn do không hoạt động. Vui lòng đăng nhập lại.', 6);
+    }
+  }, []);
   const aboveThreshold = dragY >= PULL_THRESHOLD;
 
   const toggle = useCallback(() => {
@@ -406,12 +414,19 @@ export default function Login() {
             {/* Error */}
             {error && (
               <div style={{
-                color: 'rgba(255,80,80,0.85)',
-                fontSize: 10.5, letterSpacing: 1.5,
-                textAlign: 'center', marginBottom: 14,
-                fontWeight: 700,
+                background: 'rgba(255,50,50,0.10)',
+                border: '1px solid rgba(255,80,80,0.30)',
+                borderRadius: 10,
+                padding: '10px 14px',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}>
-                {t.login.errorBanner}
+                <span style={{ fontSize: 15 }}>⚠</span>
+                <span style={{ color: 'rgba(255,120,120,0.95)', fontSize: 13, fontWeight: 600 }}>
+                  {error}
+                </span>
               </div>
             )}
 

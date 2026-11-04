@@ -1,10 +1,12 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
 import NotFoundPage from './pages/NotFound/NotFoundPage';
 import RippleEffect from './components/RippleEffect/RippleEffect';
 import CustomCursor from './components/CustomCursor/CustomCursor';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/Layout/MainLayout';
+import LotusEmpty from './components/LotusEmpty/LotusEmpty';
 import HomePage from './pages/Home/HomePage';
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -14,6 +16,7 @@ import DutySchedulePage from './pages/DutySchedule/DutySchedulePage';
 import WorkAssignmentPage from './pages/WorkAssignment/WorkAssignmentPage';
 import TrainingPage from './pages/Training/TrainingPage';
 import BuddhistFollowerPage from './pages/BuddhistFollower/BuddhistFollowerPage';
+import DonationPage from './pages/Donation/DonationPage';
 import RewardDisciplinePage from './pages/RewardDiscipline/RewardDisciplinePage';
 import DepartmentPage from './pages/Department/DepartmentPage';
 import NewsPage from './pages/News/NewsPage';
@@ -28,6 +31,13 @@ const AdminRoute = ({ children }) => {
   const { user, isAdmin } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (!isAdmin()) return <Navigate to="/app/dashboard" replace />;
+  return children;
+};
+
+const DonationRoute = ({ children }) => {
+  const { user, isAdmin, hasRole } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isAdmin() && !hasRole('thuki')) return <Navigate to="/app/dashboard" replace />;
   return children;
 };
 
@@ -63,6 +73,7 @@ const AppRoutes = () => {
         <Route path="work-assignment"    element={<WorkAssignmentPage />} />
         <Route path="training"           element={<TrainingPage />} />
         <Route path="buddhist-followers" element={<BuddhistFollowerPage />} />
+        <Route path="donations"          element={<DonationRoute><DonationPage /></DonationRoute>} />
         <Route path="reward-discipline"  element={<RewardDisciplinePage />} />
         <Route path="news"               element={<NewsPage />} />
         <Route path="users"              element={<AdminRoute><UserManagementPage /></AdminRoute>} />
@@ -75,12 +86,14 @@ const AppRoutes = () => {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <CustomCursor />
-        <RippleEffect />
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <ConfigProvider renderEmpty={() => <LotusEmpty />}>
+      <BrowserRouter>
+        <AuthProvider>
+          <CustomCursor />
+          <RippleEffect />
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </ConfigProvider>
   );
 }

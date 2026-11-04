@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Row, Col, Avatar, Tag, Button, Descriptions, Spin, Tabs, Table, Badge,
-  Typography, Space, Empty,
+  Typography, Space, Empty, Modal,
 } from 'antd';
 import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
+import PersonnelForm from './PersonnelForm';
+import { BASE_URL } from '../News/useNewsPage';
+const imgSrc = (p) => !p ? null : p.startsWith('http') ? p : `${BASE_URL}${p}`;
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -89,6 +92,7 @@ export default function PersonnelDetail() {
   const [trainings, setTrainings] = useState([]);
   const [rewards, setRewards]     = useState([]);
   const [duties, setDuties]       = useState([]);
+  const [editOpen, setEditOpen]   = useState(false);
 
   const typeLabels = {
     tang_ni: t.personnel.types.tang_ni,
@@ -183,7 +187,7 @@ export default function PersonnelDetail() {
         <Row gutter={24}>
           <Col xs={24} sm={6} style={{ textAlign: 'center' }}>
             {person.photo
-              ? <Avatar src={person.photo} size={120} />
+              ? <Avatar src={imgSrc(person.photo)} size={120} />
               : <Avatar size={120} style={{ backgroundColor: '#8B4513', fontSize: 48 }}>{person.fullName?.[0]}</Avatar>
             }
             <div style={{ marginTop: 12 }}>
@@ -205,7 +209,7 @@ export default function PersonnelDetail() {
             </Space>
             {canManage() && (
               <div style={{ marginTop: 16 }}>
-                <Button icon={<EditOutlined />} onClick={() => navigate(`/app/personnel/${id}/edit`)}>{t.common.edit}</Button>
+                <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>{t.common.edit}</Button>
               </div>
             )}
           </Col>
@@ -294,6 +298,24 @@ export default function PersonnelDetail() {
           </TabPane>
         </Tabs>
       </Card>
+
+      <Modal
+        title={t.personnel.editTitle}
+        open={editOpen}
+        onCancel={() => setEditOpen(false)}
+        footer={null}
+        width={720}
+        destroyOnClose
+      >
+        <PersonnelForm
+          record={person}
+          onSuccess={() => {
+            setEditOpen(false);
+            api.get(`/personnel/${id}`).then(r => setPerson(r.data)).catch(() => {});
+          }}
+          onCancel={() => setEditOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

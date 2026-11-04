@@ -19,14 +19,6 @@ import './DutySchedulePage.css';
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-// Màu nền nhẹ cho ca trực trên lịch
-const SHIFT_BG = {
-  'sáng':    '#fff8e1',
-  'chiều':   '#fff3e0',
-  'tối':     '#e8eaf6',
-  'cả_ngày': '#e8f5e9',
-};
-
 const SHIFT_DOT = {
   'sáng':    '#f59e0b',
   'chiều':   '#f97316',
@@ -106,31 +98,44 @@ export default function DutySchedulePage() {
     });
     if (!dayDuties.length) return null;
     return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 11 }}>
+      <div className="duty-cell-events">
         {dayDuties.slice(0, 3).map((d) => (
-          <li key={d.id}
-            onClick={(e) => { e.stopPropagation(); openModal(d); }}
-            style={{
-              background: SHIFT_BG[d.shift] || '#f5f5f5',
-              borderLeft: `3px solid ${SHIFT_DOT[d.shift] || '#888'}`,
-              borderRadius: 3, padding: '1px 4px', marginBottom: 2,
-              cursor: 'pointer', lineHeight: 1.4, overflow: 'hidden',
-              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}
+          <Tooltip
+            key={d.id}
+            title={
+              <div style={{ fontSize: 12 }}>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                  {t.dutySchedule.shifts[d.shift] || d.shift}
+                </div>
+                <div>{d.personnel?.dharmName || d.personnel?.fullName}</div>
+                {d.startTime && d.endTime && (
+                  <div style={{ color: '#ffd59e' }}>{d.startTime} – {d.endTime}</div>
+                )}
+                {d.notes && <div style={{ color: '#ccc', marginTop: 2 }}>{d.notes}</div>}
+              </div>
+            }
+            mouseEnterDelay={0.4}
           >
-            <span style={{ color: SHIFT_DOT[d.shift] || '#888', fontWeight: 700 }}>
-              {t.dutySchedule.shifts[d.shift]?.charAt(0)}
-            </span>
-            {' '}
-            <span style={{ color: '#333' }}>
-              {d.personnel?.dharmName || d.personnel?.fullName || '?'}
-            </span>
-          </li>
+            <div
+              onClick={(e) => { e.stopPropagation(); openModal(d); }}
+              className={`duty-event duty-shift-${d.shift?.replace('_', '-')}`}
+            >
+              <span className="duty-event-pill">
+                {t.dutySchedule.shifts[d.shift]?.charAt(0) || '?'}
+              </span>
+              <span className="duty-event-name">
+                {d.personnel?.dharmName || d.personnel?.fullName || '?'}
+              </span>
+              {d.startTime && (
+                <span className="duty-event-time">{d.startTime}</span>
+              )}
+            </div>
+          </Tooltip>
         ))}
         {dayDuties.length > 3 && (
-          <li style={{ color: '#888', paddingLeft: 4 }}>+{dayDuties.length - 3}</li>
+          <div className="duty-event-more">+{dayDuties.length - 3} ca</div>
         )}
-      </ul>
+      </div>
     );
   };
 
@@ -138,14 +143,14 @@ export default function DutySchedulePage() {
     {
       title: t.dutySchedule.colDate,
       dataIndex: 'dutyDate',
-      width: 160,
+      width: 140,
       render: (v) => dayjs(v).format('DD/MM/YYYY (ddd)'),
       sorter: (a, b) => a.dutyDate.localeCompare(b.dutyDate),
     },
     {
       title: t.dutySchedule.colDuty,
       dataIndex: 'dutyType',
-      width: 180,
+      width: 220,
       render: (v) => t.dutySchedule.dutyTypes[v] || v,
     },
     {
@@ -156,7 +161,7 @@ export default function DutySchedulePage() {
     },
     {
       title: t.dutySchedule.colPerson,
-      width: 160,
+      width: 150,
       render: (_, r) => {
         const p = r.personnel;
         return p ? (p.dharmName || p.fullName) : '—';
@@ -164,7 +169,7 @@ export default function DutySchedulePage() {
     },
     {
       title: t.dutySchedule.colTime,
-      width: 120,
+      width: 110,
       render: (_, r) => r.startTime && r.endTime ? `${r.startTime} - ${r.endTime}` : '—',
     },
     {
@@ -175,7 +180,7 @@ export default function DutySchedulePage() {
     },
     {
       title: t.common.actions,
-      width: 100,
+      width: 90,
       render: (_, r) => canManage() && (
         <Space>
           <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
@@ -248,13 +253,30 @@ export default function DutySchedulePage() {
           loading={loading}
           size="small"
           className="personnel-table"
-          scroll={{ x: 960 }}
         />
       )}
 
       {/* Calendar view */}
       {viewMode === 'calendar' && (
         <div className="duty-calendar-wrap">
+          {/* Stats row */}
+          <div className="duty-stats-row">
+            {Object.entries(SHIFT_DOT).map(([shift, color]) => {
+              const count = data.filter((d) => d.shift === shift).length;
+              return (
+                <div key={shift} className="duty-stat-chip">
+                  <span className="duty-stat-dot" style={{ background: color }} />
+                  <span>{t.dutySchedule.shifts[shift]}</span>
+                  <span className="duty-stat-count" style={{ color }}>{count}</span>
+                </div>
+              );
+            })}
+            <div className="duty-stat-chip" style={{ marginLeft: 'auto', background: '#f9f3ed', borderColor: '#d4b896' }}>
+              <span style={{ color: '#8B4513', fontWeight: 700, fontSize: 13 }}>{data.length}</span>
+              <span style={{ color: '#6b4226' }}>ca tổng</span>
+            </div>
+          </div>
+
           <Calendar
             value={calendarValue}
             onPanelChange={handleCalendarPanelChange}
@@ -266,14 +288,18 @@ export default function DutySchedulePage() {
               if (source === 'date' && canManage()) openModal(null, date);
             }}
           />
-          <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+
+          {/* Legend */}
+          <div className="duty-legend-bar">
             {Object.entries(SHIFT_DOT).map(([k, color]) => (
-              <span key={k} style={{ fontSize: 12, color: '#555' }}>
-                <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: color, marginRight: 4 }} />
-                {t.dutySchedule.shifts[k]}
-              </span>
+              <div key={k} className="duty-legend-item">
+                <span className="duty-legend-swatch" style={{ background: color }} />
+                <span>{t.dutySchedule.shifts[k]}</span>
+              </div>
             ))}
-            <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>{t.dutySchedule.calendarClickHint}</span>
+            {canManage() && (
+              <span className="duty-legend-hint">{t.dutySchedule.calendarClickHint}</span>
+            )}
           </div>
         </div>
       )}

@@ -212,7 +212,7 @@ export default function WorkAssignmentPage() {
 
   const columns = [
     {
-      title: t.workAssignment.colTask, dataIndex: 'title', width: 240,
+      title: t.workAssignment.colTask, dataIndex: 'title', width: 300,
       render: (v, r) => (
         <div>
           <div style={{ fontWeight: 600 }}>{v}</div>
@@ -298,7 +298,7 @@ export default function WorkAssignmentPage() {
 
       {viewMode === 'table' ? (
         <Table dataSource={data} columns={columns} rowKey="id" loading={loading}
-          size="small" className="personnel-table" scroll={{ x: 880 }} />
+          size="small" className="personnel-table" />
       ) : (
         <KanbanBoard
           data={data}

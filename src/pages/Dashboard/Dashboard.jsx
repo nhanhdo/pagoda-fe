@@ -2,14 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, Typography, Table, Tag, Spin, Empty, List } from 'antd';
 import {
   TeamOutlined, HeartFilled, BookFilled, CalendarFilled,
-  CheckSquareFilled, UserOutlined, WarningOutlined, ManOutlined,
+  CheckSquareFilled, WarningOutlined,
   ArrowRightOutlined, ScheduleOutlined, SolutionOutlined,
   UsergroupAddOutlined, FileTextOutlined, StarFilled, BellFilled,
+  CalendarOutlined, EnvironmentOutlined, ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard, SHIFT_COLORS, DUTY_STATUS_COLORS } from './useDashboard';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { solarToLunar, getBuddhistHolidays, formatLunarDate } from '../../utils/lunarCalendar';
+import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
 import './Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -143,7 +144,7 @@ function DonutChart({ data, size = 160, thickness = 26 }) {
 }
 
 export default function Dashboard() {
-  const { stats, dutyToday, loading, displayName } = useDashboard();
+  const { stats, dutyToday, upcomingEvents, loading, displayName } = useDashboard();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
 
@@ -170,9 +171,12 @@ export default function Dashboard() {
     { title: t.common.status,         dataIndex: 'status',   render: (v) => <Tag color={DUTY_STATUS_COLORS[v] || 'default'}>{v}</Tag> },
   ];
 
-  const tangNi = stats?.personnel?.tangNi ?? 0;
-  const cuSi   = stats?.personnel?.cuSi   ?? 0;
-  const total  = stats?.personnel?.total  ?? 0;
+  const tangNi         = stats?.personnel?.tangNi          ?? 0;
+  const cuSi           = stats?.personnel?.cuSi            ?? 0;
+  const phatTu         = stats?.personnel?.phatTu          ?? 0;
+  const tinhNguyenVien = stats?.personnel?.tinhNguyenVien  ?? 0;
+  const nhanVien       = stats?.personnel?.nhanVien        ?? 0;
+  const total          = stats?.personnel?.total           ?? 0;
 
   const today = new Date();
   const todayLunar = solarToLunar(today.getDate(), today.getMonth() + 1, today.getFullYear());
@@ -187,7 +191,7 @@ export default function Dashboard() {
       {/* Welcome */}
       <div className="dashboard-welcome welcome-anim">
         <Title level={4} className="dashboard-welcome-title">
-          {t.dashboard.welcome} {displayName}
+          {t.dashboard.welcome} {displayName ? displayName.charAt(0).toUpperCase() + displayName.slice(1) : ''}
         </Title>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 2 }}>
           <Text type="secondary">
@@ -297,15 +301,91 @@ export default function Dashboard() {
         </Col>
       </Row>
 
+      {/* Upcoming events */}
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24}>
+          <Card
+            className="dashboard-section-card"
+            title={
+              <span>
+                <CalendarOutlined style={{ color: '#8B4513', marginRight: 8 }} />
+                {t.dashboard.upcomingEvents}
+                {upcomingEvents.length > 0 && <Tag color="volcano" style={{ marginLeft: 8 }}>{upcomingEvents.length}</Tag>}
+              </span>
+            }
+            extra={<span className="card-extra-link" onClick={() => navigate('/app/news?tab=event')}>{t.dashboard.viewAll} <ArrowRightOutlined /></span>}
+          >
+            {upcomingEvents.length === 0 ? (
+              <Empty description={t.dashboard.noUpcomingEvents} />
+            ) : (
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {upcomingEvents.map((ev, idx) => {
+                  const evDate = ev.eventDate ? new Date(ev.eventDate) : null;
+                  const dayNum = evDate ? evDate.getDate() : '—';
+                  const monthStr = evDate ? evDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'vi-VN', { month: 'short' }) : '';
+                  const isToday = evDate && evDate.toISOString().split('T')[0] === todayKey;
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={() => navigate('/app/news?tab=event')}
+                      style={{
+                        flex: '1 1 220px', minWidth: 200, maxWidth: 280,
+                        border: '1px solid #f0e8d8', borderRadius: 10,
+                        padding: '12px 14px', cursor: 'pointer', background: '#fffdf9',
+                        borderTop: `3px solid ${isToday ? '#cf1322' : '#8B4513'}`,
+                        opacity: 0,
+                        animation: `kpi-slide-in 0.45s cubic-bezier(0.16,1,0.3,1) ${0.1 + idx * 0.08}s forwards`,
+                        transition: 'box-shadow 0.2s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(139,69,19,0.12)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
+                    >
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <div style={{
+                          minWidth: 44, textAlign: 'center', background: isToday ? '#fff1f0' : '#fdf6ec',
+                          border: `1px solid ${isToday ? '#ffa39e' : '#f0e8d8'}`, borderRadius: 8, padding: '4px 6px',
+                        }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: isToday ? '#cf1322' : '#8B4513', lineHeight: 1.1 }}>{dayNum}</div>
+                          <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>{monthStr}</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
+                          {ev.eventTime && (
+                            <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                              <ClockCircleOutlined style={{ marginRight: 4 }} />{ev.eventTime}
+                            </div>
+                          )}
+                          {ev.eventLocation && (
+                            <div style={{ fontSize: 12, color: '#888', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <EnvironmentOutlined style={{ marginRight: 4 }} />{ev.eventLocation}
+                            </div>
+                          )}
+                          {isToday && (
+                            <Tag color="red" style={{ marginTop: 4, fontSize: 11, borderRadius: 20 }}>Hôm nay</Tag>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
       {/* Personnel breakdown */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={16}>
           <Card className="dashboard-section-card" title={`📊 ${t.dashboard.personnelBreakdown}`}>
             <DonutChart
               data={[
-                { label: t.dashboard.tangNi, value: tangNi, color: '#d46b08' },
-                { label: t.dashboard.cuSi,   value: cuSi,   color: '#389e0d' },
-              ]}
+                { label: t.dashboard.tangNi,         value: tangNi,         color: '#d46b08' },
+                { label: t.dashboard.cuSi,           value: cuSi,           color: '#389e0d' },
+                { label: t.dashboard.phatTu,         value: phatTu,         color: '#1890ff' },
+                { label: t.dashboard.tinhNguyenVien, value: tinhNguyenVien, color: '#722ed1' },
+                { label: t.dashboard.nhanVien,       value: nhanVien,       color: '#eb2f96' },
+              ].filter(d => d.value > 0)}
             />
           </Card>
         </Col>

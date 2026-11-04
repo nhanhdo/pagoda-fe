@@ -24,6 +24,13 @@
 body {
   font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   background: #f5f5f0;
+  overflow-x: hidden;
+}
+
+/* Prevent any element from causing horizontal scroll */
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 .ant-layout-sider {
@@ -92,25 +99,45 @@ body {
 }
 
 /* Personnel table header */
+.personnel-table .ant-table {
+  border: 1px solid #d4a574 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+}
 .personnel-table .ant-table-thead > tr > th {
   background: #8B4513 !important;
   color: #fff !important;
   font-weight: 700 !important;
   font-size: 13px !important;
-  border-bottom: 2px solid #8B4513 !important;
+  border-bottom: 2px solid #6b3410 !important;
+  border-right: 1px solid rgba(255,255,255,0.18) !important;
   white-space: nowrap;
 }
+.personnel-table .ant-table-thead > tr > th:last-child {
+  border-right: none !important;
+}
 .personnel-table .ant-table-thead > tr > th::before {
-  background-color: rgba(255, 255, 255, 0.2) !important;
+  display: none !important;
 }
 .personnel-table .ant-table-tbody > tr > td {
   color: #1a1a1a !important;
+  border-bottom: 1px solid #ecddd0 !important;
+  border-right: 1px solid #ecddd0 !important;
+}
+.personnel-table .ant-table-tbody > tr > td:last-child {
+  border-right: none !important;
+}
+.personnel-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: none !important;
 }
 .personnel-table .ant-table-tbody > tr:hover > td {
   background: #fdf0e8 !important;
 }
 .personnel-table .ant-table-tbody > tr:nth-child(even) > td {
-  background: #fafafa;
+  background: #fdf8f4;
+}
+.personnel-table .ant-table-tbody > tr:nth-child(even):hover > td {
+  background: #fdf0e8 !important;
 }
 .personnel-table .ant-table-row-expand-icon {
   color: #2e7d32 !important;
@@ -422,9 +449,15 @@ body {
    RESPONSIVE
 ═══════════════════════════════════════════════════════ */
 
-/* ===== Responsive ===== */
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — 4 tiers
+   phone   ≤ 575px
+   mobile  576 – 767px
+   tablet  768 – 991px  (iPad portrait / small laptop)
+   laptop  992 – 1199px
+═══════════════════════════════════════════════════════ */
 
-/* Toolbar dùng chung cho các trang — wrap trên mobile */
+/* Toolbar dùng chung — always wrap-friendly */
 .page-toolbar {
   display: flex;
   justify-content: space-between;
@@ -434,66 +467,215 @@ body {
   gap: 10px;
 }
 
+/* ── Tablet 768–991px ── */
+@media (min-width: 768px) and (max-width: 991px) {
+  .ant-layout-content {
+    margin: 12px !important;
+  }
+
+  /* Card padding tighter on tablet */
+  .ant-card-body {
+    padding: 14px 16px !important;
+  }
+  .ant-card-head {
+    padding: 0 14px !important;
+  }
+
+  /* Table header */
+  .personnel-table .ant-table-thead > tr > th {
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+  .personnel-table .ant-table-tbody > tr > td {
+    padding: 8px 10px !important;
+  }
+
+  /* Stats row wraps at 2-per-row on tablet */
+  .follower-stats-row {
+    gap: 10px;
+  }
+  .follower-stat-card {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 140px;
+  }
+
+  /* Toolbar: allow wrapping */
+  .page-toolbar,
+  .personnel-list-toolbar,
+  .duty-schedule-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ── Mobile ≤ 767px ── */
 @media (max-width: 767px) {
-  /* Content margin nhỏ hơn trên mobile */
   .ant-layout-content {
     margin: 8px !important;
   }
 
-  /* Toolbar: stack dọc, mỗi phần full width */
-  .page-toolbar,
-  .personnel-list-toolbar {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
+  /* Card padding */
+  .ant-card-body {
+    padding: 12px 14px !important;
+  }
+  .ant-card-head {
+    padding: 0 12px !important;
+    min-height: 44px !important;
+    font-size: 13px !important;
   }
 
-  /* Ant Space bên trong toolbar: wrap */
+  /* Toolbar: stack */
+  .page-toolbar,
+  .personnel-list-toolbar,
+  .duty-schedule-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  /* Ant Space inside toolbar: wrap */
   .page-toolbar .ant-space,
-  .personnel-list-toolbar .ant-space {
+  .personnel-list-toolbar .ant-space,
+  .duty-schedule-toolbar .ant-space {
     flex-wrap: wrap !important;
     width: 100%;
   }
 
-  /* Input và Select full width trên mobile */
+  /* Input / Select / DatePicker full width */
   .page-toolbar .ant-input-affix-wrapper,
   .page-toolbar .ant-select,
   .page-toolbar .ant-picker,
   .personnel-list-toolbar .ant-input-affix-wrapper,
-  .personnel-list-toolbar .ant-select {
+  .personnel-list-toolbar .ant-select,
+  .duty-schedule-toolbar .ant-input-affix-wrapper,
+  .duty-schedule-toolbar .ant-select,
+  .duty-schedule-toolbar .ant-picker {
     width: 100% !important;
     min-width: 0 !important;
   }
 
-  /* Button Add full width */
-  .page-toolbar > .ant-btn,
-  .personnel-list-toolbar > .ant-btn {
-    width: 100% !important;
-  }
-
-  /* Modal: full width */
+  /* Modal */
   .ant-modal {
-    max-width: calc(100vw - 24px) !important;
-    margin: 12px auto !important;
+    max-width: calc(100vw - 20px) !important;
+    margin: 10px auto !important;
+  }
+  .ant-modal-body {
+    padding: 16px !important;
   }
 
-  /* Form: giảm margin */
+  /* Form */
   .ant-form-item {
     margin-bottom: 12px;
   }
+  .ant-form-item-label > label {
+    font-size: 13px !important;
+  }
 
-  /* Table header font nhỏ hơn */
+  /* Table */
   .personnel-table .ant-table-thead > tr > th {
     font-size: 12px !important;
     padding: 8px 8px !important;
   }
   .personnel-table .ant-table-tbody > tr > td {
     padding: 8px 8px !important;
+    font-size: 13px !important;
   }
 
-  /* Tabs compact */
+  /* Tabs */
   .ant-tabs-tab {
     padding: 8px 10px !important;
     font-size: 13px !important;
+  }
+  .ant-tabs-nav {
+    margin-bottom: 8px !important;
+  }
+
+  /* Stats row: 2 per row */
+  .follower-stats-row {
+    gap: 8px;
+  }
+  .follower-stat-card {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 130px;
+    padding: 12px 14px;
+  }
+
+  /* Page header */
+  .page-header {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Descriptions */
+  .ant-descriptions-item-label,
+  .ant-descriptions-item-content {
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* Popover notification panel */
+  .ant-popover-inner-content {
+    max-width: calc(100vw - 24px) !important;
+  }
+}
+
+/* ── Phone ≤ 575px ── */
+@media (max-width: 575px) {
+  .ant-layout-content {
+    margin: 6px !important;
+  }
+
+  /* Even tighter cards */
+  .ant-card-body {
+    padding: 10px 12px !important;
+  }
+  .ant-card-head {
+    padding: 0 10px !important;
+    min-height: 40px !important;
+  }
+
+  /* Stats row: single column */
+  .follower-stats-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .follower-stat-card {
+    flex: none;
+    width: 100%;
+    padding: 10px 14px;
+  }
+
+  /* Modal: near full screen */
+  .ant-modal {
+    max-width: calc(100vw - 12px) !important;
+    margin: 6px auto !important;
+  }
+
+  /* Table: smaller text */
+  .personnel-table .ant-table-thead > tr > th {
+    font-size: 11px !important;
+    padding: 6px 6px !important;
+    white-space: nowrap;
+  }
+  .personnel-table .ant-table-tbody > tr > td {
+    padding: 6px 6px !important;
+    font-size: 12px !important;
+  }
+
+  /* Tabs: even more compact */
+  .ant-tabs-tab {
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* Row gutter override for nested grids */
+  .ant-row {
+    margin-left: -6px !important;
+    margin-right: -6px !important;
+  }
+  .ant-col {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
   }
 }

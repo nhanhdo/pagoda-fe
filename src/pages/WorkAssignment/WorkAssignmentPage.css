@@ -87,6 +87,13 @@
   opacity: 1;
 }
 
+/* Touch devices: always show actions (can't hover) */
+@media (hover: none) {
+  .kanban-card__actions {
+    opacity: 1;
+  }
+}
+
 .kanban-card__desc {
   display: -webkit-box;
   -webkit-line-clamp: 2;

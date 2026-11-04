@@ -147,7 +147,7 @@ export default function RewardDisciplinePage() {
         )}
       </div>
 
-      <Table dataSource={data} columns={columns} rowKey="id" loading={loading} size="small" className="personnel-table" scroll={{ x: 860 }} />
+      <Table dataSource={data} columns={columns} rowKey="id" loading={loading} size="small" className="personnel-table" />
 
       <Modal
         title={`${editRecord ? t.common.edit : t.common.add} ${isReward ? t.rewardDiscipline.tabReward : t.rewardDiscipline.tabDiscipline}`}

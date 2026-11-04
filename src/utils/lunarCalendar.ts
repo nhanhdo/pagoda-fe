@@ -76,9 +76,15 @@ export interface LunarDate {
   month: number;
   year: number;
   leap: boolean;
-  can: string;
-  chi: string;
+  can: string;      // year can
+  chi: string;      // year chi
   yearName: string;
+  dayCan: string;
+  dayChi: string;
+  dayCanChi: string;
+  monthCan: string;
+  monthChi: string;
+  monthCanChi: string;
 }
 
 const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
@@ -117,8 +123,18 @@ export function solarToLunar(dd: number, mm: number, yy: number): LunarDate {
   let lunarMonth = ((diff + 11 - leapMonthDiff) % 12) + 1;
   if (lunarMonth >= 11 && diff < 4) lunarYear = yy - 1;
 
-  const can = CAN[(lunarYear + 6) % 10];
+  const yearCanIdx = (lunarYear + 6) % 10;
+  const can = CAN[yearCanIdx];
   const chi = CHI[(lunarYear + 8) % 12];
+
+  // Day Can-Chi from Julian Day Number
+  const dayCan  = CAN[(dayNumber + 6) % 10];
+  const dayChi  = CHI[(dayNumber + 10) % 12];
+
+  // Month Can-Chi
+  const monthCanIdx = ((yearCanIdx % 5) * 2 + lunarMonth + 1) % 10;
+  const monthCan    = CAN[monthCanIdx];
+  const monthChi    = CHI[(lunarMonth + 1) % 12];
 
   return {
     day: lunarDay,
@@ -128,6 +144,12 @@ export function solarToLunar(dd: number, mm: number, yy: number): LunarDate {
     can,
     chi,
     yearName: `${can} ${chi}`,
+    dayCan,
+    dayChi,
+    dayCanChi: `${dayCan} ${dayChi}`,
+    monthCan,
+    monthChi,
+    monthCanChi: `${monthCan} ${monthChi}`,
   };
 }
 
@@ -195,4 +217,68 @@ export function getBuddhistHolidays(year: number): Map<string, { names: string[]
 
 export function formatLunarDate(l: LunarDate): string {
   return `${l.day}/${l.month}${l.leap ? ' (nhuận)' : ''} ${l.yearName}`;
+}
+
+// ─── Giờ Hoàng Đạo ───────────────────────────────────────
+const CHI_TIMES = ['23h-1h','1h-3h','3h-5h','5h-7h','7h-9h','9h-11h','11h-13h','13h-15h','15h-17h','17h-19h','19h-21h','21h-23h'];
+const HD_OFFSETS = [0, 1, 4, 5, 7, 10]; // positions of 6 hoàng đạo thần
+
+export function getHoangDaoHours(dayChiIdx: number): { chi: string; time: string }[] {
+  const start = dayChiIdx % 2 === 0 ? 0 : 2; // even day chi → start Tý(0), odd → start Dần(2)
+  return HD_OFFSETS
+    .map(o => { const i = (start + o) % 12; return { chi: CHI[i], time: CHI_TIMES[i] }; })
+    .sort((a, b) => CHI.indexOf(a.chi) - CHI.indexOf(b.chi));
+}
+
+// ─── Solar terms (Tiết khí) ──────────────────────────────
+const SOLAR_TERMS = [
+  'Xuân phân','Thanh minh','Cốc vũ','Lập hạ','Tiểu mãn','Mang chủng',
+  'Hạ chí','Tiểu thử','Đại thử','Lập thu','Xử thử','Bạch lộ',
+  'Thu phân','Hàn lộ','Sương giáng','Lập đông','Tiểu tuyết','Đại tuyết',
+  'Đông chí','Tiểu hàn','Đại hàn','Lập xuân','Vũ thủy','Kinh trập',
+];
+
+function getSunLongitudeDeg(jdn: number): number {
+  const T  = (jdn - 2451545.5 - TZ / 24) / 36525;
+  const T2 = T * T;
+  const M  = 357.5291 + 35999.0503 * T - 0.0001559 * T2 - 0.00000048 * T * T2;
+  const L0 = 280.46645 + 36000.76983 * T + 0.0003032 * T2;
+  let DL   = (1.9146 - 0.004817 * T - 0.000014 * T2) * Math.sin(DR * M);
+  DL += (0.019993 - 0.000101 * T) * Math.sin(DR * 2 * M) + 0.00029 * Math.sin(DR * 3 * M);
+  return ((L0 + DL) % 360 + 360) % 360;
+}
+
+export function getSolarTerm(dd: number, mm: number, yy: number): string {
+  const deg = getSunLongitudeDeg(jdFromDate(dd, mm, yy));
+  return SOLAR_TERMS[Math.floor(deg / 15) % 24];
+}
+
+// ─── Thập nhị trực ───────────────────────────────────────
+export interface TrucInfo {
+  name: string;
+  hoangDao: boolean;
+  shouldDo: string[];
+  shouldAvoid: string[];
+}
+
+const TRUC_LIST: TrucInfo[] = [
+  { name: 'Kiến', hoangDao: false, shouldDo: ['cúng tế', 'tế lễ'], shouldAvoid: ['động thổ', 'cưới hỏi', 'xuất hành', 'mở kho'] },
+  { name: 'Trừ',  hoangDao: true,  shouldDo: ['chữa bệnh', 'tắm gội', 'vệ sinh', 'cắt may'], shouldAvoid: ['cưới hỏi', 'đặt nền móng', 'khai trương'] },
+  { name: 'Mãn',  hoangDao: false, shouldDo: ['khai trương', 'giao dịch', 'nhập trạch'], shouldAvoid: ['tang sự', 'kiện tụng'] },
+  { name: 'Bình', hoangDao: true,  shouldDo: ['cưới hỏi', 'xuất hành', 'giao dịch', 'khai trương'], shouldAvoid: ['kiện tụng', 'tang sự'] },
+  { name: 'Định', hoangDao: true,  shouldDo: ['cưới hỏi', 'đặt nền móng', 'khai trương', 'ký kết'], shouldAvoid: ['kiện tụng', 'tranh luận'] },
+  { name: 'Chấp', hoangDao: false, shouldDo: ['trồng cây', 'chăn nuôi', 'gieo giống'], shouldAvoid: ['khai trương', 'cưới hỏi', 'xuất hành'] },
+  { name: 'Phá',  hoangDao: false, shouldDo: ['phá dỡ công trình cũ'], shouldAvoid: ['cưới hỏi', 'khai trương', 'ký kết', 'xuất hành'] },
+  { name: 'Nguy', hoangDao: true,  shouldDo: ['cúng tế', 'lên núi'], shouldAvoid: ['xuất hành xa', 'bơi lội'] },
+  { name: 'Thành',hoangDao: true,  shouldDo: ['cưới hỏi', 'khai trương', 'nhập trạch', 'ký kết', 'xuất hành'], shouldAvoid: ['kiện tụng', 'tang sự'] },
+  { name: 'Thu',  hoangDao: false, shouldDo: ['thu hoạch', 'thu nợ', 'nạp tài'], shouldAvoid: ['xuất hành', 'cưới hỏi', 'khai trương'] },
+  { name: 'Khai', hoangDao: true,  shouldDo: ['khai trương', 'xuất hành', 'cưới hỏi', 'nhập trạch', 'ký kết'], shouldAvoid: ['tang sự', 'mai táng'] },
+  { name: 'Bế',   hoangDao: false, shouldDo: ['mai táng', 'tích trữ'], shouldAvoid: ['khai trương', 'xuất hành', 'cưới hỏi'] },
+];
+
+export function getTruc(lunarDay: number, lunarMonth: number, lunarYear: number): TrucInfo {
+  const yearChiIdx = (lunarYear + 8) % 12;
+  const offset = [0, 2, 10][yearChiIdx % 3];
+  const idx = (lunarMonth * 2 + lunarDay + offset) % 12;
+  return TRUC_LIST[idx];
 }

@@ -37,6 +37,22 @@
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Feed column — must constrain its content */
+.news-feed-col {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.news-feed-inner {
+  min-width: 0;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .news-sidebar {
@@ -59,19 +75,59 @@
   color: #a0522d !important;
 }
 
+/* Tabs — all wrappers must constrain width */
+.news-feed-tabs {
+  overflow: hidden;
+  min-width: 0;
+}
+.news-feed-tabs .ant-tabs-content-holder {
+  overflow: hidden;
+  min-width: 0;
+}
+.news-feed-tabs .ant-tabs-content {
+  min-width: 0;
+  overflow: hidden;
+}
+.news-feed-tabs .ant-tabs-tabpane {
+  min-width: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+
 /* ── Post card ───────────────────────────────────────────── */
 .news-post-card {
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
   border: 1px solid #f0e8df;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   overflow: hidden;
-  transition: box-shadow .2s ease, transform .2s ease;
+  transition: box-shadow .25s ease, transform .25s ease;
+  /* always constrain width */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .news-post-card:hover {
-  box-shadow: 0 4px 16px rgba(139,69,19,.12), 0 8px 28px rgba(0,0,0,.08);
-  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(139,69,19,.13), 0 2px 8px rgba(0,0,0,.06);
+  transform: translateY(-2px);
+}
+
+/* Force AntD Paragraph inside cards to not overflow */
+.news-post-card .ant-typography {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+/* Ellipsis paragraph renders a span — make it block-level */
+.news-post-card .ant-typography p,
+.news-post-card p.ant-typography {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* ── Sidebar widgets ─────────────────────────────────────── */
@@ -124,6 +180,68 @@
   color: #8B4513 !important;
   font-weight: 800 !important;
 }
+/* Taller cells */
+.news-calendar-wrap .ant-picker-calendar-date {
+  min-height: 80px !important;
+}
+.news-calendar-wrap .ant-picker-calendar-date-content {
+  height: 52px !important;
+  overflow: hidden;
+}
+.news-calendar-wrap .ant-picker-calendar-date-value {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+/* Header spacing */
+.news-calendar-wrap .ant-picker-calendar-header {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #f5ece0 !important;
+}
+/* Selected cell highlight */
+.news-calendar-wrap .ant-picker-cell-selected .ant-picker-cell-inner {
+  background-color: #fff3e6 !important;
+  border: 2px solid #8B4513 !important;
+}
+.news-calendar-wrap .ant-picker-cell-selected .ant-picker-calendar-date-value {
+  color: #8B4513 !important;
+  font-weight: 900 !important;
+}
+/* Sunday column */
+.news-calendar-wrap .ant-picker-content th:last-child,
+.news-calendar-wrap .ant-picker-cell:nth-child(7) .ant-picker-calendar-date-value {
+  color: #c0392b;
+}
+/* Hover effect */
+.news-calendar-wrap .ant-picker-cell:hover .ant-picker-cell-inner {
+  background: #fdf6ec !important;
+}
+/* Responsive: stack on small screens */
+@media (max-width: 768px) {
+  .news-cal-layout { flex-direction: column !important; }
+  .news-cal-sidebar { width: 100% !important; }
+}
+
+/* Double-click to add event hint */
+.cal-add-hint {
+  display: none;
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: #8B4513;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 15px;
+  text-align: center;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.news-calendar-wrap .ant-picker-cell:hover .cal-add-hint {
+  display: block;
+}
 
 .today-chip {
   display: inline-block;
@@ -137,9 +255,140 @@
   margin-bottom: 2px;
 }
 
+/* ── Upload image fix — prevent overflow in form modal ──── */
+.ant-upload-list-picture-card .ant-upload-list-item,
+.ant-upload-list-picture-card .ant-upload-list-item-container {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+.ant-upload-list-picture-card .ant-upload-list-item-thumbnail img,
+.ant-upload-list-picture-card .ant-upload-list-item-image {
+  object-fit: contain !important;
+  max-width: 100% !important;
+  max-height: 180px !important;
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+.ant-upload-list-picture-card {
+  overflow: hidden !important;
+}
+/* Force picture-card item width to match container */
+.ant-upload-list.ant-upload-list-picture-card {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+.ant-upload-list-picture-card .ant-upload-list-item-container {
+  width: 104px !important;
+  height: 104px !important;
+}
+
+/* ── Comments ─────────────────────────────────────────────── */
+.comment-section {
+  border-top: 1px solid #f5f5f5;
+  padding: 0 16px 12px;
+}
+.comment-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #fafafa;
+}
+.comment-item:last-child {
+  border-bottom: none;
+}
+.comment-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: flex-start;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 900px) {
   .news-layout { flex-direction: column; }
   .news-sidebar { width: 100%; }
   .news-banner { padding: 16px 18px; }
+}
+
+/* ── Mobile ≤ 767px ── */
+@media (max-width: 767px) {
+  /* Banner: reduce icon, tighter layout */
+  .news-banner {
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+
+  /* Feed container inner padding */
+  .news-feed-inner {
+    padding: 0 12px 16px !important;
+  }
+
+  /* Tabs: scrollable on mobile — hide default overflow arrows */
+  .news-feed-tabs .ant-tabs-nav-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .news-feed-tabs .ant-tabs-nav-wrap::-webkit-scrollbar {
+    display: none;
+  }
+  .news-feed-tabs .ant-tabs-nav-operations {
+    display: none !important;
+  }
+  .news-feed-tabs .ant-tabs-nav-list {
+    flex-wrap: nowrap !important;
+  }
+  .news-feed-tabs .ant-tabs-tab {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Post card */
+  .news-post-card {
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+
+  /* Word wrap in post body */
+  .news-post-card .ant-typography,
+  .news-post-card p {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    max-width: 100% !important;
+  }
+
+  /* Sidebar widget */
+  .news-widget {
+    border-radius: 10px;
+  }
+
+  /* Calendar sidebar on mobile: stacks */
+  .news-cal-layout {
+    flex-direction: column !important;
+  }
+  .news-cal-sidebar {
+    width: 100% !important;
+  }
+}
+
+/* ── Phone ≤ 575px ── */
+@media (max-width: 575px) {
+  .news-banner {
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+  /* Stats pills in banner wrap on phone */
+  .news-banner-stats {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
 }
