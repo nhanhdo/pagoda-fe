@@ -334,7 +334,7 @@
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .news-sidebar {
-    display: none;
+    display: none !important;
   }
   .news-banner {
     padding: 16px 18px;
