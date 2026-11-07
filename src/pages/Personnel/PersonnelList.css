@@ -1,40 +1,95 @@
+/* ── Toolbar ── */
 .personnel-list-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 0;
-  background: none;
-  box-shadow: none;
   margin-bottom: 16px;
 }
 
+/* ── Name cell ── */
 .personnel-name-cell__main {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
+  color: #2d1a0e;
 }
-
 .personnel-name-cell__dharm {
   font-size: 12px;
-  color: #888;
+  color: #9e7a5a;
+  margin-top: 1px;
 }
 
-.personnel-type-tag {
-  min-width: 90px;
-  text-align: center;
-  display: inline-block;
+/* ── Code chip ── */
+.personnel-code-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #f5ece3;
+  color: #8B4513;
+  border: 1px solid #ddbfa0;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
+
+/* ── Type pill ── */
+.personnel-type-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ── Action button group ── */
+.personnel-action-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.personnel-action-btn {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  transition: background 0.15s, border-color 0.15s, transform 0.12s !important;
+}
+.personnel-action-btn:hover {
+  transform: scale(1.12) !important;
+}
+.personnel-action-btn.view:hover  { background: #e8f4ff !important; border-color: #91caff !important; }
+.personnel-action-btn.edit:hover  { background: #fff7e6 !important; border-color: #ffc44d !important; }
+.personnel-action-btn.del:hover   { background: #fff1f0 !important; border-color: #ffaaa5 !important; }
 
 /* ── View toggle ── */
 .view-toggle {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+  background: #f5ece3;
+  border-radius: 8px;
+  padding: 3px;
+}
+.view-toggle .ant-btn {
+  border-radius: 6px !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
-/* ── Card grid ── */
+/* ═══════════════════════════════════════════
+   CARD GRID
+═══════════════════════════════════════════ */
 .personnel-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 16px;
   padding: 4px 0;
 }
@@ -42,35 +97,80 @@
 .personnel-card {
   background: #fff;
   border-radius: 16px;
-  border: 1px solid #f0ebe3;
-  padding: 20px 16px;
-  text-align: center;
+  border: 1px solid #ede5db;
+  overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.18s;
   position: relative;
 }
 
 .personnel-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(139, 69, 19, 0.12);
-  border-color: #d4a017;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(139,69,19,0.14);
+  border-color: #c8956c;
+}
+
+/* colored accent bar at top */
+.personnel-card__accent {
+  width: 100%;
+  height: 5px;
+  flex-shrink: 0;
+}
+
+.personnel-card__body {
+  padding: 18px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+/* code badge — top right */
+.personnel-card__code {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  background: rgba(255,255,255,0.88);
+  border: 1px solid #ddbfa0;
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8B4513;
+  letter-spacing: 0.4px;
+}
+
+/* avatar ring */
+.personnel-card__avatar {
+  position: relative;
+  margin-top: 4px;
+}
+.personnel-card__avatar-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2.5px solid;
+  opacity: 0.55;
 }
 
 .personnel-card__name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #5c3317;
-  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #3d1a06;
+  text-align: center;
+  margin-top: 4px;
   word-break: break-word;
+  line-height: 1.3;
 }
-
 .personnel-card__subname {
   font-size: 12px;
-  color: #888;
+  color: #9e7a5a;
+  text-align: center;
+  margin-top: -3px;
 }
 
 .personnel-card__position {
@@ -80,23 +180,41 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
+  letter-spacing: 0.2px;
 }
 
 .personnel-card__status {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 12px;
+  color: #888;
+}
+.personnel-card__status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.personnel-card__actions {
+.personnel-card__footer {
+  width: 100%;
+  border-top: 1px solid #f3ece4;
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s;
+}
+.personnel-card:hover .personnel-card__footer {
+  opacity: 1;
 }
 
-.personnel-card:hover .personnel-card__actions {
-  opacity: 1;
+@media (max-width: 575px) {
+  .personnel-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
 }

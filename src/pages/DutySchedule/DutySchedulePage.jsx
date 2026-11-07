@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Select, DatePicker, Space, Tag, Modal, Form,
-  Input, message, Popconfirm, Badge, Row, Col, Tabs, Calendar, Tooltip,
+  Input, message, Popconfirm, Badge, Row, Col, Tabs, Calendar, Popover, Descriptions,
 } from 'antd';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined,
@@ -39,6 +40,7 @@ export default function DutySchedulePage() {
   const [form] = Form.useForm();
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'calendar'
   const [calendarValue, setCalendarValue] = useState(dayjs());
+  const [popRecord, setPopRecord] = useState(null); // duty record shown in info popover
 
   const openModal = (record = null, defaultDate = null) => {
     setEditRecord(record);
@@ -89,6 +91,55 @@ export default function DutySchedulePage() {
     setDateRange([start, end]);
   };
 
+  // Info popover content for a duty record
+  const dutyPopoverContent = (d) => (
+    <div style={{ width: 260 }}>
+      <Descriptions column={1} size="small" style={{ marginBottom: canManage() ? 10 : 0 }}>
+        <Descriptions.Item label={t.dutySchedule.fields.person}>
+          <strong>{d.personnel?.dharmName || d.personnel?.fullName || '—'}</strong>
+        </Descriptions.Item>
+        <Descriptions.Item label={t.dutySchedule.fields.date}>
+          {dayjs(d.dutyDate).format('DD/MM/YYYY (ddd)')}
+        </Descriptions.Item>
+        <Descriptions.Item label={t.dutySchedule.fields.dutyType}>
+          {t.dutySchedule.dutyTypes[d.dutyType] || d.dutyType}
+        </Descriptions.Item>
+        <Descriptions.Item label={t.dutySchedule.fields.shift}>
+          <Tag color={shiftColors[d.shift]}>{t.dutySchedule.shifts[d.shift] || d.shift}</Tag>
+        </Descriptions.Item>
+        {(d.startTime || d.endTime) && (
+          <Descriptions.Item label={t.dutySchedule.colTime}>
+            {d.startTime} – {d.endTime}
+          </Descriptions.Item>
+        )}
+        <Descriptions.Item label={t.common.status}>
+          <Badge status={statusColors[d.status] || 'default'} text={t.dutySchedule.statuses[d.status] || d.status} />
+        </Descriptions.Item>
+        {d.notes && (
+          <Descriptions.Item label={t.common.notes}>{d.notes}</Descriptions.Item>
+        )}
+      </Descriptions>
+      {canManage() && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
+          <Popconfirm
+            title={t.dutySchedule.confirmDelete}
+            onConfirm={() => { setPopRecord(null); handleDelete(d.id); }}
+            okText={t.common.delete} cancelText={t.common.cancel}
+          >
+            <Button size="small" danger icon={<DeleteOutlined />}>{t.common.delete}</Button>
+          </Popconfirm>
+          <Button
+            size="small" type="primary" icon={<EditOutlined />}
+            style={{ background: '#8B4513', borderColor: '#8B4513' }}
+            onClick={() => { setPopRecord(null); openModal(d); }}
+          >
+            {t.common.edit}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   // Render nội dung mỗi ô ngày trên calendar
   const calendarCellRender = (value) => {
     const dateStr = value.format('YYYY-MM-DD');
@@ -100,24 +151,22 @@ export default function DutySchedulePage() {
     return (
       <div className="duty-cell-events">
         {dayDuties.slice(0, 3).map((d) => (
-          <Tooltip
+          <Popover
             key={d.id}
+            open={popRecord?.id === d.id}
+            onOpenChange={(v) => { if (!v) setPopRecord(null); }}
             title={
-              <div style={{ fontSize: 12 }}>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>
-                  {t.dutySchedule.shifts[d.shift] || d.shift}
-                </div>
-                <div>{d.personnel?.dharmName || d.personnel?.fullName}</div>
-                {d.startTime && d.endTime && (
-                  <div style={{ color: '#ffd59e' }}>{d.startTime} – {d.endTime}</div>
-                )}
-                {d.notes && <div style={{ color: '#ccc', marginTop: 2 }}>{d.notes}</div>}
-              </div>
+              <span style={{ color: '#5c3317', fontWeight: 700 }}>
+                {t.dutySchedule.shifts[d.shift] || d.shift} · {dayjs(d.dutyDate).format('DD/MM')}
+              </span>
             }
-            mouseEnterDelay={0.4}
+            content={dutyPopoverContent(d)}
+            trigger="click"
+            placement="right"
+            overlayInnerStyle={{ padding: '10px 14px' }}
           >
             <div
-              onClick={(e) => { e.stopPropagation(); openModal(d); }}
+              onClick={(e) => { e.stopPropagation(); setPopRecord(d); }}
               className={`duty-event duty-shift-${d.shift?.replace('_', '-')}`}
             >
               <span className="duty-event-pill">
@@ -130,7 +179,7 @@ export default function DutySchedulePage() {
                 <span className="duty-event-time">{d.startTime}</span>
               )}
             </div>
-          </Tooltip>
+          </Popover>
         ))}
         {dayDuties.length > 3 && (
           <div className="duty-event-more">+{dayDuties.length - 3} ca</div>
@@ -192,10 +241,12 @@ export default function DutySchedulePage() {
     },
   ];
 
+  if (loading && !data.length) return <PageSpinner />;
+
   return (
     <Card>
       {/* Toolbar */}
-      <div className="duty-schedule-toolbar">
+      <div className="duty-schedule-toolbar section-anim section-d0">
         <Space wrap>
           <RangePicker
             value={dateRange}
@@ -220,6 +271,7 @@ export default function DutySchedulePage() {
       </div>
 
       {/* View toggle */}
+      <div className="section-anim section-d1">
       <Tabs
         activeKey={viewMode}
         onChange={(k) => {
@@ -253,6 +305,7 @@ export default function DutySchedulePage() {
           loading={loading}
           size="small"
           className="personnel-table"
+          scroll={{ x: 'max-content' }}
         />
       )}
 
@@ -285,7 +338,35 @@ export default function DutySchedulePage() {
               return null;
             }}
             onSelect={(date, { source }) => {
-              if (source === 'date' && canManage()) openModal(null, date);
+              if (source === 'date') {
+                setPopRecord(null);
+                if (canManage()) openModal(null, date);
+              }
+            }}
+            headerRender={({ value, onChange }) => {
+              const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `Th ${i + 1}` }));
+              const years = Array.from({ length: 30 }, (_, i) => {
+                const y = dayjs().year() - 5 + i;
+                return { value: y, label: `${y}` };
+              });
+              return (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, padding: '8px 16px' }}>
+                  <Select
+                    size="small"
+                    value={value.year()}
+                    options={years}
+                    style={{ width: 80 }}
+                    onChange={(y) => onChange(value.year(y))}
+                  />
+                  <Select
+                    size="small"
+                    value={value.month()}
+                    options={months}
+                    style={{ width: 72 }}
+                    onChange={(m) => onChange(value.month(m))}
+                  />
+                </div>
+              );
             }}
           />
 
@@ -303,6 +384,7 @@ export default function DutySchedulePage() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Form modal */}
       <Modal

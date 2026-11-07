@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Select, Space, Tag, Modal, Form, Input,
   DatePicker, Badge, Row, Col, List, Avatar,
@@ -109,9 +110,11 @@ export default function TrainingPage() {
     },
   ];
 
+  if (loading && !data.length) return <PageSpinner />;
+
   return (
     <Card>
-      <div className="follower-stats-row">
+      <div className="follower-stats-row section-anim section-d0">
         {trainingStats.map(({ label, value, color }) => (
           <div key={label} className="follower-stat-card" style={{ borderTopColor: color }}>
             <div style={{ fontSize: 26, fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
@@ -120,7 +123,7 @@ export default function TrainingPage() {
         ))}
       </div>
 
-      <div className="page-toolbar">
+      <div className="page-toolbar section-anim section-d1">
         <div />
         {canManage() && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}
@@ -130,6 +133,7 @@ export default function TrainingPage() {
         )}
       </div>
 
+      <div className="section-anim section-d2">
       <Table
         dataSource={data}
         columns={columns}
@@ -137,6 +141,7 @@ export default function TrainingPage() {
         loading={loading}
         size="small"
         className="personnel-table"
+        scroll={{ x: 'max-content' }}
         expandable={{
           expandedRowRender: (r) => (
             <div style={{ padding: '8px 0' }}>
@@ -153,6 +158,7 @@ export default function TrainingPage() {
           ),
         }}
       />
+      </div>
 
       <Modal
         title={editRecord ? t.training.editTitle : t.training.addTitle}

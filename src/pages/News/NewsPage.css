@@ -385,8 +385,9 @@
   .news-banner {
     padding: 10px 12px;
     border-radius: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
-  /* Stats pills in banner wrap on phone */
   .news-banner-stats {
     flex-wrap: wrap;
     gap: 4px;

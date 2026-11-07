@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, Typography, Table, Tag, Spin, Empty, List } from 'antd';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   TeamOutlined, HeartFilled, BookFilled, CalendarFilled,
   CheckSquareFilled, WarningOutlined,
@@ -11,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDashboard, SHIFT_COLORS, DUTY_STATUS_COLORS } from './useDashboard';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
+import ParticleCanvas from '../../components/ParticleCanvas/ParticleCanvas';
 import './Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -184,12 +186,13 @@ export default function Dashboard() {
   const holidaysToday = getBuddhistHolidays(today.getFullYear()).get(todayKey);
   const dateLocale = lang === 'en' ? 'en-US' : 'vi-VN';
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><Spin size="large" /></div>;
+  if (loading) return <PageSpinner />;
 
   return (
-    <div className="dashboard-root page-enter-anim">
+    <div className="dashboard-root">
       {/* Welcome */}
       <div className="dashboard-welcome welcome-anim">
+        <ParticleCanvas count={22} style={{ opacity: 0.7 }} />
         <Title level={4} className="dashboard-welcome-title">
           {t.dashboard.welcome} {displayName ? displayName.charAt(0).toUpperCase() + displayName.slice(1) : ''}
         </Title>

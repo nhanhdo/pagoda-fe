@@ -1,4 +1,5 @@
 import React from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Input, Select, Space, Tag, Modal, Form,
   Popconfirm, Badge, Row, Col, DatePicker, InputNumber, Typography,
@@ -203,10 +204,12 @@ export default function BuddhistFollowerPage() {
     },
   ];
 
+  if (loading && !data.length) return <PageSpinner />;
+
   return (
     <Card>
       {/* ── Summary stats ── */}
-      <div className="follower-stats-row">
+      <div className="follower-stats-row section-anim section-d0">
         {[
           { label: t.buddhistFollower.statTotalList,         value: total,                 icon: <TeamOutlined />, color: '#8B4513' },
           { label: t.buddhistFollower.statPureBuddhist,      value: totalPurePhatTu,       icon: <HeartFilled />,  color: '#8B4513' },
@@ -222,7 +225,7 @@ export default function BuddhistFollowerPage() {
       </div>
 
       {/* ── Toolbar ── */}
-      <div className="page-toolbar">
+      <div className="page-toolbar section-anim section-d1">
         <Space wrap>
           <Input placeholder={t.buddhistFollower.searchPlaceholder} prefix={<SearchOutlined />}
             value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -243,6 +246,7 @@ export default function BuddhistFollowerPage() {
       </div>
 
       {/* ── Table with expandable volunteer stats ── */}
+      <div className="section-anim section-d2">
       <Table
         dataSource={data}
         columns={columns}
@@ -252,6 +256,7 @@ export default function BuddhistFollowerPage() {
           current: page, total, pageSize: 10, onChange: setPage,
           showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ${t.buddhistFollower.totalLabel}`,
         }}
+        scroll={{ x: 'max-content' }}
         size="small"
         className="personnel-table"
         expandable={{
@@ -262,6 +267,7 @@ export default function BuddhistFollowerPage() {
           expandRowByClick: false,
         }}
       />
+      </div>
 
       {/* ── Modal ── */}
       <Modal

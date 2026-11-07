@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Row, Col, Card, Button, Space, Tag, Modal, Form, Input,
   message, Popconfirm, Avatar, Tooltip, Typography, Empty, Spin, Drawer, List,
@@ -42,12 +43,12 @@ export default function DepartmentPage() {
     }
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 60 }}><Spin size="large" /></div>;
+  if (loading) return <PageSpinner />;
 
   return (
     <div>
       {/* Toolbar */}
-      <div className="department-page-toolbar">
+      <div className="department-page-toolbar section-anim section-d0">
         <Text style={{ fontSize: 13, color: '#888' }}>
           <TeamOutlined style={{ marginRight: 6 }} />
           {data.length} {t.nav.departments.toLowerCase()}
@@ -63,6 +64,7 @@ export default function DepartmentPage() {
       </div>
 
       {/* Card Grid */}
+      <div className="section-anim section-d1">
       {data.length === 0 ? (
         <Empty description={t.department.emptyAll} />
       ) : (
@@ -142,6 +144,7 @@ export default function DepartmentPage() {
           })}
         </Row>
       )}
+      </div>
 
       {/* Member Drawer */}
       <Drawer

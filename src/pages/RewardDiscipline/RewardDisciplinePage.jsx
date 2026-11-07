@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Select, Space, Tag, Modal, Form, Input,
   message, Popconfirm, Row, Col, DatePicker, Segmented,
@@ -119,9 +120,11 @@ export default function RewardDisciplinePage() {
     },
   ];
 
+  if (loading && !data.length) return <PageSpinner />;
+
   return (
     <Card>
-      <div className="follower-stats-row">
+      <div className="follower-stats-row section-anim section-d0">
         {rdStats.map(({ label, value, color }) => (
           <div key={label} className="follower-stat-card" style={{ borderTopColor: color }}>
             <div style={{ fontSize: 26, fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
@@ -130,7 +133,7 @@ export default function RewardDisciplinePage() {
         ))}
       </div>
 
-      <div className="rd-toolbar">
+      <div className="rd-toolbar section-anim section-d1">
         <Segmented
           options={[
             { label: `🏆 ${t.rewardDiscipline.tabReward}`, value: 'khen_thưởng' },
@@ -147,7 +150,9 @@ export default function RewardDisciplinePage() {
         )}
       </div>
 
-      <Table dataSource={data} columns={columns} rowKey="id" loading={loading} size="small" className="personnel-table" />
+      <div className="section-anim section-d2">
+      <Table dataSource={data} columns={columns} rowKey="id" loading={loading} size="small" className="personnel-table" scroll={{ x: 'max-content' }} />
+      </div>
 
       <Modal
         title={`${editRecord ? t.common.edit : t.common.add} ${isReward ? t.rewardDiscipline.tabReward : t.rewardDiscipline.tabDiscipline}`}

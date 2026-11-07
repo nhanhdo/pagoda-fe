@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Space, Tag, Modal, Form, Input, Select,
   message, Popconfirm, Switch, Tooltip, Typography, Avatar, Badge,
@@ -281,10 +282,12 @@ export default function UserManagementPage() {
     { label: t.users.adminAccounts, value: users.filter(u => u.role === 'admin').length, color: '#e74c3c' },
   ];
 
+  if (loading && !users.length) return <PageSpinner />;
+
   return (
     <div>
       {/* Header */}
-      <div className="user-banner">
+      <div className="user-banner section-anim section-d0">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(255,200,100,0.12)', border: '1px solid rgba(255,200,100,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <UserOutlined style={{ fontSize: 24, color: '#ffd59e' }} />
@@ -305,7 +308,7 @@ export default function UserManagementPage() {
       </div>
 
       {/* Stats */}
-      <div className="user-stats-grid">
+      <div className="user-stats-grid section-anim section-d1">
         {stats.map(s => (
           <div key={s.label} style={{ background: '#fff', borderRadius: 10, padding: '14px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f0f0f0', borderLeft: `4px solid ${s.color}` }}>
             <div style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
@@ -315,6 +318,7 @@ export default function UserManagementPage() {
       </div>
 
       {/* Table */}
+      <div className="section-anim section-d2">
       <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #f0f0f0' }} bodyStyle={{ padding: 0 }}>
         <Table
           dataSource={users}
@@ -324,9 +328,11 @@ export default function UserManagementPage() {
           pagination={{ pageSize: 10, showSizeChanger: false, showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ${t.users.totalLabel}` }}
           rowClassName={(r) => !r.isActive ? 'row-inactive' : ''}
           className="personnel-table"
+          scroll={{ x: 'max-content' }}
           style={{ borderRadius: 12, overflow: 'hidden' }}
         />
       </Card>
+      </div>
 
       <style>{`.row-inactive td { opacity: 0.5; }`}</style>
 

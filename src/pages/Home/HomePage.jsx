@@ -147,7 +147,7 @@ function StoneLanternPost({ size = 34, lit = true }) {
 }
 
 /* ── Temple silhouette — grand 3-tier pagoda ────────────── */
-function TempleSilhouette({ isDay = true }) {
+function TempleSilhouette() {
   return (
     <svg viewBox="0 0 720 500" style={{ width:'clamp(300px,52vw,720px)', height:'auto', display:'block' }}>
       <defs>
@@ -164,12 +164,10 @@ function TempleSilhouette({ isDay = true }) {
       </defs>
 
       {/* ── Ambient window light spill ── */}
-      {!isDay && <>
-        <ellipse cx="360" cy="492" rx="295" ry="20" fill="#ffaa22" opacity="0.16" filter="url(#tAmb)"/>
-        <ellipse cx="360" cy="485" rx="215" ry="13" fill="#ffcc44" opacity="0.11" filter="url(#tAmb)"/>
-      </>}
-      <ellipse cx="360" cy="390" rx="200" ry="28" fill="#ffaa22" opacity={isDay ? 0.09 : 0.26} filter="url(#tAmb)"/>
-      <ellipse cx="360" cy="272" rx="140" ry="20" fill="#ffaa22" opacity={isDay ? 0.07 : 0.20} filter="url(#tAmb)"/>
+      <ellipse cx="360" cy="492" rx="295" ry="20" fill="#ffaa22" opacity="0.16" filter="url(#tAmb)"/>
+      <ellipse cx="360" cy="485" rx="215" ry="13" fill="#ffcc44" opacity="0.11" filter="url(#tAmb)"/>
+      <ellipse cx="360" cy="390" rx="200" ry="28" fill="#ffaa22" opacity="0.26" filter="url(#tAmb)"/>
+      <ellipse cx="360" cy="272" rx="140" ry="20" fill="#ffaa22" opacity="0.20" filter="url(#tAmb)"/>
 
       {/* ══ FOUNDATION ══ */}
       <rect x="50"  y="448" width="620" height="20" rx="3" fill="#130303" opacity="0.97"/>
@@ -187,22 +185,20 @@ function TempleSilhouette({ isDay = true }) {
         <rect key={i} x={x} y="294" width="11" height="126" rx="4" fill="#260707" opacity="0.9"/>
       ))}
       {/* Window glow — amber light from inside */}
-      <rect x="162" y="310" width="55"  height="70" rx="4" fill="#ffcc44" opacity={isDay ? 0.38 : 0.85} filter={isDay ? undefined : "url(#tWin)"}/>
-      <rect x="232" y="307" width="62"  height="74" rx="4" fill="#ffcc44" opacity={isDay ? 0.32 : 0.78} filter={isDay ? undefined : "url(#tWin)"}/>
+      <rect x="162" y="310" width="55"  height="70" rx="4" fill="#ffcc44" opacity="0.85" filter="url(#tWin)"/>
+      <rect x="232" y="307" width="62"  height="74" rx="4" fill="#ffcc44" opacity="0.78" filter="url(#tWin)"/>
       {/* Center gate */}
-      <rect x="316" y="302" width="88"  height="118" rx="5" fill="#ffaa22" opacity={isDay ? 0.44 : 0.90} filter={isDay ? undefined : "url(#tWin)"}/>
-      <rect x="324" y="310" width="30"  height="110" rx="3" fill="#ff9900" opacity={isDay ? 0.28 : 0.65}/>
-      <rect x="366" y="310" width="30"  height="110" rx="3" fill="#ff9900" opacity={isDay ? 0.28 : 0.65}/>
+      <rect x="316" y="302" width="88"  height="118" rx="5" fill="#ffaa22" opacity="0.90" filter="url(#tWin)"/>
+      <rect x="324" y="310" width="30"  height="110" rx="3" fill="#ff9900" opacity="0.65"/>
+      <rect x="366" y="310" width="30"  height="110" rx="3" fill="#ff9900" opacity="0.65"/>
       {/* Right windows */}
-      <rect x="426" y="307" width="62"  height="74" rx="4" fill="#ffcc44" opacity={isDay ? 0.32 : 0.78} filter={isDay ? undefined : "url(#tWin)"}/>
-      <rect x="503" y="310" width="55"  height="70" rx="4" fill="#ffcc44" opacity={isDay ? 0.38 : 0.85} filter={isDay ? undefined : "url(#tWin)"}/>
-      {!isDay && <>
-        <ellipse cx="189" cy="345" rx="34" ry="38" fill="#ffcc44" opacity="0.24" filter="url(#tAmb)"/>
-        <ellipse cx="263" cy="344" rx="39" ry="40" fill="#ffcc44" opacity="0.19" filter="url(#tAmb)"/>
-        <ellipse cx="360" cy="361" rx="54" ry="62" fill="#ffaa22" opacity="0.22" filter="url(#tAmb)"/>
-        <ellipse cx="457" cy="344" rx="39" ry="40" fill="#ffcc44" opacity="0.19" filter="url(#tAmb)"/>
-        <ellipse cx="530" cy="345" rx="34" ry="38" fill="#ffcc44" opacity="0.24" filter="url(#tAmb)"/>
-      </>}
+      <rect x="426" y="307" width="62"  height="74" rx="4" fill="#ffcc44" opacity="0.78" filter="url(#tWin)"/>
+      <rect x="503" y="310" width="55"  height="70" rx="4" fill="#ffcc44" opacity="0.85" filter="url(#tWin)"/>
+      <ellipse cx="189" cy="345" rx="34" ry="38" fill="#ffcc44" opacity="0.24" filter="url(#tAmb)"/>
+      <ellipse cx="263" cy="344" rx="39" ry="40" fill="#ffcc44" opacity="0.19" filter="url(#tAmb)"/>
+      <ellipse cx="360" cy="361" rx="54" ry="62" fill="#ffaa22" opacity="0.22" filter="url(#tAmb)"/>
+      <ellipse cx="457" cy="344" rx="39" ry="40" fill="#ffcc44" opacity="0.19" filter="url(#tAmb)"/>
+      <ellipse cx="530" cy="345" rx="34" ry="38" fill="#ffcc44" opacity="0.24" filter="url(#tAmb)"/>
       {/* Window frames */}
       {[
         [162,310,55,70],[232,307,62,74],[316,302,88,118],[426,307,62,74],[503,310,55,70]
@@ -244,7 +240,7 @@ function TempleSilhouette({ isDay = true }) {
           <ellipse cx={x} cy="282" rx="7"  ry="11" fill="#cc0e0e" opacity="0.88"/>
           <ellipse cx={x} cy="273" rx="9"  ry="4"  fill="#880c0c" opacity="0.8"/>
           <ellipse cx={x} cy="293" rx="7"  ry="3"  fill="#880c0c" opacity="0.75"/>
-          <ellipse cx={x} cy="282" rx="3.5" ry="6" fill="#ffdd44" opacity={isDay ? 0.45 : 0.92} filter={isDay ? undefined : "url(#tWin)"}/>
+          <ellipse cx={x} cy="282" rx="3.5" ry="6" fill="#ffdd44" opacity="0.92" filter="url(#tWin)"/>
         </g>
       ))}
 
@@ -253,14 +249,12 @@ function TempleSilhouette({ isDay = true }) {
       {[222,278,360,442,488].map((x,i)=>(
         <rect key={i} x={x} y="210" width="9" height="86" rx="3" fill="#280808" opacity="0.85"/>
       ))}
-      <rect x="230" y="222" width="50" height="58" rx="3" fill="#ffcc44" opacity={isDay ? 0.4 : 0.82} filter={isDay ? undefined : "url(#tWin)"}/>
-      <rect x="300" y="218" width="120" height="64" rx="4" fill="#ffaa22" opacity={isDay ? 0.46 : 0.88} filter={isDay ? undefined : "url(#tWin)"}/>
-      <rect x="440" y="222" width="50" height="58" rx="3" fill="#ffcc44" opacity={isDay ? 0.4 : 0.82} filter={isDay ? undefined : "url(#tWin)"}/>
-      {!isDay && <>
-        <ellipse cx="255" cy="251" rx="33" ry="32" fill="#ffcc44" opacity="0.21" filter="url(#tAmb)"/>
-        <ellipse cx="360" cy="250" rx="72" ry="36" fill="#ffaa22" opacity="0.20" filter="url(#tAmb)"/>
-        <ellipse cx="465" cy="251" rx="33" ry="32" fill="#ffcc44" opacity="0.21" filter="url(#tAmb)"/>
-      </>}
+      <rect x="230" y="222" width="50" height="58" rx="3" fill="#ffcc44" opacity="0.82" filter="url(#tWin)"/>
+      <rect x="300" y="218" width="120" height="64" rx="4" fill="#ffaa22" opacity="0.88" filter="url(#tWin)"/>
+      <rect x="440" y="222" width="50" height="58" rx="3" fill="#ffcc44" opacity="0.82" filter="url(#tWin)"/>
+      <ellipse cx="255" cy="251" rx="33" ry="32" fill="#ffcc44" opacity="0.21" filter="url(#tAmb)"/>
+      <ellipse cx="360" cy="250" rx="72" ry="36" fill="#ffaa22" opacity="0.20" filter="url(#tAmb)"/>
+      <ellipse cx="465" cy="251" rx="33" ry="32" fill="#ffcc44" opacity="0.21" filter="url(#tAmb)"/>
 
       {/* ── SECOND ROOF ── */}
       <path d="
@@ -289,14 +283,12 @@ function TempleSilhouette({ isDay = true }) {
       {[288,360,432].map((x,i)=>(
         <rect key={i} x={x} y="122" width="9" height="88" rx="3" fill="#2e0808" opacity="0.8"/>
       ))}
-      <rect x="290" y="132" width="56" height="58" rx="3" fill="#ffcc44" opacity={isDay ? 0.42 : 0.84} filter={isDay ? undefined : "url(#tWin)"}/>
-      <rect x="374" y="132" width="56" height="58" rx="3" fill="#ffcc44" opacity={isDay ? 0.42 : 0.84} filter={isDay ? undefined : "url(#tWin)"}/>
-      <rect x="326" y="128" width="68" height="64" rx="4" fill="#ffaa22" opacity={isDay ? 0.48 : 0.90} filter={isDay ? undefined : "url(#tWin)"}/>
-      {!isDay && <>
-        <ellipse cx="318" cy="161" rx="35" ry="33" fill="#ffcc44" opacity="0.22" filter="url(#tAmb)"/>
-        <ellipse cx="402" cy="161" rx="35" ry="33" fill="#ffcc44" opacity="0.22" filter="url(#tAmb)"/>
-        <ellipse cx="360" cy="160" rx="46" ry="36" fill="#ffaa22" opacity="0.20" filter="url(#tAmb)"/>
-      </>}
+      <rect x="290" y="132" width="56" height="58" rx="3" fill="#ffcc44" opacity="0.84" filter="url(#tWin)"/>
+      <rect x="374" y="132" width="56" height="58" rx="3" fill="#ffcc44" opacity="0.84" filter="url(#tWin)"/>
+      <rect x="326" y="128" width="68" height="64" rx="4" fill="#ffaa22" opacity="0.90" filter="url(#tWin)"/>
+      <ellipse cx="318" cy="161" rx="35" ry="33" fill="#ffcc44" opacity="0.22" filter="url(#tAmb)"/>
+      <ellipse cx="402" cy="161" rx="35" ry="33" fill="#ffcc44" opacity="0.22" filter="url(#tAmb)"/>
+      <ellipse cx="360" cy="160" rx="46" ry="36" fill="#ffaa22" opacity="0.20" filter="url(#tAmb)"/>
 
       {/* ── THIRD ROOF ── */}
       <path d="
@@ -317,26 +309,34 @@ function TempleSilhouette({ isDay = true }) {
       <path d="M 212,90 Q 298,80 360,78 Q 422,80 508,90"
         fill="none" stroke="#ffd000" strokeWidth="1.8" opacity="0.45"/>
 
-      {/* ══ SPIRE / FINIAL ══ */}
-      {/* Spire base cap */}
-      <rect x="332" y="50" width="56" height="40" rx="4" fill="#2a0808" opacity="0.97"/>
-      <rect x="326" y="44" width="68" height="12" rx="4" fill="#330909" opacity="0.9"/>
-      {/* Spire pole */}
-      <line x1="360" y1="8"  x2="360" y2="50"  stroke="#ffd000" strokeWidth="5" opacity="0.85" filter="url(#tGlw)"/>
-      {/* Spire ornaments */}
-      <circle cx="360" cy="7"  r="10"  fill="#ffd000" opacity="0.92" filter="url(#tGlw)"/>
-      <circle cx="360" cy="23" r="6.5" fill="#ffd000" opacity="0.80" filter="url(#tGlw)"/>
-      <circle cx="360" cy="37" r="5"   fill="#ffd000" opacity="0.68"/>
-      <circle cx="360" cy="49" r="3.5" fill="#ffd000" opacity="0.58"/>
-      {/* Spire glow pulse handled by moonGlow */}
-      <circle cx="360" cy="7"  r="22"  fill="#ffd000" opacity="0.08" filter="url(#tAmb)"/>
+      {/* ══ SPIRE / FINIAL (bảo đỉnh) ══ */}
+      {/* Base cap block sitting on third roof */}
+      <rect x="336" y="52" width="48" height="36" rx="3" fill="#2a0808" opacity="0.97"/>
+      <rect x="328" y="46" width="64" height="12" rx="4" fill="#330909" opacity="0.92"/>
+      {/* Lotus base collar */}
+      <ellipse cx="360" cy="46" rx="32" ry="6" fill="#ffd000" opacity="0.55"/>
+      {/* Spire pole — thin needle */}
+      <line x1="360" y1="4" x2="360" y2="46" stroke="#ffd000" strokeWidth="3.5" opacity="0.82" filter="url(#tGlw)"/>
+      {/* Stacked rings — INCREASE in size going DOWN (proper pagoda finial) */}
+      <ellipse cx="360" cy="40" rx="11" ry="4"   fill="#ffd000" opacity="0.90" filter="url(#tGlw)"/>
+      <ellipse cx="360" cy="33" rx="8.5" ry="3.2" fill="#ffd000" opacity="0.84"/>
+      <ellipse cx="360" cy="27" rx="7"   ry="2.8" fill="#ffd000" opacity="0.78"/>
+      <ellipse cx="360" cy="22" rx="5.5" ry="2.4" fill="#ffd000" opacity="0.72"/>
+      <ellipse cx="360" cy="17" rx="4"   ry="2"   fill="#ffd000" opacity="0.66"/>
+      {/* Top orb / jewel */}
+      <circle cx="360" cy="10" r="7" fill="#ffd000" opacity="0.95" filter="url(#tGlw)"/>
+      {/* Sharp pointed tip */}
+      <polygon points="360,1 356.5,10 363.5,10" fill="#ffd000" opacity="0.98" filter="url(#tGlw)"/>
+      {/* Ambient glow halo around orb */}
+      <circle cx="360" cy="10" r="20" fill="#ffd000" opacity="0.09" filter="url(#tAmb)"/>
+
     </svg>
   );
 }
 
 
 /* ── Clock widget ────────────────────────────────────────── */
-function ClockWidget({ isDay }) {
+function ClockWidget() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -351,15 +351,13 @@ function ClockWidget({ isDay }) {
   const minDeg  = m * 6 + s * 0.1;
   const hourDeg = (h % 12) * 30 + m * 0.5;
 
-  const gold   = isDay ? '#8B4513'                       : '#ffc44d';
-  const light  = isDay ? '#5c3317'                       : '#fff8d0';
-  const faint  = isDay ? 'rgba(100,50,10,.38)'           : 'rgba(255,210,140,.32)';
-  const faceBg = isDay ? 'rgba(255,248,225,.22)'         : 'rgba(6,2,16,.55)';
-  const rim    = isDay ? 'rgba(155,85,12,.78)'           : 'rgba(255,196,77,.68)';
-  const glow   = isDay
-    ? 'drop-shadow(0 0 9px rgba(180,100,8,.38)) drop-shadow(0 2px 6px rgba(0,0,0,.18))'
-    : 'drop-shadow(0 0 16px rgba(255,190,55,.5)) drop-shadow(0 2px 8px rgba(0,0,0,.5))';
-  const secCol = isDay ? '#c0392b' : '#ff7043';
+  const gold   = '#ffc44d';
+  const light  = '#fff8d0';
+  const faint  = 'rgba(255,210,140,.32)';
+  const faceBg = 'rgba(6,2,16,.55)';
+  const rim    = 'rgba(255,196,77,.68)';
+  const glow   = 'drop-shadow(0 0 16px rgba(255,190,55,.5)) drop-shadow(0 2px 8px rgba(0,0,0,.5))';
+  const secCol = '#ff7043';
   const WEEKS  = ['CN','T2','T3','T4','T5','T6','T7'];
 
   return (
@@ -424,31 +422,29 @@ function ClockWidget({ isDay }) {
 
         {/* Center cap */}
         <circle cx="62" cy="62" r="4.5" fill={gold}/>
-        <circle cx="62" cy="62" r="2"   fill={isDay?'#fff8e1':'#fffacc'}/>
+        <circle cx="62" cy="62" r="2"   fill="#fffacc"/>
       </svg>
 
       {/* ── Digital + date ── */}
       <div style={{
-        background: isDay ? 'rgba(255,246,210,.25)' : 'rgba(6,2,18,.55)',
-        border: `1px solid ${isDay?'rgba(155,85,10,.28)':'rgba(255,196,77,.28)'}`,
+        background: 'rgba(6,2,18,.55)',
+        border: '1px solid rgba(255,196,77,.28)',
         borderRadius: 9, padding: '5px 14px',
         backdropFilter: 'blur(8px)',
         textAlign: 'center',
-        boxShadow: isDay
-          ? '0 2px 12px rgba(180,100,10,.12)'
-          : '0 2px 14px rgba(0,0,0,.45)',
+        boxShadow: '0 2px 14px rgba(0,0,0,.45)',
       }}>
         <div style={{
           fontFamily: 'monospace',
           fontSize: 18, fontWeight: 700, letterSpacing: 2.5,
-          color: isDay ? '#5c3317' : '#ffd59e',
+          color: '#ffd59e',
           lineHeight: 1.15,
         }}>
           {String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}
         </div>
         <div style={{
           fontSize: 10, letterSpacing: 1.2, marginTop: 3,
-          color: isDay ? 'rgba(75,38,5,.52)' : 'rgba(255,210,140,.48)',
+          color: 'rgba(255,210,140,.48)',
         }}>
           {WEEKS[now.getDay()]} · {String(now.getDate()).padStart(2,'0')}/{String(now.getMonth()+1).padStart(2,'0')}/{now.getFullYear()}
         </div>
@@ -458,72 +454,6 @@ function ClockWidget({ isDay }) {
 }
 
 
-/* ── Pull-cord day/night toggle ─────────────────────────── */
-function PullCord({ isDay, onToggle }) {
-  const [pulling, setPulling] = useState(false);
-
-  const handleClick = () => {
-    if (pulling) return;
-    setPulling(true);
-    onToggle();
-    setTimeout(() => setPulling(false), 700);
-  };
-
-  const gold  = isDay ? '#c8860a' : '#ffc44d';
-  const glow  = isDay ? 'rgba(200,134,10,.5)' : 'rgba(255,196,77,.65)';
-  const label = isDay ? '☽ Đêm' : '☀ Ngày';
-
-  return (
-    <div
-      role="button"
-      aria-label={isDay ? 'Chuyển sang ban đêm' : 'Chuyển sang ban ngày'}
-      onClick={handleClick}
-      title={isDay ? 'Chuyển sang ban đêm' : 'Chuyển sang ban ngày'}
-      style={{
-        position: 'absolute', right: '3.5%', top: 0,
-        cursor: 'pointer', zIndex: 30,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        pointerEvents: 'auto',
-        transformOrigin: 'top center',
-        animation: pulling ? 'cordPull .65s ease' : 'cordSway 4.5s ease-in-out infinite',
-        userSelect: 'none',
-      }}
-    >
-      {/* String */}
-      <div style={{
-        width: 2, height: 58,
-        background: `linear-gradient(to bottom, transparent, ${gold})`,
-        borderRadius: 1,
-      }}/>
-      {/* Small knot */}
-      <div style={{
-        width: 7, height: 7, borderRadius: '50%',
-        background: gold, marginBottom: 2, marginTop: -2,
-        boxShadow: `0 0 6px 2px ${glow}`,
-      }}/>
-      {/* Bead */}
-      <div style={{
-        width: 28, height: 28, borderRadius: '50%',
-        background: `radial-gradient(circle at 38% 33%, rgba(255,255,255,.45) 0%, ${gold} 58%)`,
-        boxShadow: `0 0 14px 6px ${glow}, 0 2px 5px rgba(0,0,0,.35)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 14, lineHeight: 1,
-        transition: 'box-shadow .2s ease',
-      }}>
-        {isDay ? '🌙' : '☀️'}
-      </div>
-      {/* Label */}
-      <div style={{
-        marginTop: 6, fontSize: 9, letterSpacing: 1.5,
-        color: isDay ? 'rgba(255,255,200,.75)' : 'rgba(255,220,120,.8)',
-        fontWeight: 700, textTransform: 'uppercase',
-        textShadow: '0 1px 4px rgba(0,0,0,.6)',
-      }}>
-        {label}
-      </div>
-    </div>
-  );
-}
 
 /* ── Main ────────────────────────────────────────────────── */
 export default function HomePage() {
@@ -531,20 +461,6 @@ export default function HomePage() {
   const fireflyRef  = useRef(null);
   const navigate    = useNavigate();
   const [mp, setMp] = useState({ x:0, y:0 });
-
-  const [autoDay, setAutoDay] = useState(() => {
-    const h = new Date().getHours();
-    return h >= 6 && h < 18;
-  });
-  const [dayOverride, setDayOverride] = useState(null);
-  const isDay = dayOverride !== null ? dayOverride : autoDay;
-  const toggleDay = () => setDayOverride(v => v !== null ? !v : !autoDay);
-
-  useEffect(() => {
-    const check = () => { const h = new Date().getHours(); setAutoDay(h >= 6 && h < 18); };
-    const id = setInterval(check, 60000);
-    return () => clearInterval(id);
-  }, []);
 
   usePetals(canvasRef);
   useFireflies(fireflyRef);
@@ -562,14 +478,10 @@ export default function HomePage() {
   return (
     <div onMouseMove={onMove} style={{
       width:'100vw', height:'100vh', position:'relative', overflow:'hidden',
-      background: isDay
-        ? 'linear-gradient(180deg,#0a2a88 0%,#1565c0 10%,#1e88e5 26%,#42a5f5 46%,#b3e5fc 66%,#fff9c4 82%,#ffe082 100%)'
-        : 'linear-gradient(180deg,#0a0320 0%,#280840 15%,#6a1545 32%,#b83858 50%,#e05828 68%,#f08820 82%,#884012 100%)',
-      transition: 'background 1s ease',
+      background:'linear-gradient(180deg,#04020e 0%,#09051c 10%,#120830 22%,#200c38 36%,#360f28 52%,#581420 65%,#7a1e18 78%,#963412 88%,#7a3208 100%)',
     }}>
       <style>{`
         @keyframes moonGlow{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
-        @keyframes sunPulse{0%,100%{opacity:.92;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
         @keyframes lanternSway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
         @keyframes twinkle{0%,100%{opacity:.25}50%{opacity:.9}}
         @keyframes treeSway{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg)}}
@@ -580,9 +492,135 @@ export default function HomePage() {
         @keyframes mistDrift{0%,100%{transform:translateX(-18%) scaleX(1.4);opacity:.22}50%{transform:translateX(0%) scaleX(1.4);opacity:.36}}
         @keyframes mistDrift2{0%,100%{transform:translateX(12%) scaleX(1.5);opacity:.14}50%{transform:translateX(-12%) scaleX(1.5);opacity:.26}}
         @keyframes mistDrift3{0%,100%{transform:translateX(-8%) scaleX(1.3);opacity:.1}50%{transform:translateX(8%) scaleX(1.3);opacity:.2}}
-        @keyframes cordSway{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}
-        @keyframes cordPull{0%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(15px) rotate(2.5deg)}60%{transform:translateY(7px) rotate(-1.5deg)}85%{transform:translateY(2px) rotate(.7deg)}100%{transform:translateY(0) rotate(0deg)}}
+        @keyframes buddhaFloat{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-12px) scale(1.014)}}
+        @keyframes buddhaGlow{0%,100%{opacity:.50}50%{opacity:.95}}
+        @keyframes sacredRaysRotate{from{transform:translate(-50%,-20%) rotate(0deg)}to{transform:translate(-50%,-20%) rotate(360deg)}}
+        @keyframes mandalaRingPulse{0%,100%{opacity:.28}50%{opacity:.62}}
+        @keyframes mandalaRingPulse2{0%,100%{opacity:.14}50%{opacity:.42}}
       `}</style>
+
+      {/* ── Sacred light rays — divine aura behind Buddha ── */}
+      <div aria-hidden="true" style={{
+        position:'absolute',
+        left:'50%',
+        top:'8%',
+        width:'clamp(520px,66vw,920px)',
+        aspectRatio:'1 / 1',
+        transform:'translate(-50%, -20%)',
+        zIndex:3,
+        pointerEvents:'none',
+        background:'repeating-conic-gradient(rgba(255,210,80,0.17) 0deg 8deg, transparent 8deg 24deg)',
+        borderRadius:'50%',
+        animation:'sacredRaysRotate 90s linear infinite',
+        mixBlendMode:'screen',
+      }}/>
+
+      {/* ── Outer mandala ring 1 ── */}
+      <div aria-hidden="true" style={{
+        position:'absolute',
+        left:'50%',
+        top:'8%',
+        width:'clamp(340px,42vw,580px)',
+        aspectRatio:'1 / 1',
+        transform:'translate(-50%, 2%)',
+        zIndex:4,
+        pointerEvents:'none',
+        border:'1px solid rgba(255,215,0,0.30)',
+        borderRadius:'50%',
+        boxShadow:'0 0 40px rgba(255,200,60,0.22)',
+        animation:'mandalaRingPulse 5s ease-in-out infinite',
+      }}/>
+
+      {/* ── Outer mandala ring 2 ── */}
+      <div aria-hidden="true" style={{
+        position:'absolute',
+        left:'50%',
+        top:'8%',
+        width:'clamp(420px,52vw,700px)',
+        aspectRatio:'1 / 1',
+        transform:'translate(-50%, -4%)',
+        zIndex:4,
+        pointerEvents:'none',
+        border:'1px solid rgba(255,215,0,0.18)',
+        borderRadius:'50%',
+        animation:'mandalaRingPulse2 7s ease-in-out 1.5s infinite',
+      }}/>
+
+      {/* ── Tượng Phật — centered divine focal point ── */}
+      {/* Outer: pure centering, no parallax (divine immovability) */}
+      <div aria-hidden="true" style={{
+        position:'absolute',
+        left:'50%',
+        top:'8%',
+        width:'clamp(220px,24vw,340px)',
+        zIndex:12,
+        pointerEvents:'none',
+        transform:'translateX(-50%)',
+      }}>
+      {/* Inner: float animation */}
+      <div style={{ position:'relative', animation:'buddhaFloat 6s ease-in-out infinite' }}>
+        {/* Deep ambient halo — wide soft glow */}
+        <div style={{
+          position:'absolute',
+          inset:'-55%',
+          borderRadius:'50%',
+          background:'radial-gradient(circle, rgba(255,245,120,0.82) 0%, rgba(255,200,50,0.48) 42%, rgba(255,140,20,0.18) 65%, transparent 78%)',
+          animation:'buddhaGlow 4s ease-in-out infinite',
+          pointerEvents:'none',
+        }}/>
+
+        {/* Mid glow ring */}
+        <div style={{
+          position:'absolute',
+          inset:'-22%',
+          borderRadius:'50%',
+          background:'radial-gradient(circle, transparent 50%, rgba(255,215,80,0.28) 72%, transparent 90%)',
+          pointerEvents:'none',
+        }}/>
+
+        {/* Outer golden ring — 2nd */}
+        <div style={{
+          position:'absolute',
+          inset:'-12px',
+          borderRadius:'50%',
+          border:'1px solid rgba(255,215,0,0.50)',
+          boxShadow:'0 0 50px rgba(255,215,70,0.65), 0 0 100px rgba(255,160,30,0.28)',
+          pointerEvents:'none',
+        }}/>
+
+        {/* Inner golden ring */}
+        <div style={{
+          position:'absolute',
+          inset:'-5px',
+          borderRadius:'50%',
+          border:'2px solid rgba(255,215,0,0.85)',
+          boxShadow:'0 0 24px rgba(255,210,70,0.90), 0 0 50px rgba(255,170,30,0.40), inset 0 0 18px rgba(255,200,60,0.20)',
+          pointerEvents:'none',
+        }}/>
+
+        {/* Circle crop container */}
+        <div style={{
+          borderRadius:'50%',
+          overflow:'hidden',
+          aspectRatio:'1 / 1',
+          border:'2px solid rgba(255,215,0,0.65)',
+          boxShadow:'inset 0 0 40px rgba(255,200,50,0.38)',
+        }}>
+          <img
+            src="/adida.PNG"
+            alt=""
+            style={{
+              width:'100%',
+              height:'100%',
+              objectFit:'cover',
+              objectPosition:'center 18%',
+              display:'block',
+              filter:'brightness(1.18) saturate(1.25) contrast(1.06)',
+            }}
+          />
+        </div>
+      </div>{/* /inner float */}
+      </div>{/* /outer centering */}
 
       {/* ── Clock widget — top-left sky ── */}
       <div style={{
@@ -590,113 +628,166 @@ export default function HomePage() {
         zIndex:15, pointerEvents:'none',
         ...p(4),
       }}>
-        <ClockWidget isDay={isDay}/>
+        <ClockWidget/>
       </div>
 
-      {/* ── Pull cord — day/night toggle ── */}
-      <PullCord isDay={isDay} onToggle={toggleDay}/>
+      {/* Stars */}
+      <div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',...p(1.5)}}>
+        {Array.from({length:55},(_,i)=>(
+          <div key={i} style={{
+            position:'absolute',
+            left:`${(i*139.5)%100}%`, top:`${(i*82.3)%50}%`,
+            width: 1+(i%3)*.6, height: 1+(i%3)*.6,
+            borderRadius:'50%', background:'#fff',
+            animation:`twinkle ${2+(i%5)*0.8}s ease-in-out ${(i*.27)%3}s infinite`,
+          }}/>
+        ))}
+      </div>
 
-      {/* Stars — night only */}
-      {!isDay && (
-        <div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',...p(1.5)}}>
-          {Array.from({length:55},(_,i)=>(
-            <div key={i} style={{
-              position:'absolute',
-              left:`${(i*139.5)%100}%`, top:`${(i*82.3)%50}%`,
-              width: 1+(i%3)*.6, height: 1+(i%3)*.6,
-              borderRadius:'50%', background:'#fff',
-              animation:`twinkle ${2+(i%5)*0.8}s ease-in-out ${(i*.27)%3}s infinite`,
-            }}/>
-          ))}
+
+      {/* Moon */}
+      <div aria-hidden="true" style={{
+        position:'absolute', right:'16%', top:'7%',
+        width:120, height:120, borderRadius:'50%',
+        background:'radial-gradient(circle,rgba(255,235,165,.97) 30%,rgba(255,190,80,.65) 58%,transparent 74%)',
+        boxShadow:'0 0 50px 18px rgba(255,210,90,.32),0 0 100px 50px rgba(255,160,50,.16)',
+        animation:'moonGlow 5s ease-in-out infinite',
+        pointerEvents:'none', zIndex:20,
+        ...p(5),
+      }}/>
+
+      {/* ── Cinematic bottom CTA ── */}
+      <div style={{
+        position:'absolute', bottom:0, left:0, right:0,
+        height:'48%',
+        background:'linear-gradient(to top,rgba(4,1,10,0.92) 0%,rgba(4,1,10,0.58) 42%,transparent 100%)',
+        display:'flex', flexDirection:'column',
+        alignItems:'center', justifyContent:'flex-end',
+        paddingBottom:'clamp(28px,5vh,52px)',
+        gap:0,
+        zIndex:22,
+        pointerEvents:'none',
+      }}>
+        {/* Temple name — large atmospheric */}
+        <div style={{
+          fontWeight:900, fontSize:'clamp(26px,4.5vw,58px)',
+          color:'#fff8e8',
+          letterSpacing:'0.06em',
+          textShadow:'0 0 60px rgba(255,180,30,0.55), 0 0 20px rgba(255,140,0,0.35), 0 2px 24px rgba(0,0,0,0.9)',
+          lineHeight:1.1,
+          textAlign:'center',
+          pointerEvents:'none',
+          marginBottom: 6,
+        }}>
+          Chùa Tân Thành
         </div>
-      )}
 
+        {/* Tagline */}
+        <div style={{
+          fontSize:'clamp(11px,1.4vw,15px)', letterSpacing:'0.28em',
+          color:'rgba(255,210,130,0.55)',
+          textTransform:'uppercase',
+          marginBottom:28,
+          pointerEvents:'none',
+          textShadow:'0 1px 8px rgba(0,0,0,0.6)',
+        }}>
+          Nơi an lạc &nbsp;·&nbsp; Nơi tu tập
+        </div>
 
-      {/* Sun (day) / Moon (night) — click to login */}
-      {isDay ? (
-        <>
-          <div
-            role="button" tabIndex={0} aria-label="Đăng nhập vào hệ thống quản lý"
-            onClick={()=>navigate('/login')}
-            onKeyDown={(e)=>{ if(e.key==='Enter'||e.key===' ') navigate('/login'); }}
-            style={{
-              position:'absolute', right:'16%', top:'7%',
-              width:110, height:110, borderRadius:'50%',
-              background:'radial-gradient(circle,#fffde7 0%,#fff9c4 25%,#ffee58 50%,#fdd835 70%,transparent 85%)',
-              boxShadow:'0 0 60px 25px rgba(255,220,50,.55),0 0 130px 65px rgba(255,200,30,.28),0 0 220px 110px rgba(255,180,0,.12)',
-              animation:'sunPulse 8s ease-in-out infinite',
-              cursor:'pointer', zIndex:20,
-              transition:'box-shadow .3s ease',
-              ...p(5),
-            }}
-            onMouseEnter={e=>{e.currentTarget.style.boxShadow='0 0 90px 40px rgba(255,230,60,.7),0 0 180px 90px rgba(255,200,30,.38)';}}
-            onMouseLeave={e=>{e.currentTarget.style.boxShadow='0 0 60px 25px rgba(255,220,50,.55),0 0 130px 65px rgba(255,200,30,.28)';}}
-          />
-          <div aria-hidden="true" style={{
-            position:'absolute', right:'16%', top:'calc(7% + 118px)',
-            textAlign:'center', width:110,
-            color:'rgba(255,255,255,.65)', fontSize:11, letterSpacing:1.5,
-            pointerEvents:'none', zIndex:19,
-            animation:'loginHint 2.5s ease-in-out infinite',
-            ...p(5),
-          }}>Nhấn để đăng nhập</div>
-        </>
-      ) : (
-        <>
-          <div
-            role="button" tabIndex={0} aria-label="Đăng nhập vào hệ thống quản lý"
-            onClick={()=>navigate('/login')}
-            onKeyDown={(e)=>{ if(e.key==='Enter'||e.key===' ') navigate('/login'); }}
-            style={{
-              position:'absolute', right:'16%', top:'7%',
-              width:120, height:120, borderRadius:'50%',
-              background:'radial-gradient(circle,rgba(255,235,165,.97) 30%,rgba(255,190,80,.65) 58%,transparent 74%)',
-              boxShadow:'0 0 50px 18px rgba(255,210,90,.32),0 0 100px 50px rgba(255,160,50,.16)',
-              animation:'moonGlow 5s ease-in-out infinite',
-              cursor:'pointer', zIndex:20,
-              transition:'box-shadow .3s ease',
-              ...p(5),
-            }}
-            onMouseEnter={e=>{e.currentTarget.style.boxShadow='0 0 80px 30px rgba(255,220,80,.55),0 0 160px 80px rgba(255,160,50,.28)';}}
-            onMouseLeave={e=>{e.currentTarget.style.boxShadow='0 0 50px 18px rgba(255,210,90,.32),0 0 100px 50px rgba(255,160,50,.16)';}}
-          />
-          <div aria-hidden="true" style={{
-            position:'absolute', right:'16%', top:'calc(7% + 128px)',
-            textAlign:'center', width:120,
-            color:'rgba(255,235,180,.65)', fontSize:11, letterSpacing:1.5,
-            pointerEvents:'none', zIndex:19,
-            animation:'loginHint 2.5s ease-in-out infinite',
-            ...p(5),
-          }}>Nhấn để đăng nhập</div>
-        </>
-      )}
+        {/* Login button — frosted pill */}
+        <button
+          onClick={()=>navigate('/login')}
+          style={{
+            pointerEvents:'auto',
+            padding:'clamp(12px,1.8vh,16px) clamp(40px,5vw,72px)',
+            borderRadius:50,
+            border:'1px solid rgba(255,196,77,0.45)',
+            cursor:'pointer',
+            background:'rgba(255,196,77,0.14)',
+            backdropFilter:'blur(14px)',
+            WebkitBackdropFilter:'blur(14px)',
+            color:'#ffd59e',
+            fontSize:'clamp(13px,1.4vw,16px)',
+            fontWeight:800,
+            letterSpacing:'0.22em',
+            textTransform:'uppercase',
+            boxShadow:'0 0 40px rgba(255,180,50,0.22), 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,100,0.18)',
+            transition:'all 0.2s ease',
+          }}
+          onMouseEnter={e=>{
+            e.currentTarget.style.background='rgba(255,196,77,0.26)';
+            e.currentTarget.style.boxShadow='0 0 70px rgba(255,180,50,0.42), 0 8px 36px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,220,100,0.3)';
+            e.currentTarget.style.borderColor='rgba(255,196,77,0.75)';
+            e.currentTarget.style.transform='translateY(-3px)';
+          }}
+          onMouseLeave={e=>{
+            e.currentTarget.style.background='rgba(255,196,77,0.14)';
+            e.currentTarget.style.boxShadow='0 0 40px rgba(255,180,50,0.22), 0 4px 24px rgba(0,0,0,0.5)';
+            e.currentTarget.style.borderColor='rgba(255,196,77,0.45)';
+            e.currentTarget.style.transform='';
+          }}
+        >
+          ☸ &nbsp; Đăng nhập
+        </button>
+      </div>
+
+      {/* Horizon glow / atmospheric scattering */}
+      <div aria-hidden="true" style={{
+        position:'absolute', bottom:'18%', left:0, right:0, height:'22%',
+        background:'radial-gradient(ellipse 70% 55% at 50% 100%, rgba(180,60,15,.30) 0%, rgba(120,30,10,.12) 50%, transparent 100%)',
+        pointerEvents:'none', zIndex:1,
+      }}/>
+
+      {/* Cloud bands — mid sky */}
+      <div aria-hidden="true" style={{position:'absolute',top:'28%',left:0,right:0,pointerEvents:'none',zIndex:2}}>
+        <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{width:'100%',height:60,display:'block',opacity:0.12}}>
+          <path fill="rgba(200,180,220,1)"
+            d="M-80,52 Q120,28 280,44 Q420,56 560,34 Q700,18 840,38 Q980,52 1120,30 Q1260,14 1440,36 L1440,80 L-80,80 Z"/>
+          <path fill="rgba(140,100,160,0.5)"
+            d="M-80,62 Q200,42 380,58 Q560,68 720,46 Q880,32 1060,52 Q1200,62 1440,48 L1440,80 L-80,80 Z"/>
+        </svg>
+      </div>
+      <div aria-hidden="true" style={{position:'absolute',top:'38%',left:0,right:0,pointerEvents:'none',zIndex:2}}>
+        <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{width:'100%',height:45,display:'block',opacity:0.08}}>
+          <path fill="rgba(180,160,210,1)"
+            d="M-80,40 Q300,18 520,34 Q740,48 960,24 Q1160,8 1440,30 L1440,60 L-80,60 Z"/>
+        </svg>
+      </div>
+
+      {/* Mountains — distant (faintest, highest) */}
+      <div style={{position:'absolute',bottom:'24%',width:'100%',pointerEvents:'none',...p(1.5)}}>
+        <svg viewBox="0 0 1440 160" preserveAspectRatio="none" style={{width:'100%',height:140,display:'block'}}>
+          <path fill="rgba(30,15,35,.38)"
+            d="M0,155 Q80,118 160,138 Q220,128 290,100 Q350,116 420,108 Q490,96 560,80 Q630,92 700,110 Q770,100 850,74 Q920,88 990,96 Q1060,80 1130,100 Q1200,112 1280,92 Q1360,106 1440,118 L1440,160 L0,160 Z"/>
+        </svg>
+      </div>
 
       {/* Mountains — far */}
-      <div style={{position:'absolute',bottom:'22%',width:'100%',pointerEvents:'none',...p(2.5)}}>
-        <svg viewBox="0 0 1440 200" preserveAspectRatio="none" style={{width:'100%',height:170,display:'block'}}>
-          <path fill={isDay?'rgba(38,82,38,.62)':'rgba(28,5,18,.6)'} d="M0,185 L90,105 L200,155 L320,80 L450,140 L570,65 L700,130 L830,55 L950,120 L1070,70 L1200,138 L1320,85 L1440,120 L1440,200 L0,200 Z"/>
+      <div style={{position:'absolute',bottom:'21%',width:'100%',pointerEvents:'none',...p(2.5)}}>
+        <svg viewBox="0 0 1440 190" preserveAspectRatio="none" style={{width:'100%',height:165,display:'block'}}>
+          <path fill="rgba(22,8,20,.55)"
+            d="M0,180 Q60,148 130,162 Q180,148 240,118 Q300,132 360,120 Q420,106 490,80 Q560,96 630,112 Q700,100 770,78 Q840,90 910,106 Q980,88 1050,98 Q1120,110 1200,88 Q1280,100 1360,118 Q1400,128 1440,122 L1440,190 L0,190 Z"/>
         </svg>
       </div>
 
       {/* Mountains — near */}
-      <div style={{position:'absolute',bottom:'19%',width:'100%',pointerEvents:'none',...p(6)}}>
-        <svg viewBox="0 0 1440 180" preserveAspectRatio="none" style={{width:'100%',height:150,display:'block'}}>
-          <path fill={isDay?'rgba(28,62,28,.72)':'rgba(18,3,10,.72)'} d="M0,165 L70,95 L160,145 L280,72 L400,132 L510,58 L630,115 L748,48 L870,112 L990,60 L1110,128 L1240,72 L1370,128 L1440,95 L1440,180 L0,180 Z"/>
+      <div style={{position:'absolute',bottom:'18%',width:'100%',pointerEvents:'none',...p(5.5)}}>
+        <svg viewBox="0 0 1440 175" preserveAspectRatio="none" style={{width:'100%',height:148,display:'block'}}>
+          <path fill="rgba(14,5,16,.76)"
+            d="M0,165 Q50,138 110,152 Q155,138 210,110 Q260,122 320,100 Q370,88 440,65 Q510,80 575,98 Q640,86 710,60 Q775,74 840,90 Q905,72 975,82 Q1040,92 1115,70 Q1180,82 1250,100 Q1320,88 1380,108 Q1420,118 1440,110 L1440,175 L0,175 Z"/>
         </svg>
       </div>
 
       {/* Ground */}
       <div style={{position:'absolute',bottom:0,left:0,right:0,height:'22%',
-        background:'linear-gradient(to bottom,rgba(22,6,3,.7) 0%,rgba(12,3,2,.96) 100%)',
+        background:'linear-gradient(to bottom,rgba(10,3,2,.72) 0%,rgba(4,1,1,.98) 100%)',
         pointerEvents:'none',
       }}>
         <svg viewBox="0 0 1440 140" preserveAspectRatio="none" style={{width:'100%',height:'100%',display:'block'}}>
-          {/* Perspective path */}
-          <path fill="rgba(150,100,50,.2)" d="M 680,0 L 760,0 L 1020,140 L 420,140 Z"/>
-          <path fill="rgba(170,120,60,.1)" d="M 700,0 L 740,0 L 880,140 L 560,140 Z"/>
-          {/* Stepping stones */}
-          {[16,36,58,82,108].map((y,i)=>(
-            <ellipse key={i} cx="720" cy={y} rx={10+i*4} ry="5" fill="rgba(200,155,80,.28)"/>
+          <path fill="rgba(140,90,40,.18)" d="M 672,0 L 768,0 L 1040,140 L 400,140 Z"/>
+          <path fill="rgba(160,110,55,.09)" d="M 696,0 L 744,0 L 892,140 L 548,140 Z"/>
+          {[14,32,54,80,110].map((y,i)=>(
+            <ellipse key={i} cx="720" cy={y} rx={8+i*5} ry="4.5" fill="rgba(190,145,70,.22)"/>
           ))}
         </svg>
       </div>
@@ -733,11 +824,10 @@ export default function HomePage() {
       <div style={{
         position:'absolute', left:'50%', bottom:'19%',
         transform:'translateX(-50%)',
-        pointerEvents:'none', zIndex:2, opacity: isDay ? .95 : .88,
-        filter: isDay ? 'drop-shadow(0 4px 24px rgba(180,80,0,.2))' : 'none',
+        pointerEvents:'none', zIndex:2, opacity:.88,
         ...p(9),
       }}>
-        <TempleSilhouette isDay={isDay}/>
+        <TempleSilhouette/>
       </div>
 
       {/* Stone lantern posts along the path (perspective-scaled, on ground) */}
@@ -753,10 +843,9 @@ export default function HomePage() {
           position:'absolute', left:lp.left, bottom:lp.bottom,
           pointerEvents:'none', zIndex:lp.z,
           transform:'translateX(-50%)',
-          animation: isDay ? 'none' : `lanternPostPulse ${2.2 + i * 0.4}s ease-in-out ${i * 0.5}s infinite`,
-          filter: isDay ? 'drop-shadow(0 2px 6px rgba(0,0,0,.3))' : undefined,
+          animation:`lanternPostPulse ${2.2 + i * 0.4}s ease-in-out ${i * 0.5}s infinite`,
         }}>
-          <StoneLanternPost size={lp.size} lit={!isDay}/>
+          <StoneLanternPost size={lp.size} lit={true}/>
         </div>
       ))}
 
@@ -769,15 +858,20 @@ export default function HomePage() {
       ].map((l,i)=>(
         <div key={i} aria-hidden="true" style={{
           position:'absolute',left:l.left,bottom:l.bottom,
-          width:22,height:32,pointerEvents:'none',zIndex:6,
+          width:30,height:50,pointerEvents:'none',zIndex:6,
           animation:`lanternSway ${3.5+i*.4}s ease-in-out ${l.d}s infinite`,
           ...p(5+i*2),
         }}>
-          <svg viewBox="0 0 22 32" style={{width:'100%',height:'100%'}}>
-            <ellipse cx="11" cy="16" rx="9" ry="13" fill="#cc0e0e" opacity=".9"/>
-            <ellipse cx="11" cy="4"  rx="11" ry="5"  fill="#880c0c"/>
-            <ellipse cx="11" cy="28" rx="9"  ry="4"  fill="#880c0c"/>
-            <ellipse cx="11" cy="16" rx="5"  ry="8"  fill="#ffdd44" opacity=".5"/>
+          <svg viewBox="0 0 30 54" style={{width:'100%',height:'100%'}}>
+            <line x1="15" y1="0" x2="15" y2="8" stroke="#770000" strokeWidth="1.5" opacity="0.7"/>
+            <ellipse cx="15" cy="12" rx="13" ry="5" fill="#880c0c" opacity="0.9"/>
+            <ellipse cx="15" cy="26" rx="12" ry="16" fill="#cc0e0e" opacity="0.92"/>
+            <ellipse cx="15" cy="42" rx="10" ry="4.5" fill="#880c0c" opacity="0.85"/>
+            <line x1="12" y1="46" x2="11" y2="52" stroke="#880c0c" strokeWidth="1.2" opacity="0.7"/>
+            <line x1="15" y1="46" x2="15" y2="53" stroke="#880c0c" strokeWidth="1.2" opacity="0.7"/>
+            <line x1="18" y1="46" x2="19" y2="52" stroke="#880c0c" strokeWidth="1.2" opacity="0.7"/>
+            <ellipse cx="15" cy="26" rx="6" ry="10" fill="#ffdd44" opacity={0.9}
+              style={{filter:'url(#tGlw)'}}/>
           </svg>
         </div>
       ))}
@@ -826,7 +920,7 @@ export default function HomePage() {
       <canvas ref={canvasRef} aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:8}}/>
 
       {/* Firefly canvas — night only */}
-      <canvas ref={fireflyRef} aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:9,opacity:isDay?0:1,transition:'opacity 1.5s ease'}}/>
+      <canvas ref={fireflyRef} aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:9}}/>
 
       {/* Ground mist — 3 animated layers */}
       <div aria-hidden="true" style={{position:'absolute',bottom:'17%',left:'-20%',right:'-20%',height:90,pointerEvents:'none',zIndex:7}}>
@@ -850,12 +944,12 @@ export default function HomePage() {
         display:'flex', alignItems:'center',
         padding:'0 clamp(20px,4vw,48px)',
         height:'clamp(60px,8vh,80px)',
-        background:'linear-gradient(to bottom,rgba(4,1,1,.65),transparent)',
+        background:'linear-gradient(to bottom,rgba(4,1,1,0.72),transparent)',
         zIndex:20, pointerEvents:'none',
       }}>
         <span style={{fontSize:28,filter:'drop-shadow(0 0 8px rgba(255,180,30,.8))'}}>☸</span>
         <div style={{marginLeft:10}}>
-          <div style={{color:'#fff5d8',fontWeight:900,fontSize:'clamp(14px,2vw,20px)',letterSpacing:.5,lineHeight:1.2,textShadow:'0 1px 12px rgba(255,140,30,.5)'}}>
+          <div style={{color:'#fff5d8',fontWeight:900,fontSize:'clamp(16px,2.2vw,22px)',letterSpacing:.5,lineHeight:1.2,textShadow:'0 1px 12px rgba(255,140,30,.5)'}}>
             Chùa Tân Thành
           </div>
           <div style={{color:'rgba(255,200,100,.55)',fontSize:10,letterSpacing:3,textTransform:'uppercase'}}>
@@ -864,18 +958,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom: subtitle text */}
-      <div style={{
-        position:'absolute', bottom:'clamp(24px,4vh,40px)', left:0, right:0,
-        textAlign:'center', pointerEvents:'none', zIndex:20,
-      }}>
-        <div style={{color:'rgba(255,215,130,.65)',fontSize:13,letterSpacing:3}}>
-          Nơi an lạc — Nơi tu tập
-        </div>
-        <div style={{color:'rgba(255,200,100,.45)',fontSize:12,letterSpacing:2,marginTop:4}}>
-          Tan Thanh Pagoda
-        </div>
-      </div>
     </div>
   );
 }

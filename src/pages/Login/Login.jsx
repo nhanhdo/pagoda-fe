@@ -1,185 +1,79 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Form, Input, Button, Typography, message } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 
-const { Title, Text } = Typography;
-
-/* ── Robot Lamp SVG ──────────────────────────────────── */
-function RobotLamp({ lit }) {
-  const circuit = lit ? 'rgba(0,200,255,0.75)' : 'rgba(0,150,230,0.65)';
-  const smileColor = lit ? 'rgba(0,220,255,0.9)' : 'rgba(0,120,200,0.75)';
-
-  return (
-    <svg
-      viewBox="0 0 220 315"
-      aria-hidden="true"
-      style={{
-        width: 'clamp(160px, 38vw, 220px)',
-        height: 'auto',
-        filter: lit
-          ? 'drop-shadow(0 0 18px rgba(0,150,255,0.5))'
-          : 'drop-shadow(0 1px 5px rgba(0,0,0,0.7))',
-        transition: 'filter 1.1s ease',
-      }}
-    >
-      <defs>
-        <radialGradient id="rlShade" cx="50%" cy="35%" r="65%">
-          <stop offset="0%" stopColor={lit ? '#1a4a8a' : '#1c2e52'} />
-          <stop offset="100%" stopColor={lit ? '#0b2058' : '#0c1838'} />
-        </radialGradient>
-        <radialGradient id="rlEye" cx="33%" cy="33%" r="65%">
-          <stop offset="0%" stopColor={lit ? '#ffffff' : '#6a9eb8'} />
-          <stop offset="40%" stopColor={lit ? '#48e4ff' : '#1e4d68'} />
-          <stop offset="100%" stopColor={lit ? '#0066bb' : '#0d1e30'} />
-        </radialGradient>
-        <radialGradient id="rlOrb" cx="30%" cy="25%" r="68%">
-          <stop offset="0%" stopColor={lit ? '#90eeff' : '#2a5a82'} />
-          <stop offset="100%" stopColor={lit ? '#0077cc' : '#0d2040'} />
-        </radialGradient>
-        <radialGradient id="rlBase" cx="50%" cy="30%" r="70%">
-          <stop offset="0%" stopColor={lit ? '#0e2248' : '#142035'} />
-          <stop offset="100%" stopColor={lit ? '#070f28' : '#091220'} />
-        </radialGradient>
-        <filter id="rlEyeGlow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation={lit ? '6' : '1'} result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="rlOrbGlow" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation={lit ? '7' : '2'} result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-
-      {/* ── SHADE ── */}
-      <path d="M 68,32 L 152,32 L 180,152 L 40,152 Z" fill="url(#rlShade)" />
-      <rect x="63" y="22" width="94" height="14" rx="4" fill={lit ? '#1a3560' : '#0a1428'} style={{transition:'fill 1.2s'}} />
-      <rect x="67" y="22" width="86" height="8" rx="3" fill={lit ? '#223870' : '#0c1835'} style={{transition:'fill 1.2s'}} />
-
-      {/* ── CIRCUIT TRACES ── */}
-      <g stroke={circuit} strokeWidth="1.5" fill="none" strokeLinecap="round" style={{transition:'stroke 1.2s'}}>
-        <polyline points="58,54 78,54 78,44 94,44" />
-        <polyline points="58,68 70,68 70,78" />
-        <polyline points="162,54 142,54 142,44 126,44" />
-        <polyline points="162,68 150,68 150,78" />
-        <polyline points="52,122 70,122 70,112 85,112" />
-        <polyline points="168,122 150,122 150,112 135,112" />
-      </g>
-      <g fill={circuit} style={{transition:'fill 1.2s'}}>
-        {[[78,54],[94,44],[70,78],[142,54],[126,44],[150,78],[70,122],[85,112],[150,122],[135,112]].map(([x,y],i) => (
-          <circle key={i} cx={x} cy={y} r="2.5" />
-        ))}
-      </g>
-
-      {/* ── FACE ── */}
-      <ellipse cx="88"  cy="108" rx="23" ry="21" fill="rgba(0,0,0,0.65)" />
-      <ellipse cx="132" cy="108" rx="23" ry="21" fill="rgba(0,0,0,0.65)" />
-      <circle cx="88"  cy="108" r="18" fill="url(#rlEye)" filter="url(#rlEyeGlow)" style={{transition:'fill 1.2s, filter 1.2s', transformBox:'fill-box', transformOrigin:'center', animation:lit?'eyeBlink 3s ease-in-out 0.5s infinite':'none'}} />
-      <circle cx="132" cy="108" r="18" fill="url(#rlEye)" filter="url(#rlEyeGlow)" style={{transition:'fill 1.2s, filter 1.2s', transformBox:'fill-box', transformOrigin:'center', animation:lit?'eyeBlink 3s ease-in-out 0.5s infinite':'none'}} />
-      <circle cx="82"  cy="102" r="5"  fill="rgba(255,255,255,0.8)" opacity={lit ? 0.95 : 0.1} style={{transition:'opacity 1.2s'}} />
-      <circle cx="126" cy="102" r="5"  fill="rgba(255,255,255,0.8)" opacity={lit ? 0.95 : 0.1} style={{transition:'opacity 1.2s'}} />
-      <path d="M 76,132 Q 110,150 144,132"
-        fill="none" stroke={smileColor} strokeWidth="2.5" strokeLinecap="round"
-        style={{transition:'stroke 1.2s'}}
-      />
-
-      {/* ── NECK ── */}
-      <rect x="98" y="152" width="24" height="65" rx="4" fill="#0a1630" />
-      <rect x="100" y="152" width="7"  height="65" rx="3" fill="rgba(0,60,120,0.25)" />
-      <line x1="110" y1="160" x2="110" y2="210" stroke={circuit} strokeWidth="1" style={{transition:'stroke 1.2s'}} />
-      <circle cx="110" cy="185" r="2" fill={circuit} style={{transition:'fill 1.2s'}} />
-
-      {/* ── BASE ── */}
-      <ellipse cx="110" cy="228" rx="56" ry="12" fill="#040a14" />
-      <rect x="54" y="217" width="112" height="26" rx="6" fill="url(#rlBase)" />
-      <ellipse cx="110" cy="217" rx="56" ry="12" fill={lit ? '#101e38' : '#060c18'} style={{transition:'fill 1.2s'}} />
-      <ellipse cx="110" cy="243" rx="56" ry="12" fill="#030810" />
-      <g stroke={circuit} strokeWidth="1.5" style={{transition:'stroke 1.2s'}}>
-        <line x1="64"  y1="230" x2="84"  y2="230" />
-        <line x1="136" y1="230" x2="156" y2="230" />
-      </g>
-      <g fill={circuit} style={{transition:'fill 1.2s'}}>
-        <circle cx="84"  cy="230" r="2.5" />
-        <circle cx="136" cy="230" r="2.5" />
-      </g>
-
-      {/* ── HANGING ORB ── */}
-      <line x1="110" y1="243" x2="110" y2="268" stroke="rgba(0,70,130,0.5)" strokeWidth="1.5" />
-      <circle cx="110" cy="280" r="13" fill="url(#rlOrb)" filter="url(#rlOrbGlow)" style={{transition:'filter 1.2s'}} />
-      <circle cx="104" cy="274" r="4"  fill="rgba(255,255,255,0.7)" opacity={lit ? 0.9 : 0.1} style={{transition:'opacity 1.2s'}} />
-    </svg>
-  );
+/* ── Falling petals canvas ───────────────────────────── */
+function usePetals(ref) {
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+    resize();
+    const ctx = c.getContext('2d');
+    class P {
+      constructor(init) { this.reset(init); }
+      reset(init) {
+        this.x  = Math.random() * c.width;
+        this.y  = init ? Math.random() * c.height : -14;
+        this.s  = 2.5 + Math.random() * 4.5;
+        this.vy = 0.4 + Math.random() * 1.1;
+        this.a  = Math.random() * Math.PI * 2;
+        this.rv = (Math.random() - 0.5) * 0.038;
+        this.ph = Math.random() * Math.PI * 2;
+        this.fr = 0.3 + Math.random() * 0.5;
+        this.op = 0.28 + Math.random() * 0.5;
+        const r = Math.random();
+        this.c = r < 0.55
+          ? `rgba(255,${155+~~(r*180)},${175+~~(r*60)},${this.op})`
+          : `rgba(255,${185+~~(Math.random()*50)},${200+~~(Math.random()*40)},${this.op})`;
+      }
+      tick(t) {
+        this.y += this.vy;
+        this.x += Math.sin(t * this.fr + this.ph) * 0.38;
+        this.a += this.rv;
+        if (this.y > c.height + 16) this.reset(false);
+      }
+      draw() {
+        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.a);
+        ctx.fillStyle = this.c;
+        const s = this.s;
+        ctx.beginPath();
+        ctx.moveTo(0,-s); ctx.bezierCurveTo(s*.75,-s*.35,s*.75,s*.35,0,s);
+        ctx.bezierCurveTo(-s*.75,s*.35,-s*.75,-s*.35,0,-s);
+        ctx.fill(); ctx.restore();
+      }
+    }
+    const ps = Array.from({ length: 200 }, (_, i) => new P(true));
+    let t = 0, id;
+    const go = () => {
+      id = requestAnimationFrame(go);
+      ctx.clearRect(0, 0, c.width, c.height);
+      t += 0.013;
+      ps.forEach(p => { p.tick(t); p.draw(); });
+    };
+    const onVis = () => { if (document.hidden) cancelAnimationFrame(id); else go(); };
+    go();
+    window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', onVis);
+    return () => { cancelAnimationFrame(id); window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', onVis); };
+  }, []);
 }
 
-const PULL_THRESHOLD = 38;
-const MAX_DRAG = 72;
-const BASE_CORD = 46;
-
-/* ── Main component ───────────────────────────────────── */
+/* ── Main component ──────────────────────────────────── */
 export default function Login() {
-  const { t } = useLanguage();
+  const { t }              = useLanguage();
   const { login, loading } = useAuth();
-  const [lit, setLit]               = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragY, setDragY]           = useState(0);
-  const [flashKey, setFlashKey]     = useState(0);
-  const [error, setError]           = useState('');
-  const startY   = useRef(0);
-  const didDrag  = useRef(false); // track whether pointer actually moved
+  const [error, setError]  = useState('');
+  const canvasRef          = useRef(null);
+  usePetals(canvasRef);
 
-  const isLit = lit;
-
-  // Show idle-logout notice if user was auto-logged out
   React.useEffect(() => {
     if (sessionStorage.getItem('logoutReason') === 'idle') {
       sessionStorage.removeItem('logoutReason');
       message.warning('Phiên làm việc đã hết hạn do không hoạt động. Vui lòng đăng nhập lại.', 6);
     }
   }, []);
-  const aboveThreshold = dragY >= PULL_THRESHOLD;
-
-  const toggle = useCallback(() => {
-    const next = !lit;
-    setLit(next);
-    if (next) setFlashKey(k => k + 1);
-  }, [lit]);
-
-  const onPointerDown = useCallback((e) => {
-    e.preventDefault();
-    startY.current = e.clientY;
-    didDrag.current = false;
-    setIsDragging(true);
-    setDragY(0);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }, []);
-
-  const onPointerMove = useCallback((e) => {
-    if (!isDragging) return;
-    const dy = Math.max(0, Math.min(MAX_DRAG, e.clientY - startY.current));
-    if (dy > 4) didDrag.current = true;
-    setDragY(dy);
-  }, [isDragging]);
-
-  const onPointerUp = useCallback((e) => {
-    if (!isDragging) return;
-    const pulled = dragY >= PULL_THRESHOLD;
-    setIsDragging(false);
-    setDragY(0);
-    if (pulled) toggle();
-  }, [isDragging, dragY, toggle]);
-
-  // Click (no drag) also toggles
-  const onClick = useCallback(() => {
-    if (!didDrag.current) toggle();
-  }, [toggle]);
-
-  const onKeyDown = useCallback((e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggle();
-    }
-  }, [toggle]);
 
   const onFinish = async (values) => {
     setError('');
@@ -187,317 +81,308 @@ export default function Login() {
     if (!result.success) setError(result.message || t.login.invalidCredentials);
   };
 
-  const cordLen = BASE_CORD + dragY;
-  const cordT   = isDragging ? 'none' : 'height 0.38s cubic-bezier(0.34,1.56,0.64,1)';
-  const beadT   = isDragging ? 'none' : 'transform 0.38s cubic-bezier(0.34,1.56,0.64,1)';
-
-  // Bounce only when unlit, not dragging, and bead is at rest
-  const beadAnim = (!isLit && !isDragging && dragY === 0)
-    ? 'beadBounce 1.8s ease-in-out infinite'
-    : 'none';
-
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#030810',
-      backgroundImage: `
-        linear-gradient(rgba(0,90,200,0.065) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,90,200,0.065) 1px, transparent 1px)
-      `,
-      backgroundSize: '44px 44px',
+      position: 'relative',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      position: 'relative',
       overflow: 'hidden',
-      padding: '24px 16px',
+      background: 'linear-gradient(155deg, #120600 0%, #2a0c04 18%, #4a1a08 38%, #7a2e10 56%, #5a1e08 72%, #2a0c04 86%, #0e0400 100%)',
+      padding: '24px 20px',
     }}>
-      {/* Flicker overlay */}
-      <div
-        key={flashKey}
-        aria-hidden="true"
-        style={{
-          position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 15,
-          background: 'rgba(0,160,255,0.14)',
-          animation: flashKey > 0 ? 'lamp-flash-overlay 0.7s ease-out forwards' : 'none',
-        }}
-      />
+      <style>{`
+        @keyframes buddhaGlowL{0%,100%{opacity:.50}50%{opacity:.88}}
+        @keyframes raysL{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+        @keyframes floatL{0%,100%{transform:translateY(0px)}50%{transform:translateY(-9px)}}
+        @keyframes shimmer{0%,100%{opacity:.6}50%{opacity:1}}
+        .lf-input.ant-input-affix-wrapper {
+          background: rgba(255,245,230,0.07) !important;
+          border: 1px solid rgba(255,200,100,0.22) !important;
+          border-radius: 10px !important;
+          height: 48px !important;
+          transition: border-color .2s, box-shadow .2s !important;
+        }
+        .lf-input.ant-input-affix-wrapper:hover {
+          border-color: rgba(255,200,100,0.45) !important;
+        }
+        .lf-input.ant-input-affix-wrapper-focused {
+          border-color: rgba(255,200,80,0.70) !important;
+          box-shadow: 0 0 0 3px rgba(255,180,50,0.14) !important;
+        }
+        .lf-input .ant-input { background: transparent !important; color: #fdf0d8 !important; font-size: 14px !important; }
+        .lf-input .ant-input::placeholder { color: rgba(255,210,140,0.30) !important; }
+        .lf-input .ant-input-password input { background: transparent !important; color: #fdf0d8 !important; font-size: 14px !important; }
+        .lf-input .ant-input-password input::placeholder { color: rgba(255,210,140,0.30) !important; }
+        .lf-input .ant-input-prefix .anticon { color: rgba(255,196,77,0.45) !important; }
+        .lf-input .ant-input-suffix .anticon { color: rgba(255,196,77,0.40) !important; }
+        .lf-btn { transition: all 0.2s ease !important; }
+        .lf-btn:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 36px rgba(255,170,40,0.38) !important; }
+        .lf-btn:active { transform: translateY(0) !important; }
+        @media (max-width: 680px) { .login-left-col { display: none !important; } .login-divider-col { display: none !important; } }
+      `}</style>
 
-      {/* Ambient light */}
-      <div aria-hidden="true" style={{
-        position: 'absolute',
-        top: '15%', left: '20%',
-        width: '55%', height: '65%',
-        background: 'radial-gradient(ellipse, rgba(0,80,200,0.12) 0%, transparent 70%)',
-        opacity: isLit ? 1 : 0.22,
-        transition: 'opacity 1.6s ease',
-        pointerEvents: 'none',
-      }} />
+      {/* Full-screen petals */}
+      <canvas ref={canvasRef} style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0 }}/>
 
-      {/* Corner glows */}
+      {/* Full-screen ambient glow */}
       <div aria-hidden="true" style={{
-        position: 'absolute', top: -120, right: -120,
-        width: 340, height: 340,
-        background: 'radial-gradient(circle, rgba(80,40,200,0.07) 0%, transparent 60%)',
-        pointerEvents: 'none',
-      }} />
-      <div aria-hidden="true" style={{
-        position: 'absolute', bottom: -100, left: -100,
-        width: 280, height: 280,
-        background: 'radial-gradient(circle, rgba(0,80,200,0.06) 0%, transparent 60%)',
-        pointerEvents: 'none',
-      }} />
+        position:'fixed', inset:0, pointerEvents:'none', zIndex:0,
+        background:'radial-gradient(ellipse 70% 60% at 50% 42%, rgba(255,160,30,0.10) 0%, transparent 70%)',
+      }}/>
 
-      {/* Main content */}
+      {/* ── Main card ── */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 'clamp(20px,5vw,72px)',
-        maxWidth: 980,
-        width: '100%',
-        flexWrap: 'wrap',
+        position:'relative', zIndex:2,
+        display:'flex',
+        width:'100%',
+        maxWidth:900,
+        minHeight:540,
+        borderRadius:24,
+        overflow:'hidden',
+        boxShadow:'0 32px 100px rgba(0,0,0,0.70), 0 0 0 1px rgba(255,200,80,0.12)',
       }}>
 
-        {/* ── LEFT: LAMP + CORD ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {/* Ceiling mount */}
+        {/* ════ LEFT — brand panel ════ */}
+        <div className="login-left-col" style={{
+          flex:'0 0 44%',
+          position:'relative',
+          background:'linear-gradient(160deg, #1e0804 0%, #3d1206 28%, #6b2210 55%, #3d1206 80%, #180602 100%)',
+          display:'flex', flexDirection:'column',
+          alignItems:'center', justifyContent:'center',
+          padding:'48px 36px',
+          overflow:'hidden',
+        }}>
+          {/* Rotating sacred rays */}
           <div aria-hidden="true" style={{
-            width: 46, height: 7,
-            background: 'linear-gradient(to bottom, rgba(0,120,220,0.75), rgba(0,70,150,0.45))',
-            borderRadius: '0 0 4px 4px',
-          }} />
+            position:'absolute', left:'50%', top:'46%',
+            width:'clamp(380px,55vw,560px)', aspectRatio:'1/1',
+            transform:'translate(-50%,-50%)',
+            borderRadius:'50%',
+            background:'repeating-conic-gradient(rgba(255,195,55,0.14) 0deg 7deg, transparent 7deg 24deg)',
+            animation:'raysL 110s linear infinite',
+            zIndex:0, pointerEvents:'none',
+          }}/>
 
-          {/* Swaying group */}
+          {/* Wide ambient glow */}
           <div aria-hidden="true" style={{
-            transformOrigin: '50% 0%',
-            animation: 'lantern-sway 8s ease-in-out infinite',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}>
-            {/* Top wire */}
+            position:'absolute', left:'50%', top:'40%',
+            width:'72%', aspectRatio:'1/1',
+            transform:'translate(-50%,-50%)',
+            borderRadius:'50%',
+            background:'radial-gradient(circle, rgba(255,210,70,0.26) 0%, rgba(255,140,20,0.11) 48%, transparent 70%)',
+            animation:'buddhaGlowL 5s ease-in-out infinite',
+            zIndex:0, pointerEvents:'none',
+          }}/>
+
+          {/* Buddha image */}
+          <div style={{ position:'relative', zIndex:1, animation:'floatL 5.5s ease-in-out infinite', marginBottom:24 }}>
+            {/* Outer halo */}
+            <div style={{ position:'absolute', inset:'-12px', borderRadius:'50%',
+              border:'1px solid rgba(255,215,0,0.32)',
+              boxShadow:'0 0 44px rgba(255,200,50,0.24)',
+              pointerEvents:'none' }}/>
+            {/* Inner ring */}
+            <div style={{ position:'absolute', inset:'-4px', borderRadius:'50%',
+              border:'2px solid rgba(255,215,0,0.60)',
+              boxShadow:'0 0 20px rgba(255,195,55,0.55), inset 0 0 14px rgba(255,170,30,0.16)',
+              pointerEvents:'none' }}/>
             <div style={{
-              width: 2, height: 30,
-              background: 'linear-gradient(to bottom, rgba(0,140,240,0.75), rgba(0,90,180,0.55))',
-            }} />
-
-            <RobotLamp lit={isLit} />
-
-            {/* Pull cord — keyboard & click accessible */}
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label={isLit ? t.login.lampOnAriaLabel : t.login.lampOffAriaLabel}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                cursor: isDragging ? 'grabbing' : 'grab',
-                outline: 'none',
-                marginTop: -4,
-                userSelect: 'none',
-                touchAction: 'none',
-              }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onClick={onClick}
-              onKeyDown={onKeyDown}
-            >
-              {/* Cord line */}
-              <div style={{
-                width: 2,
-                height: cordLen,
-                background: aboveThreshold
-                  ? 'linear-gradient(to bottom, rgba(0,220,180,0.7), rgba(0,180,140,0.5))'
-                  : 'linear-gradient(to bottom, rgba(0,160,255,0.85), rgba(0,100,200,0.62))',
-                transition: cordT,
-                borderRadius: 1,
-              }} />
-
-              {/* Pull bead */}
-              <div style={{
-                width: 20, height: 20, borderRadius: '50%',
-                background: aboveThreshold
-                  ? 'radial-gradient(circle at 34% 30%, #80ffea, #00bb88)'
-                  : isLit
-                    ? 'radial-gradient(circle at 34% 30%, #80e0ff, #0088cc)'
-                    : 'radial-gradient(circle at 34% 30%, #3a6a9a, #1a3558)',
-                border: `1.5px solid ${aboveThreshold ? 'rgba(0,230,180,0.8)' : isLit ? 'rgba(0,200,255,0.65)' : 'rgba(0,140,230,0.7)'}`,
-                boxShadow: aboveThreshold
-                  ? '0 0 16px rgba(0,220,160,0.8), 0 0 6px rgba(0,255,200,0.5)'
-                  : isLit
-                    ? '0 0 14px rgba(0,180,255,0.65), 0 0 5px rgba(0,220,255,0.4)'
-                    : '0 0 12px rgba(0,120,230,0.5), 0 2px 5px rgba(0,0,0,0.5)',
-                transform: isDragging ? `translateY(${dragY}px)` : undefined,
-                animation: isDragging ? 'none' : beadAnim,
-                transition: isDragging ? 'none' : `box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s, ${beadT}`,
-              }} />
-
-              {/* Tassel */}
-              <div style={{ display: 'flex', gap: 2.5, marginTop: 5, opacity: 0.85 }}>
-                {[0,1,2,3,4].map(i => (
-                  <div key={i} style={{
-                    width: 1.5,
-                    height: 6 + (i === 2 ? 4 : Math.abs(i - 2) * 1.5),
-                    background: 'rgba(0,155,255,0.82)',
-                    borderRadius: 1,
-                  }} />
-                ))}
-              </div>
+              width:'clamp(130px,13vw,172px)', aspectRatio:'1/1',
+              borderRadius:'50%', overflow:'hidden',
+              border:'2px solid rgba(255,215,0,0.42)',
+            }}>
+              <img src="/adida.PNG" alt="" style={{
+                width:'100%', height:'100%',
+                objectFit:'cover', objectPosition:'center 18%',
+                display:'block',
+                filter:'brightness(1.14) saturate(1.18)',
+              }}/>
             </div>
           </div>
 
-          {/* Pull hint */}
+          {/* Temple name */}
+          <h1 style={{
+            position:'relative', zIndex:1,
+            margin:'0 0 8px',
+            fontSize:'clamp(22px,2.6vw,30px)',
+            fontWeight:900,
+            color:'#fdf4e3',
+            letterSpacing:'0.08em',
+            textAlign:'center',
+            textShadow:'0 2px 24px rgba(255,160,30,0.55)',
+          }}>Chùa Tân Thành</h1>
+
+          <p style={{
+            position:'relative', zIndex:1,
+            margin:'0 0 32px',
+            fontSize:11,
+            color:'rgba(255,210,130,0.52)',
+            letterSpacing:'0.30em',
+            textTransform:'uppercase',
+            textAlign:'center',
+          }}>Hệ thống quản lý</p>
+
+          {/* Quote */}
           <div style={{
-            marginTop: 16,
-            opacity: isLit ? 0 : 1,
-            transition: 'opacity 0.7s ease',
-            pointerEvents: 'none',
+            position:'relative', zIndex:1,
+            borderLeft:'2px solid rgba(255,215,0,0.28)',
+            paddingLeft:14,
+            maxWidth:220,
           }}>
-            <Text style={{ color: 'rgba(0,190,255,0.92)', fontSize: 12, letterSpacing: 2, textShadow: '0 0 10px rgba(0,150,255,0.5)' }}>
-              {t.login.pullHint}
-            </Text>
+            <p style={{
+              margin:0,
+              fontSize:13,
+              color:'rgba(255,230,170,0.62)',
+              fontStyle:'italic',
+              lineHeight:1.75,
+            }}>"Tâm bình thì thế giới bình, tâm an thì vạn sự an"</p>
+          </div>
+
+          {/* Bottom ornament */}
+          <div style={{
+            position:'absolute', bottom:24,
+            display:'flex', alignItems:'center', gap:10, zIndex:1,
+          }}>
+            <div style={{width:40, height:1, background:'linear-gradient(to right, transparent, rgba(255,215,0,0.30))'}}/>
+            <span style={{color:'rgba(255,215,0,0.50)', fontSize:16}}>☸</span>
+            <div style={{width:40, height:1, background:'linear-gradient(to left, transparent, rgba(255,215,0,0.30))'}}/>
+          </div>
+
+          {/* Top label */}
+          <div style={{
+            position:'absolute', top:22,
+            display:'flex', alignItems:'center', gap:10, zIndex:1,
+          }}>
+            <div style={{width:28, height:1, background:'rgba(255,215,0,0.20)'}}/>
+            <span style={{color:'rgba(255,215,0,0.32)', fontSize:10, letterSpacing:'0.32em'}}>TÂN THÀNH</span>
+            <div style={{width:28, height:1, background:'rgba(255,215,0,0.20)'}}/>
           </div>
         </div>
 
-        {/* ── RIGHT: FORM CARD ── */}
+        {/* ════ DIVIDER ════ */}
+        <div className="login-divider-col" style={{
+          width:1,
+          background:'linear-gradient(to bottom, transparent, rgba(255,200,80,0.20) 25%, rgba(255,200,80,0.28) 50%, rgba(255,200,80,0.20) 75%, transparent)',
+          flexShrink:0,
+        }}/>
+
+        {/* ════ RIGHT — login form ════ */}
         <div style={{
-          flex: '1 1 300px',
-          maxWidth: 420,
-          opacity: isLit ? 1 : 0.18,
-          filter: isLit ? 'none' : 'blur(2.5px)',
-          transition: 'opacity 0.9s ease 0.3s, filter 0.9s ease 0.3s',
-          pointerEvents: isLit ? 'auto' : 'none',
+          flex:1,
+          background:'rgba(10,4,2,0.88)',
+          backdropFilter:'blur(28px)',
+          WebkitBackdropFilter:'blur(28px)',
+          display:'flex', flexDirection:'column',
+          alignItems:'center', justifyContent:'center',
+          padding:'clamp(36px,5vh,56px) clamp(32px,5vw,56px)',
         }}>
-          <div style={{
-            background: 'rgba(4,14,36,0.82)',
-            backdropFilter: 'blur(22px)',
-            WebkitBackdropFilter: 'blur(22px)',
-            border: '1px solid rgba(60,110,220,0.28)',
-            borderRadius: 22,
-            padding: 'clamp(24px,4.5vw,40px)',
-            boxShadow: '0 8px 52px rgba(0,0,0,0.65), 0 0 24px rgba(60,100,220,0.07), inset 0 1px 0 rgba(80,150,255,0.1)',
-          }}>
-            {/* Accent bar */}
+          {/* Form header */}
+          <div style={{ width:'100%', maxWidth:340, marginBottom:32, textAlign:'center' }}>
             <div style={{
-              width: 40, height: 3,
-              background: 'linear-gradient(to right, transparent, #0088ff, transparent)',
-              margin: '0 auto 22px',
-              borderRadius: 2,
-            }} />
+              display:'inline-flex', alignItems:'center', justifyContent:'center',
+              width:46, height:46, borderRadius:'50%',
+              background:'rgba(255,196,77,0.10)',
+              border:'1px solid rgba(255,196,77,0.28)',
+              marginBottom:16,
+              fontSize:20,
+            }}>☸</div>
+            <h2 style={{
+              margin:0, color:'#fdf4e3',
+              fontSize:'clamp(20px,2.2vw,24px)',
+              fontWeight:800, letterSpacing:'0.04em',
+            }}>{t.login.sectionLabel || 'Đăng nhập'}</h2>
+            <p style={{
+              margin:'6px 0 0',
+              fontSize:11,
+              color:'rgba(255,200,100,0.40)',
+              letterSpacing:'0.22em',
+              textTransform:'uppercase',
+            }}>Chùa Tân Thành</p>
+          </div>
 
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: 22 }}>
-              <Title level={2} style={{
-                color: '#dceeff',
-                margin: '0 0 6px',
-                fontWeight: 800,
-                fontSize: 'clamp(20px,2.8vw,26px)',
-                letterSpacing: 0.5,
-                textShadow: '0 2px 16px rgba(0,140,255,0.25)',
-              }}>
-                {t.login.pagodaName}
-              </Title>
-              <Text style={{ color: 'rgba(80,160,255,0.5)', fontSize: 10.5, letterSpacing: 3 }}>
-                {t.login.systemSubtitle}
-              </Text>
-            </div>
-
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-              <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(60,110,220,0.22))' }} />
-              <Text style={{ color: 'rgba(60,120,255,0.3)', fontSize: 10, letterSpacing: 3, fontWeight: 600 }}>{t.login.sectionLabel}</Text>
-              <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(60,110,220,0.22))' }} />
-            </div>
+          {/* Form */}
+          <Form layout="vertical" onFinish={onFinish} size="large" style={{ width:'100%', maxWidth:340 }}>
 
             {/* Error */}
             {error && (
               <div style={{
-                background: 'rgba(255,50,50,0.10)',
-                border: '1px solid rgba(255,80,80,0.30)',
-                borderRadius: 10,
-                padding: '10px 14px',
-                marginBottom: 14,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
+                background:'rgba(255,60,40,0.10)',
+                border:'1px solid rgba(255,80,60,0.32)',
+                borderRadius:10, padding:'10px 14px',
+                marginBottom:16,
+                display:'flex', alignItems:'center', gap:8,
               }}>
-                <span style={{ fontSize: 15 }}>⚠</span>
-                <span style={{ color: 'rgba(255,120,120,0.95)', fontSize: 13, fontWeight: 600 }}>
-                  {error}
-                </span>
+                <span style={{fontSize:14}}>⚠</span>
+                <span style={{color:'rgba(255,120,100,0.95)', fontSize:13, fontWeight:600}}>{error}</span>
               </div>
             )}
 
-            <Form layout="vertical" onFinish={onFinish} size="large">
-              <Form.Item
-                name="username"
-                label={<span style={{ color: 'rgba(80,160,255,0.58)', fontSize: 10.5, letterSpacing: 2.5, fontWeight: 700 }}>{t.login.usernameLabel}</span>}
-                style={{ marginBottom: 14 }}
-                rules={[{ required: true, message: t.login.usernameRequired }]}
-              >
-                <Input
-                  className="login-sci-input"
-                  prefix={<UserOutlined style={{ color: 'rgba(60,150,255,0.45)' }} />}
-                  placeholder="Username"
-                  style={{
-                    background: 'rgba(0,60,160,0.08)', border: '1px solid rgba(60,120,220,0.28)',
-                    borderRadius: 10, color: '#c8e0ff', height: 48, fontSize: 14,
-                  }}
-                />
-              </Form.Item>
+            <Form.Item
+              name="username"
+              label={<span style={{ color:'rgba(255,200,100,0.55)', fontSize:10.5, fontWeight:700, letterSpacing:'0.22em', textTransform:'uppercase' }}>{t.login.usernameLabel}</span>}
+              style={{ marginBottom:14 }}
+              rules={[{ required:true, message:t.login.usernameRequired }]}
+            >
+              <Input className="lf-input" prefix={<UserOutlined/>} placeholder="Nhập tên đăng nhập"/>
+            </Form.Item>
 
-              <Form.Item
-                name="password"
-                label={<span style={{ color: 'rgba(80,160,255,0.58)', fontSize: 10.5, letterSpacing: 2.5, fontWeight: 700 }}>{t.login.passwordLabel}</span>}
-                style={{ marginBottom: 24 }}
-                rules={[{ required: true, message: t.login.passwordRequired }]}
-              >
-                <Input.Password
-                  className="login-sci-input"
-                  prefix={<LockOutlined style={{ color: 'rgba(60,150,255,0.45)' }} />}
-                  placeholder="Password"
-                  style={{
-                    background: 'rgba(0,60,160,0.08)',
-                    border: `1px solid ${error ? 'rgba(255,80,80,0.5)' : 'rgba(60,120,220,0.28)'}`,
-                    borderRadius: 10, color: '#c8e0ff', height: 48, fontSize: 14,
-                  }}
-                />
-              </Form.Item>
+            <Form.Item
+              name="password"
+              label={<span style={{ color:'rgba(255,200,100,0.55)', fontSize:10.5, fontWeight:700, letterSpacing:'0.22em', textTransform:'uppercase' }}>{t.login.passwordLabel}</span>}
+              style={{ marginBottom:28 }}
+              rules={[{ required:true, message:t.login.passwordRequired }]}
+            >
+              <Input.Password
+                className="lf-input"
+                prefix={<LockOutlined/>}
+                placeholder="Nhập mật khẩu"
+                style={{ borderColor: error ? 'rgba(255,80,60,0.52)' : undefined }}
+              />
+            </Form.Item>
 
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                loading={loading}
-                style={{
-                  height: 48, borderRadius: 10,
-                  background: 'linear-gradient(135deg, #4422aa 0%, #6633cc 50%, #8855ee 100%)',
-                  border: 'none', color: '#e8ddff', fontWeight: 700, fontSize: 14,
-                  letterSpacing: 2, boxShadow: '0 4px 22px rgba(90,40,180,0.45)',
-                  transition: 'transform 0.15s, box-shadow 0.15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 30px rgba(110,50,220,0.6)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 22px rgba(90,40,180,0.45)'; }}
-              >
-                {t.login.submitButton}
-              </Button>
-            </Form>
+            <Button
+              type="primary" htmlType="submit" block loading={loading}
+              className="lf-btn"
+              style={{
+                height:50, borderRadius:12,
+                background:'linear-gradient(135deg, #c17f3a 0%, #e8a84a 50%, #c17f3a 100%)',
+                border:'none', color:'#1a0800',
+                fontWeight:800, fontSize:14,
+                letterSpacing:'0.18em', textTransform:'uppercase',
+                boxShadow:'0 4px 22px rgba(255,170,40,0.30)',
+              }}
+            >
+              {t.login.submitButton}
+            </Button>
+          </Form>
 
-            <div style={{ textAlign: 'center', marginTop: 18 }}>
-              <Text
-                style={{ color: 'rgba(60,120,255,0.45)', fontSize: 12, cursor: 'pointer', letterSpacing: 0.5 }}
-                onClick={() => message.info({
-                  content: t.login.forgotPasswordMessage,
-                  duration: 4,
-                })}
-                onMouseEnter={e => e.target.style.color = 'rgba(100,180,255,0.75)'}
-                onMouseLeave={e => e.target.style.color = 'rgba(60,120,255,0.45)'}
-              >
-                {t.login.forgotPassword}
-              </Text>
+          {/* Forgot password */}
+          <div style={{ marginTop:18 }}>
+            <span
+              style={{ color:'rgba(255,200,100,0.35)', fontSize:12, cursor:'pointer', letterSpacing:'0.05em', transition:'color .18s' }}
+              onClick={() => message.info({ content: t.login.forgotPasswordMessage, duration:4 })}
+              onMouseEnter={e => e.target.style.color = 'rgba(255,200,100,0.70)'}
+              onMouseLeave={e => e.target.style.color = 'rgba(255,200,100,0.35)'}
+            >
+              {t.login.forgotPassword}
+            </span>
+          </div>
+
+          {/* Footer note */}
+          <div style={{
+            marginTop:'auto', paddingTop:32,
+            display:'flex', flexDirection:'column', alignItems:'center', gap:6,
+          }}>
+            <div style={{ display:'flex', gap:8, alignItems:'center', opacity:.22 }}>
+              <div style={{width:28, height:1, background:'rgba(255,200,80,1)'}}/>
+              <span style={{color:'rgba(255,200,80,1)', fontSize:10}}>✦</span>
+              <div style={{width:28, height:1, background:'rgba(255,200,80,1)'}}/>
             </div>
+            <span style={{ fontSize:10.5, color:'rgba(255,200,100,0.22)', letterSpacing:'0.15em' }}>
+              Nam Mô A Di Đà Phật
+            </span>
           </div>
         </div>
       </div>

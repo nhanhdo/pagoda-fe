@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Tabs, Tag, Button, Modal, Form, Input, Select, DatePicker,
   message, Popconfirm, Space, Spin, Upload, Switch, Typography, Avatar, Dropdown,
@@ -213,11 +214,11 @@ function PostCard({ post, canEdit, onEdit, onDelete }) {
         </div>
 
         {post.type === 'event' && (post.eventDate || post.eventLocation) && (
-          <div style={{ background: '#fff5f5', border: '1px solid rgba(192,57,43,.12)', borderRadius: 8, padding: '7px 12px', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ background: '#fff5f5', border: '1px solid rgba(192,57,43,.12)', borderRadius: 8, padding: '7px 12px', marginBottom: 10, display: 'inline-flex', flexWrap: 'wrap', gap: 12 }}>
             {post.eventDate && (
               <Text style={{ fontSize: 13, color: '#c0392b' }}>
                 <CalendarOutlined style={{ marginRight: 5 }} />
-                {dayjs(post.eventDate).format('dddd, DD/MM/YYYY')}
+                {dayjs(post.eventDate).format('ddd, DD/MM/YYYY')}
                 {post.eventTime && <span style={{ marginLeft: 8 }}><ClockCircleOutlined style={{ marginRight: 4 }} />{post.eventTime}</span>}
               </Text>
             )}
@@ -452,7 +453,7 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
 
 /* ─── Feed Tab Content ────────────────────────────────────── */
 function FeedTab({ posts, loading, canEdit, onEdit, onDelete, emptyIcon, emptyText }) {
-  if (loading) return <div style={{ textAlign: 'center', padding: '60px 0' }}><Spin size="large" /></div>;
+  if (loading) return <PageSpinner />;
   if (posts.length === 0) return (
     <div style={{ textAlign: 'center', padding: '60px 0', color: '#bbb' }}>
       <div style={{ fontSize: 14 }}>{emptyText}</div>
@@ -745,7 +746,7 @@ export default function NewsPage() {
   return (
     <div>
       {/* ── Banner ── */}
-      <div className="news-banner">
+      <div className="news-banner section-anim section-d0">
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative', zIndex: 1 }}>
           <div style={{
             width: 52, height: 52, borderRadius: 14,
@@ -760,7 +761,7 @@ export default function NewsPage() {
             <div style={{ color: 'rgba(255,210,160,.6)', fontSize: 12, marginTop: 3 }}>
               {t.news.bannerSubtitle}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
               {[
                 { label: `${cnt('event')} ${t.news.typeEvent}`, color: 'rgba(255,100,80,.9)' },
                 { label: `${cnt('news')} ${t.news.typeNews}`, color: 'rgba(80,220,190,.9)' },
@@ -770,6 +771,7 @@ export default function NewsPage() {
                   fontSize: 11, fontWeight: 600, color: s.color,
                   background: 'rgba(255,255,255,.1)', borderRadius: 20,
                   padding: '2px 10px', border: '1px solid rgba(255,255,255,.12)',
+                  whiteSpace: 'nowrap',
                 }}>
                   {s.label}
                 </span>
@@ -793,7 +795,7 @@ export default function NewsPage() {
       </div>
 
       {/* ── 2 cột: Feed + Sidebar ── */}
-      <div className="news-layout">
+      <div className="news-layout section-anim section-d1">
 
         {/* ── CỘT TRÁI: Feed ── */}
         <div className="news-feed-col">

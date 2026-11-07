@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Layout, Dropdown, Space, Typography, Modal, Form, Input,
   Descriptions, Tag, message, Select, Grid, Drawer,
@@ -9,7 +10,7 @@ import {
   AppstoreFilled, TeamOutlined, CalendarFilled, CheckSquareFilled,
   BookFilled, HeartFilled, TrophyFilled, BankFilled, NotificationFilled,
   LogoutOutlined, UserOutlined, KeyOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  BellOutlined, SafetyCertificateFilled, GlobalOutlined, DollarCircleOutlined,
+  BellOutlined, SafetyCertificateFilled, DollarCircleOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/axios';
@@ -377,10 +378,26 @@ export default function MainLayout() {
   const [changePassOpen, setChangePassOpen] = useState(false);
   const [changePassLoading, setChangePassLoading] = useState(false);
   const [changePassForm] = Form.useForm();
+  const [navState, setNavState] = useState(0); // 0=idle 1=loading 2=done
+  const [buddhaGlows, setBuddhaGlows] = useState([]);
+  const handleBuddhaClick = () => {
+    const id = Date.now();
+    setBuddhaGlows(g => [...g, id]);
+    setTimeout(() => setBuddhaGlows(g => g.filter(x => x !== id)), 2100);
+  };
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { lang, setLang, t } = useLanguage();
+
+  const isFirstNav = useRef(true);
+  useEffect(() => {
+    if (isFirstNav.current) { isFirstNav.current = false; return; }
+    setNavState(1);
+    const done  = setTimeout(() => setNavState(2), 340);
+    const reset = setTimeout(() => setNavState(0), 660);
+    return () => { clearTimeout(done); clearTimeout(reset); };
+  }, [location.key]);
 
   const screens = useBreakpoint();
   const isMobile = screens.md === false;
@@ -388,17 +405,17 @@ export default function MainLayout() {
   const isPhone  = screens.sm === false;
 
   const PAGE_TITLES = {
-    '/app/dashboard':          { label: t.layout.pageTitle.dashboard,        icon: '☸' },
-    '/app/personnel':          { label: t.layout.pageTitle.personnel,         icon: '👥' },
-    '/app/departments':        { label: t.layout.pageTitle.departments,       icon: '🏛' },
-    '/app/duty-schedule':      { label: t.layout.pageTitle.dutySchedule,      icon: '📅' },
-    '/app/work-assignment':    { label: t.layout.pageTitle.workAssignment,    icon: '✅' },
-    '/app/training':           { label: t.layout.pageTitle.training,          icon: '📖' },
-    '/app/buddhist-followers': { label: t.layout.pageTitle.buddhistFollowers, icon: '🙏' },
-    '/app/donations':          { label: t.layout.pageTitle.donations,          icon: '💰' },
-    '/app/reward-discipline':  { label: t.layout.pageTitle.rewardDiscipline,  icon: '🏆' },
-    '/app/news':               { label: t.layout.pageTitle.news,              icon: '📰' },
-    '/app/users':              { label: t.layout.pageTitle.users,             icon: '🔐' },
+    '/app/dashboard':          { label: t.layout.pageTitle.dashboard,        icon: <AppstoreFilled /> },
+    '/app/personnel':          { label: t.layout.pageTitle.personnel,         icon: <TeamOutlined /> },
+    '/app/departments':        { label: t.layout.pageTitle.departments,       icon: <BankFilled /> },
+    '/app/duty-schedule':      { label: t.layout.pageTitle.dutySchedule,      icon: <CalendarFilled /> },
+    '/app/work-assignment':    { label: t.layout.pageTitle.workAssignment,    icon: <CheckSquareFilled /> },
+    '/app/training':           { label: t.layout.pageTitle.training,          icon: <BookFilled /> },
+    '/app/buddhist-followers': { label: t.layout.pageTitle.buddhistFollowers, icon: <HeartFilled /> },
+    '/app/donations':          { label: t.layout.pageTitle.donations,          icon: <DollarCircleOutlined /> },
+    '/app/reward-discipline':  { label: t.layout.pageTitle.rewardDiscipline,  icon: <TrophyFilled /> },
+    '/app/news':               { label: t.layout.pageTitle.news,              icon: <NotificationFilled /> },
+    '/app/users':              { label: t.layout.pageTitle.users,             icon: <SafetyCertificateFilled /> },
   };
 
   useEffect(() => {
@@ -489,7 +506,23 @@ export default function MainLayout() {
         style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid rgba(255,210,140,0.15)', cursor: 'pointer', gap: 10 }}
         onClick={handleLogoClick}
       >
-        <LotusSVG size={showFullLabel ? 42 : 36} />
+        {/* Logo Buddha circle */}
+        {(() => {
+          const sz = showFullLabel ? 42 : 36;
+          return (
+            <div style={{
+              width: sz, height: sz, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+              border: '1.5px solid rgba(255,215,0,0.55)',
+              boxShadow: '0 0 10px rgba(255,200,60,0.40)',
+            }}>
+              <img src="/adida.PNG" alt="" style={{
+                width: '100%', height: '100%',
+                objectFit: 'cover', objectPosition: 'center 18%',
+                display: 'block',
+              }}/>
+            </div>
+          );
+        })()}
         {showFullLabel && (
           <div style={{ whiteSpace: 'nowrap' }}>
             <Text style={{ color: '#ffd59e', fontWeight: 800, fontSize: 13, letterSpacing: 0.3 }}>{t.app.title1} </Text>
@@ -505,9 +538,55 @@ export default function MainLayout() {
         collapsed={collapsed && !isMobile}
       />
 
+      {/* Buddha mandala — bottom decoration, click for halo effect */}
       {showFullLabel && (
-        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}>
-          <LotusSVG size={110} opacity={0.22} />
+        <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto' }}>
+          <div
+            onClick={handleBuddhaClick}
+            style={{ position: 'relative', width: 112, height: 112, cursor: 'pointer' }}
+          >
+            {/* Soft ambient glow */}
+            <div style={{
+              position: 'absolute', inset: '-30%', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,220,80,0.28) 0%, rgba(255,160,30,0.10) 55%, transparent 72%)',
+              pointerEvents: 'none',
+            }}/>
+
+            {/* Emanating halo rings on click */}
+            {buddhaGlows.map(id => (
+              <React.Fragment key={id}>
+                <div className="buddha-ring buddha-ring-d1"/>
+                <div className="buddha-ring buddha-ring-d2"/>
+                <div className="buddha-ring buddha-ring-d3"/>
+              </React.Fragment>
+            ))}
+
+            {/* Outer golden ring */}
+            <div style={{
+              position: 'absolute', inset: -4, borderRadius: '50%',
+              border: '1.5px solid rgba(255,215,0,0.40)',
+              boxShadow: '0 0 14px rgba(255,200,60,0.28)',
+              pointerEvents: 'none',
+            }}/>
+            {/* Circle-cropped Buddha image */}
+            <div style={{
+              borderRadius: '50%', overflow: 'hidden',
+              width: 112, height: 112,
+              border: '1.5px solid rgba(255,215,0,0.28)',
+              opacity: 0.72,
+            }}>
+              <img
+                src="/adida.PNG"
+                alt=""
+                style={{
+                  width: '100%', height: '100%',
+                  objectFit: 'cover', objectPosition: 'center 18%',
+                  display: 'block',
+                  filter: 'brightness(1.06) saturate(1.10)',
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -535,6 +614,22 @@ export default function MainLayout() {
 
       <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header style={{ background: '#fdf8f2', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(139,69,19,.15)', boxShadow: '0 1px 8px rgba(139,69,19,.06)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
+
+          {/* ── Navigation progress bar ── */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>
+            <div style={{
+              height: '100%',
+              background: 'linear-gradient(90deg, #8B4513 0%, #ffc44d 55%, #ff9800 100%)',
+              width:   navState === 1 ? '80%' : navState === 2 ? '100%' : '0%',
+              opacity: navState === 0 ? 0 : 1,
+              transition: navState === 1
+                ? 'width 0.38s cubic-bezier(0.1,0.5,0.5,1), opacity 0.05s'
+                : navState === 2
+                  ? 'width 0.14s ease-out, opacity 0.22s ease 0.1s'
+                  : 'opacity 0.18s ease',
+            }} />
+          </div>
+
           <div onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 18, cursor: 'pointer', color: '#5c3317', padding: '0 8px' }}>
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </div>
@@ -542,29 +637,65 @@ export default function MainLayout() {
           {currentPage && !isPhone && (
             <div style={{
               position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', alignItems: 'center', gap: 7,
+              background: 'rgba(139,69,19,0.07)',
+              border: '1px solid rgba(139,69,19,0.16)',
+              borderRadius: 20,
+              padding: '5px 14px 5px 10px',
               pointerEvents: 'none', userSelect: 'none',
-              maxWidth: isMobile ? 180 : 320, overflow: 'hidden',
+              maxWidth: isMobile ? 180 : 300,
             }}>
-              <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{currentPage.icon}</span>
-              <Text style={{ fontWeight: 700, fontSize: isMobile ? 13 : 15, color: '#5c3317', letterSpacing: 0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{
+                fontSize: 14, lineHeight: 1, flexShrink: 0,
+                color: '#8B4513',
+                display: 'flex', alignItems: 'center',
+              }}>
+                {currentPage.icon}
+              </span>
+              <Text style={{
+                fontWeight: 700, fontSize: 14, color: '#5c3317',
+                letterSpacing: 0.2, whiteSpace: 'nowrap',
+                overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
                 {currentPage.label}
               </Text>
             </div>
           )}
 
           <Space size={8}>
-            <Select
-              value={lang}
-              onChange={setLang}
-              size="small"
-              style={{ width: 64 }}
-              suffixIcon={<GlobalOutlined style={{ color: '#888', fontSize: 12 }} />}
-              options={[
-                { value: 'vi', label: 'VN' },
-                { value: 'en', label: 'EN' },
-              ]}
-            />
+            {/* Language toggle — pill switch */}
+            <div
+              onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}
+              title={lang === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+              style={{
+                cursor: 'pointer',
+                width: 52, height: 26,
+                borderRadius: 13,
+                background: '#f0dcc8',
+                border: '1.5px solid rgba(139,69,19,0.28)',
+                position: 'relative',
+                flexShrink: 0,
+                userSelect: 'none',
+              }}
+            >
+              {/* thumb with label inside */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: lang === 'vi' ? 'calc(100% - 24px)' : 3,
+                transform: 'translateY(-50%)',
+                width: 21, height: 21,
+                borderRadius: '50%',
+                background: '#8B4513',
+                boxShadow: '0 1px 5px rgba(0,0,0,0.28)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'left 0.25s cubic-bezier(0.34,1.4,0.64,1)',
+              }}>
+                <span style={{ color: '#fff', fontSize: 8, fontWeight: 800, letterSpacing: 0.3, lineHeight: 1 }}>
+                  {lang === 'vi' ? 'VN' : 'EN'}
+                </span>
+              </div>
+            </div>
 
             <NotificationBell />
 
@@ -583,7 +714,17 @@ export default function MainLayout() {
         </Header>
 
         <Content style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.key}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.18, ease: 'easeOut' } }}
+              exit={{ opacity: 0, transition: { duration: 0.08, ease: 'easeIn' } }}
+              style={{ minHeight: '100%' }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </Content>
       </Layout>
 

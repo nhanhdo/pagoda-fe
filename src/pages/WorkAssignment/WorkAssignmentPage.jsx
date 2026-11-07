@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Select, Space, Tag, Modal, Form, Input,
   DatePicker, Popconfirm, Badge, Row, Col, Tooltip, message,
@@ -255,9 +256,11 @@ export default function WorkAssignmentPage() {
     },
   ];
 
+  if (loading && !data.length) return <PageSpinner />;
+
   return (
     <Card bodyStyle={{ paddingTop: 16 }}>
-      <div className="page-toolbar">
+      <div className="page-toolbar section-anim section-d0">
         <Space wrap>
           {/* View toggle */}
           <div className="view-toggle">
@@ -296,9 +299,10 @@ export default function WorkAssignmentPage() {
         )}
       </div>
 
+      <div className="section-anim section-d1">
       {viewMode === 'table' ? (
         <Table dataSource={data} columns={columns} rowKey="id" loading={loading}
-          size="small" className="personnel-table" />
+          size="small" className="personnel-table" scroll={{ x: 'max-content' }} />
       ) : (
         <KanbanBoard
           data={data}
@@ -308,6 +312,7 @@ export default function WorkAssignmentPage() {
           onMoveCard={handleMoveCard}
         />
       )}
+      </div>
 
       <Modal
         title={editRecord ? t.workAssignment.editTitle : t.workAssignment.addTitle}

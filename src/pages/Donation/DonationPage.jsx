@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Input, Space, Tag, Modal, Form,
   Popconfirm, Row, Col, DatePicker, InputNumber, Select, message as antMessage,
@@ -161,10 +162,12 @@ export default function DonationPage() {
     },
   ];
 
+  if (loading && !data.length) return <PageSpinner />;
+
   return (
     <Card>
       {/* ── Summary stats ── */}
-      <div className="donation-stats-row">
+      <div className="donation-stats-row section-anim section-d0">
         {[
           { label: t.donation.statTotal,      value: formatAmount(summary.totalAmount), icon: <DollarOutlined />, color: '#2e7d32' },
           { label: t.donation.statCount,       value: summary.count,                   icon: <HeartOutlined />,  color: '#8B4513' },
@@ -180,7 +183,7 @@ export default function DonationPage() {
       </div>
 
       {/* ── Toolbar ── */}
-      <div className="page-toolbar">
+      <div className="page-toolbar section-anim section-d1">
         <Space wrap>
           <Input
             placeholder={t.donation.searchPlaceholder}
@@ -221,6 +224,7 @@ export default function DonationPage() {
       </div>
 
       {/* ── Table ── */}
+      <div className="section-anim section-d2">
       <Table
         dataSource={data}
         columns={columns}
@@ -233,9 +237,11 @@ export default function DonationPage() {
           onChange: setPage,
           showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${t.donation.totalLabel}`,
         }}
+        scroll={{ x: 'max-content' }}
         size="small"
         className="personnel-table"
       />
+      </div>
 
       {/* ── Modal ── */}
       <Modal
