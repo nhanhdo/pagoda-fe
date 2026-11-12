@@ -260,6 +260,13 @@
 .post-card__action.is-active .post-card__count { background: #c47f36; color: #fff; }
 
 .post-card--pending { border-color: #f6e2b8; background: linear-gradient(180deg, #fffdf6 0%, #fff 60%); }
+.post-card--pending.is-fresh { animation: pending-fresh 2.6s ease both; }
+@keyframes pending-fresh {
+  0%   { opacity: 0; transform: translateY(-8px); box-shadow: 0 0 0 3px rgba(224,164,84,.5), var(--shadow-card-hover); }
+  20%  { opacity: 1; transform: none; }
+  100% { box-shadow: var(--shadow-card); }
+}
+@media (prefers-reduced-motion: reduce) { .post-card--pending.is-fresh { animation: none; } }
 .post-card__review {
   display: flex; justify-content: flex-end; gap: 8px;
   padding: 10px 16px; border-top: 1px solid #f7ecd2; background: #fffaf0;

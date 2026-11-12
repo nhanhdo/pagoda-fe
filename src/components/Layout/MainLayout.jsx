@@ -246,9 +246,9 @@ function NotificationBell() {
             type: 'pending_post',
             icon: '📝',
             title: post.title,
-            subtitle: `${t.layout.postedBy}: ${post.author?.fullName || post.createdBy?.fullName || '—'}`,
-            time: t.layout.pendingReview,
-            link: '/app/news',
+            subtitle: `${t.layout.postedBy}: ${post.author?.dharmName || post.author?.fullName || post.userAuthor?.username || '—'}`,
+            time: post.createdAt ? relTime(post.createdAt, t) : t.layout.pendingReview,
+            link: `/app/news?tab=pending&post=${post._id || post.id}`,
           }));
         } catch { /* silent */ }
       }

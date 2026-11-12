@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -37,13 +37,33 @@ export function useNewsPage() {
     }
   }, []);
 
+  const [freshPendingIds, setFreshPendingIds] = useState<any[]>([]);
+  const pendingSigRef = useRef<string | null>(null);
+  const pendingInFlight = useRef(false);
+
   const fetchPending = useCallback(async () => {
-    if (!canApprove) return;
+    if (!canApprove || pendingInFlight.current) return;
+    pendingInFlight.current = true;
     try {
       const res = await api.get('/posts/pending?limit=50') as any;
-      setPendingPosts(res.data.data);
+      const list = res.data.data || [];
+      const sig = list.map((p: any) => `${p.id}|${p.updatedAt || ''}`).join(',');
+      if (sig === pendingSigRef.current) return;
+      // Highlight posts that arrived since the previous check (not on first load)
+      if (pendingSigRef.current !== null) {
+        const before = new Set(pendingSigRef.current.split(',').map(s => s.split('|')[0]));
+        const added = list.filter((p: any) => !before.has(String(p.id))).map((p: any) => p.id);
+        if (added.length) {
+          setFreshPendingIds(f => [...f, ...added]);
+          setTimeout(() => setFreshPendingIds(f => f.filter(id => !added.includes(id))), 2600);
+        }
+      }
+      pendingSigRef.current = sig;
+      setPendingPosts(list);
     } catch {
       // silently ignore
+    } finally {
+      pendingInFlight.current = false;
     }
   }, [canApprove]);
 
@@ -51,6 +71,18 @@ export function useNewsPage() {
     fetchAll();
     fetchPending();
   }, [fetchAll, fetchPending]);
+
+  // Live refresh of the approval queue (every 3s while the tab is visible)
+  useEffect(() => {
+    if (!canApprove) return undefined;
+    const tick = () => { if (!document.hidden) fetchPending(); };
+    const id = setInterval(tick, 3000);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [canApprove, fetchPending]);
 
   const openCreate = () => {
     setEditRecord(null);
@@ -96,6 +128,7 @@ export function useNewsPage() {
   return {
     posts,
     pendingPosts,
+    freshPendingIds,
     loading,
     activeTab,
     setActiveTab,

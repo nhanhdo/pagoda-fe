@@ -13,7 +13,7 @@ import {
   CommentOutlined, SendOutlined, ScheduleOutlined, InboxOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -312,15 +312,26 @@ function PostCard({ post, canEdit, onEdit, onDelete, focused }) {
 }
 
 /* ─── Pending Post Card ──────────────────────────────────── */
-function PendingPostCard({ post, onApprove, onReject }) {
+function PendingPostCard({ post, onApprove, onReject, focused, focusKey, fresh }) {
   const { t } = useLanguage();
   const cfg = TYPE_CFG[post.type] || TYPE_CFG.article;
   const typeLabel = { event: t.news.typeEvent, news: t.news.typeNews, article: t.news.typeArticle }[post.type] || t.news.typeArticle;
   const authorName = post.author?.dharmName || post.author?.fullName || post.userAuthor?.username || t.news.defaultUser;
   const timeAgo = dayjs(post.createdAt).fromNow();
+  const cardRef = React.useRef(null);
+  useEffect(() => {
+    if (!focused) return undefined;
+    const id = setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    return () => clearTimeout(id);
+  }, [focused, focusKey]);
 
   return (
-    <article className="post-card post-card--pending">
+    <article
+      ref={cardRef}
+      id={`pending-${post.id}`}
+      key={focused ? focusKey : undefined}
+      className={`post-card post-card--pending${focused ? ' is-focused' : ''}${fresh ? ' is-fresh' : ''}`}
+    >
       <div className="post-card__body">
         <header className="post-card__head">
           <Avatar size={40} style={{ background: '#fdf0d8', color: '#c98a1e', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
@@ -522,12 +533,27 @@ function FeedTab({ posts, loading, canEdit, onEdit, onDelete, emptyIcon, emptyTe
   );
 }
 
-function PendingList({ posts, onApprove, onReject, emptyText }) {
+function PendingList({ posts, onApprove, onReject, emptyText, focusPostId, focusKey, freshIds = [] }) {
   const [limit, setLimit] = useState(FEED_PAGE);
+  useEffect(() => {
+    if (!focusPostId) return;
+    const idx = posts.findIndex(p => String(p.id) === String(focusPostId));
+    if (idx >= 0) setLimit(l => Math.max(l, Math.ceil((idx + 1) / FEED_PAGE) * FEED_PAGE));
+  }, [focusPostId, posts]);
   if (posts.length === 0) return <NewsEmpty icon={<InboxOutlined />} text={emptyText} />;
   return (
     <div>
-      {posts.slice(0, limit).map(p => <PendingPostCard key={p.id} post={p} onApprove={onApprove} onReject={onReject} />)}
+      {posts.slice(0, limit).map(p => (
+        <PendingPostCard
+          key={p.id}
+          post={p}
+          onApprove={onApprove}
+          onReject={onReject}
+          focused={String(p.id) === String(focusPostId)}
+          focusKey={focusKey}
+          fresh={freshIds.includes(p.id)}
+        />
+      ))}
       <LoadMore shown={Math.min(limit, posts.length)} total={posts.length} onMore={() => setLimit(l => l + FEED_PAGE)} />
     </div>
   );
@@ -721,20 +747,39 @@ export default function NewsPage() {
   const [calPrefillDate, setCalPrefillDate] = useState(null);
   const [calModalOpen, setCalModalOpen] = useState(false);
   const {
-    posts, pendingPosts, loading, activeTab, setActiveTab,
+    posts, pendingPosts, freshPendingIds, loading, activeTab, setActiveTab,
     modalOpen, setModalOpen,
     editRecord, canEdit, canPost, canApprove,
-    fetchAll, openCreate, openEdit, handleDelete,
+    fetchAll, fetchPending, openCreate, openEdit, handleDelete,
     handleApprove, handleReject,
   } = useNewsPage();
 
   const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
-  // ?post=<id> (from a notification): switch to that post's tab and focus it
+  // ?post=<id>[&tab=pending] (from a notification): switch to that post's tab and focus it.
+  // location.key re-triggers this even when the same link is clicked again.
   const location = useLocation();
-  const focusPostId = new URLSearchParams(location.search).get('post');
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  // Drop the focus params once the highlight has played, so later refreshes don't pull the user back
   useEffect(() => {
+    if (!location.search) return undefined;
+    const id = setTimeout(() => navigate(location.pathname, { replace: true }), 3000);
+    return () => clearTimeout(id);
+  }, [location.key]);
+  const focusPostId = params.get('post');
+  const focusTab = params.get('tab');
+  useEffect(() => {
+    if (focusTab === 'pending' && canApprove) {
+      setActiveTab('pending');
+      fetchPending();
+      return;
+    }
+    if (focusTab && ['article', 'news', 'event', 'calendar'].includes(focusTab) && !focusPostId) {
+      setActiveTab(focusTab);
+      return;
+    }
     if (!focusPostId || loading) return;
     const type = ['article', 'news', 'event'].find(k => (posts[k] || []).some(p => String(p.id) === String(focusPostId)));
     if (type) {
@@ -742,7 +787,7 @@ export default function NewsPage() {
       setActiveFilter('all');
       setActiveTab(type);
     }
-  }, [focusPostId, loading, posts]);
+  }, [focusPostId, focusTab, loading, posts, location.key, canApprove]);
 
   const getDisplayPosts = (type) => {
     let arr = posts[type] || [];
@@ -788,7 +833,17 @@ export default function NewsPage() {
     ...(canApprove ? [{
       key: 'pending',
       label: <span><ClockCircleOutlined />{t.news.tabPending}{count(pendingPosts.length, true)}</span>,
-      content: <PendingList posts={pendingPosts} onApprove={handleApprove} onReject={handleReject} emptyText={t.news.emptyPending} />,
+      content: (
+        <PendingList
+          posts={pendingPosts}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          emptyText={t.news.emptyPending}
+          focusPostId={focusTab === 'pending' ? focusPostId : null}
+          focusKey={location.key}
+          freshIds={freshPendingIds}
+        />
+      ),
     }] : []),
   ];
   const tabItems = tabs.map(({ key, label }) => ({ key, label }));
@@ -935,7 +990,7 @@ export default function NewsPage() {
 
       <PostFormModal
         open={modalOpen} onClose={() => setModalOpen(false)}
-        editRecord={editRecord} type={activeTab} onSaved={fetchAll}
+        editRecord={editRecord} type={activeTab} onSaved={() => { fetchAll(); fetchPending(); }}
         canEdit={canEdit}
       />
 
@@ -946,7 +1001,7 @@ export default function NewsPage() {
         editRecord={null}
         type="event"
         prefillDate={calPrefillDate}
-        onSaved={() => { fetchAll(); setCalPrefillDate(null); }}
+        onSaved={() => { fetchAll(); fetchPending(); setCalPrefillDate(null); }}
         canEdit={canEdit}
       />
     </div>
