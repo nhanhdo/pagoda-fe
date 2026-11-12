@@ -1,0 +1,116 @@
+.ps-root {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.ps-root.is-visible { opacity: 1; transform: none; }
+
+/* ── Loader ── */
+.ps-loader {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ps-glow {
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,214,170,.55) 0%, rgba(255,200,210,.22) 45%, transparent 70%);
+  animation: ps-breathe 2.8s ease-in-out infinite;
+}
+
+.ps-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(196,127,54,0) 0deg, rgba(224,164,84,.25) 120deg, #e0a454 300deg, #c47f36 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  animation: ps-spin 1.3s linear infinite;
+}
+.ps-ring--soft {
+  inset: 9px;
+  background: conic-gradient(from 180deg, rgba(217,100,108,0) 0deg, rgba(233,138,106,.18) 160deg, rgba(233,138,106,.55) 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  animation: ps-spin 2.2s linear infinite reverse;
+}
+
+.ps-lotus {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  overflow: visible;
+  filter: drop-shadow(0 4px 8px rgba(217,120,90,.25));
+}
+.ps-petal {
+  transform-box: view-box;
+  transform-origin: 32px 44px;
+  animation: ps-bloom 2.4s cubic-bezier(.45,0,.25,1) infinite;
+}
+.ps-seed { animation: ps-twinkle 2.4s ease-in-out infinite; }
+
+/* ── Text ── */
+.ps-text {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  color: #a2652a;
+}
+.ps-dots { display: inline-flex; gap: 3px; }
+.ps-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #c47f36;
+  animation: ps-dot 1.2s ease-in-out infinite;
+}
+.ps-dots i:nth-child(2) { animation-delay: .15s; }
+.ps-dots i:nth-child(3) { animation-delay: .3s; }
+
+.ps-mantra {
+  font-size: 11.5px;
+  letter-spacing: .22em;
+  color: rgba(162,101,42,.5);
+  font-style: italic;
+}
+
+/* ── Keyframes ── */
+@keyframes ps-spin { to { transform: rotate(360deg); } }
+@keyframes ps-breathe {
+  0%, 100% { opacity: .55; transform: scale(.94); }
+  50%      { opacity: 1;   transform: scale(1.06); }
+}
+@keyframes ps-bloom {
+  0%, 100% { transform: scale(.78); opacity: .55; }
+  45%, 60% { transform: scale(1);   opacity: 1; }
+}
+@keyframes ps-twinkle {
+  0%, 100% { opacity: .5; }
+  50%      { opacity: 1; }
+}
+@keyframes ps-dot {
+  0%, 80%, 100% { opacity: .25; transform: translateY(0); }
+  40%           { opacity: 1;   transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-ring, .ps-ring--soft, .ps-glow, .ps-petal, .ps-seed, .ps-dots i { animation-duration: 0s; animation-iteration-count: 1; }
+  .ps-ring { animation: ps-spin 3s linear infinite; }
+}

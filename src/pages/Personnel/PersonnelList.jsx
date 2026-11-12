@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Table, Button, Input, Select, Space, Card, Modal,
-  Avatar, Popconfirm, Tooltip, Badge,
+  Avatar, Popconfirm, Tooltip, Badge, Pagination,
 } from 'antd';
 import {
   PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
@@ -23,12 +23,24 @@ const imgSrc = (p) => !p ? null : p.startsWith('http') ? p : `${BASE_URL}${p}`;
 
 const { Option } = Select;
 
-/* type → accent color for card/ring */
-const TYPE_ACCENT = {
-  'tăng_ni':  '#8B4513',
-  'cư_sĩ':    '#1890ff',
-  'phật_tử':  '#52c41a',
+const TYPE_TONE = {
+  tang_ni:          { c: '#c47f36', s: '#fbf1e4' },
+  cu_si:            { c: '#4f9a72', s: '#e8f4ed' },
+  phat_tu:          { c: '#4d8fc7', s: '#e9f1fb' },
+  tinh_nguyen_vien: { c: '#8b6fc9', s: '#f1edfb' },
+  nhan_vien:        { c: '#d9646c', s: '#fdeeee' },
 };
+const toneOf = (type) => TYPE_TONE[type] || TYPE_TONE.tang_ni;
+const TYPE_ACCENT = Object.fromEntries(Object.entries(TYPE_TONE).map(([k, v]) => [k, v.c]));
+
+const STATUS_TONE = {
+  'đang_hoạt_động': { c: '#3f8461', s: '#e8f4ed' },
+  'tạm_nghỉ':       { c: '#b9841f', s: '#fdf3dc' },
+  'đã_rời':         { c: '#8c7a6b', s: '#f2ede6' },
+};
+
+const initialOf = (name = '') => name.trim().split(/\s+/).pop()?.[0]?.toUpperCase() || '?';
+const capitalize = (s = '') => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default function PersonnelList() {
   const {
@@ -58,23 +70,20 @@ export default function PersonnelList() {
   };
 
   const ActionBtns = ({ r }) => (
-    <div className="personnel-action-group">
+    <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
       <Tooltip title={tt.personnel.viewDetail}>
-        <Button className="personnel-action-btn view" type="text"
-          icon={<EyeOutlined style={{ color: '#1890ff', fontSize: 14 }} />}
-          onClick={() => navigate(`/app/personnel/${r.id}`)} />
+        <Button type="text" icon={<EyeOutlined />} onClick={() => navigate(`/app/personnel/${r.id}`)} />
       </Tooltip>
       {canManage() && (
         <Tooltip title={tt.personnel.editTooltip}>
-          <Button className="personnel-action-btn edit" type="text"
-            icon={<EditOutlined style={{ color: '#d48806', fontSize: 14 }} />}
-            onClick={() => { setEditRecord(r); setModalOpen(true); }} />
+          <Button type="text" icon={<EditOutlined />} onClick={() => { setEditRecord(r); setModalOpen(true); }} />
         </Tooltip>
       )}
       {(isAdmin() || hasRole('truotri')) && (
-        <Popconfirm title={tt.common.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={tt.common.delete} cancelText={tt.common.cancel}>
-          <Button className="personnel-action-btn del" type="text"
-            icon={<DeleteOutlined style={{ color: '#ff4d4f', fontSize: 14 }} />} />
+        <Popconfirm title={tt.common.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={tt.common.delete} cancelText={tt.common.cancel} okButtonProps={{ danger: true }}>
+          <Tooltip title={tt.common.delete}>
+            <Button type="text" danger icon={<DeleteOutlined />} />
+          </Tooltip>
         </Popconfirm>
       )}
     </div>
@@ -82,82 +91,71 @@ export default function PersonnelList() {
 
   const columns = [
     {
-      title: tt.personnel.colCode,
-      dataIndex: 'code',
-      width: 90,
-      render: (v) => <span className="personnel-code-chip">{v}</span>,
-    },
-    {
-      title: tt.personnel.colPhoto,
-      dataIndex: 'photo',
-      width: 56,
-      render: (photo, r) => {
-        const accent = TYPE_ACCENT[r.type] || '#8B4513';
+      title: tt.personnel.colName,
+      key: 'name',
+      width: 280,
+      render: (_, r) => {
+        const tone = toneOf(r.type);
         return (
-          <div style={{ position: 'relative', width: 40, height: 40 }}>
-            {photo
-              ? <Avatar src={imgSrc(photo)} size={40} style={{ border: `2.5px solid ${accent}` }} />
-              : <Avatar size={40} style={{ background: accent, fontWeight: 700, fontSize: 16, border: `2.5px solid ${accent}` }}>{r.fullName?.[0]}</Avatar>
-            }
+          <div className="person-cell">
+            {r.photo
+              ? <Avatar src={imgSrc(r.photo)} size={40} className="person-cell__avatar" />
+              : <Avatar size={40} className="person-cell__avatar" style={{ background: tone.s, color: tone.c }}>{initialOf(r.fullName)}</Avatar>}
+            <div className="person-cell__text">
+              <div className="person-cell__name">{r.fullName}</div>
+              <div className="person-cell__sub">
+                {r.dharmName && <span>{r.dharmName}</span>}
+                {r.dharmName && r.code && <span className="person-cell__sep">·</span>}
+                {r.code && <span className="tbl-mono">{r.code}</span>}
+              </div>
+            </div>
           </div>
         );
       },
     },
     {
-      title: tt.personnel.colName,
-      width: 200,
-      render: (_, r) => (
-        <div>
-          <div className="personnel-name-cell__main">{r.fullName}</div>
-          {r.dharmName && <div className="personnel-name-cell__dharm">{r.dharmName}</div>}
-        </div>
-      ),
-    },
-    {
       title: tt.personnel.colType,
       dataIndex: 'type',
-      width: 130,
+      width: 150,
       render: (v) => {
-        const accent = TYPE_ACCENT[v] || '#8B4513';
-        return (
-          <span
-            className="personnel-type-pill"
-            style={{
-              background: `${accent}18`,
-              color: accent,
-              border: `1px solid ${accent}40`,
-            }}
-          >
-            {tt.personnel.types[v] || v}
-          </span>
-        );
+        const tone = toneOf(v);
+        return <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>{tt.personnel.types[v] || v}</span>;
       },
     },
     {
       title: tt.personnel.colPosition,
       dataIndex: 'position',
-      width: 150,
+      width: 160,
       render: (v) => v
-        ? <span style={{ color: '#5c3317', fontSize: 13 }}>{v.replace(/_/g, ' ')}</span>
-        : <span style={{ color: '#ccc' }}>—</span>,
+        ? <span style={{ color: '#5a4636' }}>{capitalize(v.replace(/_/g, ' '))}</span>
+        : <span className="tbl-muted">—</span>,
     },
     {
       title: tt.personnel.colPhone,
       dataIndex: 'phone',
-      width: 130,
+      width: 140,
       render: (v) => v
-        ? <span style={{ fontFamily: 'monospace', letterSpacing: 0.5 }}>{v}</span>
-        : <span style={{ color: '#ccc' }}>—</span>,
+        ? <span className="tbl-mono" style={{ color: '#5a4636' }}>{v}</span>
+        : <span className="tbl-muted">—</span>,
     },
     {
       title: tt.common.status,
       dataIndex: 'status',
-      width: 150,
-      render: (v) => <Badge status={statusColors[v]} text={tt.personnel.statuses[v]} />,
+      width: 160,
+      render: (v) => {
+        const tone = STATUS_TONE[v] || STATUS_TONE['đã_rời'];
+        return (
+          <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>
+            <span className="tbl-pill__dot" />{tt.personnel.statuses[v] || v}
+          </span>
+        );
+      },
     },
     {
-      title: tt.common.actions,
-      width: 110,
+      title: '',
+      key: 'actions',
+      width: 120,
+      align: 'right',
       render: (_, r) => <ActionBtns r={r} />,
     },
   ];
@@ -194,13 +192,13 @@ export default function PersonnelList() {
               type={viewMode === 'table' ? 'primary' : 'text'}
               icon={<TableOutlined />}
               onClick={() => setViewMode('table')}
-              style={viewMode === 'table' ? { backgroundColor: '#8B4513', borderColor: '#8B4513' } : {}}
+              style={viewMode === 'table' ? { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } : {}}
             />
             <Button
               type={viewMode === 'card' ? 'primary' : 'text'}
               icon={<AppstoreOutlined />}
               onClick={() => setViewMode('card')}
-              style={viewMode === 'card' ? { backgroundColor: '#8B4513', borderColor: '#8B4513' } : {}}
+              style={viewMode === 'card' ? { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } : {}}
             />
           </div>
           <Button icon={<FileExcelOutlined />} onClick={handleExport}
@@ -209,8 +207,7 @@ export default function PersonnelList() {
           </Button>
           {canManage() && (
             <Button type="primary" icon={<PlusOutlined />}
-              onClick={() => { setEditRecord(null); setModalOpen(true); }}
-              style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}>
+              onClick={() => { setEditRecord(null); setModalOpen(true); }}>
               {tt.personnel.addNew}
             </Button>
           )}
@@ -240,7 +237,7 @@ export default function PersonnelList() {
         ) : (
           <div className="personnel-card-grid">
             {data.map((r) => {
-              const accent = TYPE_ACCENT[r.type] || '#8B4513';
+              const accent = TYPE_ACCENT[r.type] || '#b06f2c';
               return (
                 <div key={r.id} className="personnel-card"
                   onClick={() => navigate(`/app/personnel/${r.id}`)}>
@@ -319,6 +316,18 @@ export default function PersonnelList() {
                 </div>
               );
             })}
+          </div>
+        )}
+        {viewMode === 'card' && total > 10 && (
+          <div className="personnel-table" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Pagination
+              current={page}
+              total={total}
+              pageSize={10}
+              onChange={setPage}
+              showSizeChanger={false}
+              showTotal={(n, range) => `${range[0]}-${range[1]} / ${n} ${tt.personnel.totalLabel}`}
+            />
           </div>
         )}
       </div>

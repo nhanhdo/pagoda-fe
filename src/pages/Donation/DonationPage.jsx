@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import CountUp from '../../components/CountUp/CountUp';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
-  Card, Table, Button, Input, Space, Tag, Modal, Form,
-  Popconfirm, Row, Col, DatePicker, InputNumber, Select, message as antMessage,
+  Table, Button, Input, Modal, Form, Popconfirm, Row, Col, DatePicker,
+  InputNumber, Select, Segmented, Avatar, Tooltip, message as antMessage,
 } from 'antd';
 import {
   PlusOutlined, SearchOutlined, DeleteOutlined, EditOutlined,
-  DollarOutlined, HeartOutlined, CalendarOutlined, UserOutlined,
-  DownloadOutlined,
+  HeartOutlined, CalendarOutlined, UserOutlined, DownloadOutlined,
+  WalletOutlined, BankOutlined, EllipsisOutlined, RiseOutlined, FallOutlined,
+  EyeInvisibleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useDonationPage } from './useDonationPage';
@@ -16,22 +19,37 @@ import { exportToExcel } from '../../utils/exportData';
 import api from '../../api/axios';
 import './DonationPage.css';
 
-const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const METHOD_COLORS = {
-  'tiền_mặt':     '#52c41a',
-  'chuyển_khoản': '#1890ff',
-  'khác':         '#faad14',
+const METHOD = {
+  'tiền_mặt':     { c: '#4f9a72', s: '#e8f4ed', icon: <WalletOutlined /> },
+  'chuyển_khoản': { c: '#4d8fc7', s: '#e9f1fb', icon: <BankOutlined /> },
+  'khác':         { c: '#d39a2c', s: '#fdf3dc', icon: <EllipsisOutlined /> },
 };
+const QUICK_AMOUNTS = [100000, 200000, 500000, 1000000, 2000000, 5000000];
 
-function formatAmount(val) {
-  if (!val) return '—';
-  return Number(val).toLocaleString('vi-VN') + ' ₫';
+const vnd = (val) => `${Number(val || 0).toLocaleString('vi-VN')} ₫`;
+
+function compactVnd(val, lang) {
+  const n = Number(val || 0);
+  const fmt = (x) => x.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN', { maximumFractionDigits: 1 });
+  if (lang === 'en') {
+    if (n >= 1e9) return `${fmt(n / 1e9)}B ₫`;
+    if (n >= 1e6) return `${fmt(n / 1e6)}M ₫`;
+    if (n >= 1e3) return `${fmt(n / 1e3)}K ₫`;
+    return `${fmt(n)} ₫`;
+  }
+  if (n >= 1e9) return `${fmt(n / 1e9)} tỷ`;
+  if (n >= 1e6) return `${fmt(n / 1e6)} triệu`;
+  if (n >= 1e3) return `${fmt(n / 1e3)} nghìn`;
+  return `${fmt(n)} ₫`;
 }
 
+const initialOf = (name = '') => name.trim().split(/\s+/).pop()?.[0]?.toUpperCase() || '?';
+
 export default function DonationPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const D = t.donation;
   const {
     data, loading, total, page, setPage,
     search, setSearch,
@@ -45,15 +63,13 @@ export default function DonationPage() {
 
   const [form] = Form.useForm();
   const [exporting, setExporting] = useState(false);
-
-  const anonymousCount = data.filter(r => !r.buddhistFollowerId).length;
+  const dateLocale = lang === 'en' ? 'en-US' : 'vi-VN';
 
   const handleExport = async () => {
     setExporting(true);
     try {
       const params = { page: 1, limit: 10000 };
       if (search) params.search = search;
-
       const start = dateRange?.[0];
       const end   = dateRange?.[1];
       if (start) params.startDate = start.format('YYYY-MM-DD');
@@ -61,7 +77,6 @@ export default function DonationPage() {
 
       const r = await api.get('/donations', { params });
       const rows = r.data.data;
-
       const dateLabel = start && end
         ? `${start.format('DD-MM-YYYY')}_${end.format('DD-MM-YYYY')}`
         : dayjs().format('YYYY-MM-DD');
@@ -88,10 +103,7 @@ export default function DonationPage() {
   const openModal = (record = null) => {
     setEditRecord(record);
     if (record) {
-      form.setFieldsValue({
-        ...record,
-        donationDate: record.donationDate ? dayjs(record.donationDate) : null,
-      });
+      form.setFieldsValue({ ...record, donationDate: record.donationDate ? dayjs(record.donationDate) : null });
     } else {
       form.resetFields();
       form.setFieldsValue({ paymentMethod: 'tiền_mặt', donationDate: dayjs() });
@@ -99,65 +111,129 @@ export default function DonationPage() {
     setModalOpen(true);
   };
 
+  /* ── Derived summary ── */
+  const totalAmount = Number(summary.totalAmount || 0);
+  const count = Number(summary.count || 0);
+  const avg = count ? totalAmount / count : 0;
+  const thisMonth = Number(summary.thisMonthAmount || 0);
+  const lastMonth = Number(summary.lastMonthAmount || 0);
+  const trend = lastMonth > 0 ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : null;
+  const byMethod = (summary.byMethod || []).filter(m => m.amount > 0);
+  const rangeLabel = dateRange?.[0] && dateRange?.[1]
+    ? `${dateRange[0].format('DD/MM/YYYY')} – ${dateRange[1].format('DD/MM/YYYY')}`
+    : D.allTime;
+  const filtered = Boolean(search || dateRange?.[0]);
+
+  const presets = [
+    { label: D.presets.thisMonth,   value: [dayjs().startOf('month'), dayjs().endOf('month')] },
+    { label: D.presets.lastMonth,   value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
+    { label: D.presets.last3Months, value: [dayjs().subtract(2, 'month').startOf('month'), dayjs().endOf('month')] },
+    { label: D.presets.thisYear,    value: [dayjs().startOf('year'), dayjs().endOf('year')] },
+  ];
+
   const columns = [
     {
-      title: t.donation.colDate,
+      title: D.colDate,
       dataIndex: 'donationDate',
-      width: 110,
-      render: (v) => v ? dayjs(v).format('DD/MM/YYYY') : '—',
+      width: 130,
+      render: (v) => v ? (
+        <div className="dn-date">
+          <div className="dn-date__main tbl-mono">{dayjs(v).format('DD/MM/YYYY')}</div>
+          <div className="dn-date__sub">{new Date(v).toLocaleDateString(dateLocale, { weekday: 'long' })}</div>
+        </div>
+      ) : <span className="tbl-muted">—</span>,
     },
     {
-      title: t.donation.colDonor,
-      width: 200,
+      title: D.colDonor,
+      key: 'donor',
+      width: 250,
       render: (_, r) => {
-        const name = r.buddhistFollower
-          ? (r.buddhistFollower.dharmName
-              ? `${r.buddhistFollower.fullName} (${r.buddhistFollower.dharmName})`
-              : r.buddhistFollower.fullName)
-          : (r.donorName || <span style={{ color: '#bbb', fontStyle: 'italic' }}>Ẩn danh</span>);
-        return <span style={{ fontWeight: 500 }}>{name}</span>;
+        const f = r.buddhistFollower;
+        if (f) {
+          return (
+            <div className="person-cell">
+              <Avatar size={38} className="person-cell__avatar" style={{ background: '#fbf1e4', color: '#c47f36' }}>{initialOf(f.fullName)}</Avatar>
+              <div className="person-cell__text">
+                <div className="person-cell__name">{f.fullName}</div>
+                <div className="person-cell__sub">
+                  {f.dharmName && <span>{f.dharmName}</span>}
+                  {f.dharmName && f.code && <span className="person-cell__sep">·</span>}
+                  {f.code && <span className="tbl-mono">{f.code}</span>}
+                </div>
+              </div>
+            </div>
+          );
+        }
+        if (r.donorName) {
+          return (
+            <div className="person-cell">
+              <Avatar size={38} className="person-cell__avatar" style={{ background: '#f2ede6', color: '#8c7a6b' }}>{initialOf(r.donorName)}</Avatar>
+              <div className="person-cell__text">
+                <div className="person-cell__name">{r.donorName}</div>
+                <div className="person-cell__sub">{D.outsideList}</div>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="person-cell">
+            <Avatar size={38} className="person-cell__avatar" style={{ background: '#f4f0f9', color: '#9d8cc2' }} icon={<EyeInvisibleOutlined />} />
+            <div className="person-cell__text">
+              <div className="person-cell__name dn-anon">{D.anonymous}</div>
+            </div>
+          </div>
+        );
       },
     },
     {
-      title: t.donation.colAmount,
+      title: D.colAmount,
       dataIndex: 'amount',
-      width: 140,
-      render: (v) => <span style={{ fontWeight: 700, color: '#2e7d32' }}>{formatAmount(v)}</span>,
+      width: 160,
+      align: 'right',
+      sorter: (a, b) => Number(a.amount) - Number(b.amount),
+      render: (v) => <span className="dn-amount tbl-mono">{vnd(v)}</span>,
     },
     {
-      title: t.donation.colPurpose,
+      title: D.colPurpose,
       dataIndex: 'purpose',
-      width: 200,
-      render: (v) => v || <span style={{ color: '#bbb' }}>—</span>,
+      width: 220,
+      render: (v) => v
+        ? <Tooltip title={v}><span className="dn-purpose">{v}</span></Tooltip>
+        : <span className="tbl-muted">—</span>,
     },
     {
-      title: t.donation.colMethod,
+      title: D.colMethod,
       dataIndex: 'paymentMethod',
-      width: 130,
-      render: (v) => (
-        <Tag style={{ color: METHOD_COLORS[v] || '#888', borderColor: METHOD_COLORS[v] || '#d9d9d9', background: 'transparent' }}>
-          {t.donation.methods[v] || v}
-        </Tag>
-      ),
+      width: 150,
+      render: (v) => {
+        const m = METHOD[v] || METHOD['khác'];
+        return <span className="tbl-pill" style={{ color: m.c, background: m.s }}>{m.icon}{D.methods[v] || v}</span>;
+      },
     },
     {
-      title: t.donation.colReceivedBy,
+      title: D.colReceivedBy,
       dataIndex: 'receivedBy',
-      width: 130,
-      render: (v) => v || <span style={{ color: '#bbb' }}>—</span>,
+      width: 140,
+      render: (v) => v || <span className="tbl-muted">—</span>,
     },
     {
-      title: t.common.actions,
-      width: 90,
+      title: '',
+      key: 'actions',
+      width: 96,
+      align: 'right',
       render: (_, r) => canManage() && (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+        <div className="personnel-action-group">
+          <Tooltip title={t.common.edit}>
+            <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+          </Tooltip>
           {(isAdmin() || hasRole('truotri')) && (
-            <Popconfirm title={t.donation.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel}>
-              <Button type="text" danger icon={<DeleteOutlined />} />
+            <Popconfirm title={D.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
+              <Tooltip title={t.common.delete}>
+                <Button type="text" danger icon={<DeleteOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
-        </Space>
+        </div>
       ),
     },
   ];
@@ -165,161 +241,218 @@ export default function DonationPage() {
   if (loading && !data.length) return <PageSpinner />;
 
   return (
-    <Card>
-      {/* ── Summary stats ── */}
-      <div className="donation-stats-row section-anim section-d0">
-        {[
-          { label: t.donation.statTotal,      value: formatAmount(summary.totalAmount), icon: <DollarOutlined />, color: '#2e7d32' },
-          { label: t.donation.statCount,       value: summary.count,                   icon: <HeartOutlined />,  color: '#8B4513' },
-          { label: t.donation.statThisMonth,   value: formatAmount(summary.thisMonthAmount), icon: <CalendarOutlined />, color: '#1890ff' },
-          { label: t.donation.statAnonymous,   value: anonymousCount,                  icon: <UserOutlined />,   color: '#faad14' },
-        ].map(({ label, value, icon, color }) => (
-          <div key={label} className="donation-stat-card" style={{ borderTopColor: color }}>
-            <div style={{ fontSize: 22, color, marginBottom: 4 }}>{icon}</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color, lineHeight: 1.2 }}>{value}</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{label}</div>
+    <div className="dn-page">
+      {/* ── Header ── */}
+      <section className="dn-hero section-anim section-d0">
+        <div className="dn-hero__main">
+          <div className="dn-hero__icon"><HeartOutlined /></div>
+          <div>
+            <h1 className="dn-hero__title">{D.title}</h1>
+            <p className="dn-hero__sub">{D.subtitle}</p>
           </div>
-        ))}
+        </div>
+        <div className="dn-hero__actions">
+          <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport} disabled={total === 0} className="dn-btn">
+            {D.exportExcel}
+          </Button>
+          {canManage() && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="dn-btn">
+              {D.addNew}
+            </Button>
+          )}
+        </div>
+      </section>
+
+      {/* ── Summary ── */}
+      <div className="dn-summary section-anim section-d1">
+        <div className="dn-total">
+          <div className="dn-total__top">
+            <span className="dn-total__label">{D.statTotal}</span>
+            <span className="dn-total__range"><CalendarOutlined /> {rangeLabel}</span>
+          </div>
+          <div className="dn-total__amount"><CountUp value={totalAmount} format={vnd} duration={1100} /></div>
+          <div className="dn-total__meta">
+            <span>≈ {compactVnd(totalAmount, lang)}</span>
+            <span className="dn-dot" />
+            <span>{D.fromCount.replace('{n}', count.toLocaleString(dateLocale))}</span>
+            <span className="dn-dot" />
+            <span>{D.perDonation}: <strong>{compactVnd(avg, lang)}</strong></span>
+          </div>
+          {byMethod.length > 0 && (
+            <div className="dn-methods">
+              <div className="dn-methods__bar">
+                {byMethod.map(m => (
+                  <Tooltip key={m.method} title={`${D.methods[m.method] || m.method}: ${vnd(m.amount)}`}>
+                    <span style={{ flex: m.amount, background: (METHOD[m.method] || METHOD['khác']).c }} />
+                  </Tooltip>
+                ))}
+              </div>
+              <div className="dn-methods__legend">
+                {byMethod.map(m => {
+                  const tone = METHOD[m.method] || METHOD['khác'];
+                  return (
+                    <span key={m.method} className="dn-methods__item">
+                      <i style={{ background: tone.c }} />
+                      {D.methods[m.method] || m.method}
+                      <strong>{Math.round((m.amount / totalAmount) * 100)}%</strong>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="dn-stat" style={{ '--st': '#4d8fc7', '--st-soft': '#e9f1fb' }}>
+          <span className="dn-stat__icon"><CalendarOutlined /></span>
+          <div className="dn-stat__label">{D.statThisMonth}</div>
+          <div className="dn-stat__value"><CountUp value={thisMonth} format={(n) => compactVnd(n, lang)} /></div>
+          {trend !== null ? (
+            <div className={`dn-trend ${trend >= 0 ? 'is-up' : 'is-down'}`}>
+              {trend >= 0 ? <RiseOutlined /> : <FallOutlined />} {Math.abs(trend)}% <span>{D.vsLastMonth}</span>
+            </div>
+          ) : (
+            <div className="dn-stat__hint">{D.noPrevMonth}</div>
+          )}
+        </div>
+
+        <div className="dn-stat" style={{ '--st': '#8b6fc9', '--st-soft': '#f1edfb' }}>
+          <span className="dn-stat__icon"><UserOutlined /></span>
+          <div className="dn-stat__label">{D.statAnonymous}</div>
+          <div className="dn-stat__value"><CountUp value={Number(summary.anonymousCount || 0)} /></div>
+          <div className="dn-stat__hint">{D.anonymousOf.replace('{n}', count.toLocaleString(dateLocale))}</div>
+        </div>
       </div>
 
-      {/* ── Toolbar ── */}
-      <div className="page-toolbar section-anim section-d1">
-        <Space wrap>
+      {/* ── List ── */}
+      <section className="dn-card section-anim section-d2">
+        <div className="dn-toolbar">
           <Input
-            placeholder={t.donation.searchPlaceholder}
-            prefix={<SearchOutlined />}
+            className="dn-search"
+            placeholder={D.searchPlaceholder}
+            prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            style={{ width: 260 }}
             allowClear
           />
           <RangePicker
             value={dateRange}
             onChange={(v) => { setDateRange(v); setPage(1); }}
             format="DD/MM/YYYY"
-            placeholder={['Từ ngày', 'Đến ngày']}
-            style={{ width: 240 }}
+            placeholder={[D.rangeFrom, D.rangeTo]}
+            presets={presets}
+            className="dn-range"
+            allowClear
           />
-        </Space>
-        <Space>
-          <Button
-            icon={<DownloadOutlined />}
-            loading={exporting}
-            onClick={handleExport}
-            disabled={total === 0}
-          >
-            Xuất Excel
-          </Button>
-          {canManage() && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => openModal()}
-              style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}
-            >
-              {t.donation.addNew}
-            </Button>
-          )}
-        </Space>
-      </div>
+        </div>
 
-      {/* ── Table ── */}
-      <div className="section-anim section-d2">
-      <Table
-        dataSource={data}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          current: page,
-          total,
-          pageSize: 10,
-          onChange: setPage,
-          showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${t.donation.totalLabel}`,
-        }}
-        scroll={{ x: 'max-content' }}
-        size="small"
-        className="personnel-table"
-      />
-      </div>
+        <Table
+          dataSource={data}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            current: page, total, pageSize: 10, onChange: setPage,
+            showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${D.totalLabel}`,
+          }}
+          scroll={{ x: 'max-content' }}
+          className="personnel-table"
+          locale={{
+            emptyText: filtered
+              ? <LotusEmpty description={D.emptyFiltered} hint={D.emptyFilteredHint} />
+              : <LotusEmpty description={D.emptyTitle} hint={canManage() ? D.emptyHint : ''} />,
+          }}
+        />
+      </section>
 
-      {/* ── Modal ── */}
+      {/* ── Add / edit ── */}
       <Modal
-        title={editRecord ? t.donation.editTitle : t.donation.addTitle}
+        title={editRecord ? D.editTitle : D.addTitle}
         open={modalOpen}
         onCancel={() => { setModalOpen(false); setEditRecord(null); }}
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
-        okButtonProps={{ style: { backgroundColor: '#2e7d32', borderColor: '#2e7d32' } }}
         width={620}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} className="dn-form">
+          <div className="dn-form__section">{D.donorSection}</div>
           <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item name="buddhistFollowerId" label={t.donation.form.follower}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="buddhistFollowerId" label={D.form.follower}>
                 <Select
                   allowClear
                   showSearch
-                  placeholder={t.donation.form.followerPlaceholder}
-                  filterOption={(input, opt) =>
-                    String(opt?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={followers.map((f) => ({
-                    value: f.id,
-                    label: f.dharmName ? `${f.fullName} (${f.dharmName})` : f.fullName,
+                  placeholder={D.form.followerPlaceholder}
+                  filterOption={(input, opt) => String(opt?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                  options={followers.map((f) => ({ value: f.id, label: f.dharmName ? `${f.fullName} (${f.dharmName})` : f.fullName }))}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="donorName" label={D.form.donorName}>
+                <Input placeholder={D.donorNamePlaceholder} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <div className="dn-form__section">{D.donationSection}</div>
+          <Form.Item name="amount" label={D.form.amount} rules={[{ required: true, message: D.form.amountRequired }]} style={{ marginBottom: 8 }}>
+            <InputNumber
+              min={0}
+              step={50000}
+              size="large"
+              style={{ width: '100%' }}
+              addonAfter="₫"
+              formatter={(v) => v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+              parser={(v) => v ? v.replace(/\./g, '') : ''}
+            />
+          </Form.Item>
+          <div className="dn-quick">
+            <span className="dn-quick__label">{D.quickAmount}:</span>
+            {QUICK_AMOUNTS.map(a => (
+              <button key={a} type="button" className="dn-quick__chip" onClick={() => form.setFieldsValue({ amount: a })}>
+                {compactVnd(a, lang)}
+              </button>
+            ))}
+          </div>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="donationDate" label={D.form.date} rules={[{ required: true, message: D.form.dateRequired }]}>
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="receivedBy" label={D.form.receivedBy}>
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="paymentMethod" label={D.form.method} initialValue="tiền_mặt">
+                <Segmented
+                  block
+                  options={Object.keys(METHOD).map(k => ({
+                    value: k,
+                    label: <span className="dn-seg"><span style={{ color: METHOD[k].c }}>{METHOD[k].icon}</span>{D.methods[k]}</span>,
                   }))}
                 />
               </Form.Item>
             </Col>
             <Col span={24}>
-              <Form.Item name="donorName" label={t.donation.form.donorName}>
-                <Input placeholder="Nhập tên nếu không có trong danh sách" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="amount" label={t.donation.form.amount} rules={[{ required: true, message: t.donation.form.amountRequired }]}>
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  formatter={(v) => v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={(v) => v ? v.replace(/,/g, '') : ''}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="donationDate" label={t.donation.form.date} rules={[{ required: true, message: t.donation.form.dateRequired }]}>
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              <Form.Item name="purpose" label={D.form.purpose}>
+                <Input placeholder={D.form.purposePlaceholder} />
               </Form.Item>
             </Col>
             <Col span={24}>
-              <Form.Item name="purpose" label={t.donation.form.purpose}>
-                <Input placeholder={t.donation.form.purposePlaceholder} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="paymentMethod" label={t.donation.form.method} initialValue="tiền_mặt">
-                <Select>
-                  <Option value="tiền_mặt">{t.donation.methods['tiền_mặt']}</Option>
-                  <Option value="chuyển_khoản">{t.donation.methods['chuyển_khoản']}</Option>
-                  <Option value="khác">{t.donation.methods['khác']}</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="receivedBy" label={t.donation.form.receivedBy}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item name="notes" label={t.common.notes}>
+              <Form.Item name="notes" label={t.common.notes} style={{ marginBottom: 0 }}>
                 <Input.TextArea rows={2} />
               </Form.Item>
             </Col>
           </Row>
         </Form>
       </Modal>
-    </Card>
+    </div>
   );
 }

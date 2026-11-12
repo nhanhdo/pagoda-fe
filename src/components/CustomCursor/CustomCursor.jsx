@@ -1,106 +1,84 @@
 import React, { useEffect, useRef } from 'react';
 
+const CLICKABLE = 'button, a, [role="button"], [role="menuitem"], [role="tab"], [role="radio"], label, summary, select,'
+  + ' .ant-btn, .ant-select-selector, .ant-picker, .ant-segmented-item, .ant-pagination-item, .ant-tabs-tab,'
+  + ' .ant-dropdown-menu-item, .ant-table-row, .ant-checkbox-wrapper, .ant-radio-wrapper, .ant-switch';
+const TEXT = 'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]), textarea, [contenteditable="true"]';
+
 export default function CustomCursor() {
-  const dotRef = useRef(null);
-  const r1Ref  = useRef(null);
-  const r2Ref  = useRef(null);
+  const dotRef  = useRef(null);
+  const ringRef = useRef(null);
 
   useEffect(() => {
+    if (!window.matchMedia('(pointer: fine)').matches) return undefined;
     const dot = dotRef.current;
-    const r1  = r1Ref.current;
-    const r2  = r2Ref.current;
-    if (!dot || !r1 || !r2) return;
+    const ring = ringRef.current;
+    if (!dot || !ring) return undefined;
 
-    let mx = -300, my = -300;
-    let x1 = -300, y1 = -300;
-    let x2 = -300, y2 = -300;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ease = reduced ? 1 : 0.28;
+
+    let mx = -100, my = -100, rx = -100, ry = -100;
+    let visible = false;
     let rafId;
-    let pressing = false;
 
-    const move = (e) => { mx = e.clientX; my = e.clientY; };
-
-    const down = () => {
-      pressing = true;
-      dot.style.transform = 'translate(-50%,-50%) scale(0.4)';
-      r1.style.transform  = 'translate(-50%,-50%) scale(2)';
-      r1.style.opacity    = '0.28';
-    };
-    const up = () => {
-      pressing = false;
-      dot.style.transform = '';
-      r1.style.transform  = '';
-      r1.style.opacity    = '';
+    const setState = (cls, on) => {
+      dot.classList.toggle(cls, on);
+      ring.classList.toggle(cls, on);
     };
 
-    const over = (e) => {
-      const clickable = e.target.closest(
-        'button, a, [role="button"], [tabindex="0"], label,' +
-        ' .ant-btn, .ant-menu-item, .ant-select-selector,' +
-        ' .ant-card.kpi-card, .overview-row, .quick-action-item'
-      );
-      if (clickable) {
-        dot.classList.add('cc-hover');
-        r1.classList.add('cc-hover');
-      } else {
-        dot.classList.remove('cc-hover');
-        r1.classList.remove('cc-hover');
+    const move = (e) => {
+      mx = e.clientX; my = e.clientY;
+      if (!visible) {
+        visible = true;
+        rx = mx; ry = my;
+        setState('is-hidden', false);
       }
     };
-
-    const leave = () => {
-      dot.style.opacity = '0';
-      r1.style.opacity  = '0';
-      r2.style.opacity  = '0';
+    const over = (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      const isText = !!el?.closest(TEXT);
+      const isClick = !isText && !!el?.closest(CLICKABLE);
+      setState('is-text', isText);
+      setState('is-hover', isClick);
     };
-    const enter = () => {
-      dot.style.opacity = '';
-      r1.style.opacity  = pressing ? '0.28' : '';
-      r2.style.opacity  = '';
-    };
+    const down = () => setState('is-down', true);
+    const up = () => setState('is-down', false);
+    const leave = () => { visible = false; setState('is-hidden', true); };
 
     const tick = () => {
-      dot.style.left = mx + 'px';
-      dot.style.top  = my + 'px';
-
-      // Ring 1 — medium lag (lerp 14%)
-      x1 += (mx - x1) * 0.14;
-      y1 += (my - y1) * 0.14;
-      r1.style.left = x1 + 'px';
-      r1.style.top  = y1 + 'px';
-
-      // Ring 2 — slow lag (lerp 6%)
-      x2 += (mx - x2) * 0.06;
-      y2 += (my - y2) * 0.06;
-      r2.style.left = x2 + 'px';
-      r2.style.top  = y2 + 'px';
-
+      rx += (mx - rx) * ease;
+      ry += (my - ry) * ease;
+      dot.style.transform = `translate3d(${mx}px, ${my}px, 0)`;
+      ring.style.transform = `translate3d(${rx}px, ${ry}px, 0)`;
       rafId = requestAnimationFrame(tick);
     };
 
-    document.addEventListener('mousemove',   move,  { passive: true });
-    document.addEventListener('mousedown',   down);
-    document.addEventListener('mouseup',     up);
-    document.addEventListener('mouseover',   over,  { passive: true });
-    document.addEventListener('mouseleave',  leave);
-    document.addEventListener('mouseenter',  enter);
+    document.documentElement.classList.add('has-custom-cursor');
+    document.addEventListener('mousemove', move, { passive: true });
+    document.addEventListener('mouseover', over, { passive: true });
+    document.addEventListener('mousedown', down);
+    document.addEventListener('mouseup', up);
+    document.documentElement.addEventListener('mouseleave', leave);
+    window.addEventListener('blur', leave);
     rafId = requestAnimationFrame(tick);
 
     return () => {
-      document.removeEventListener('mousemove',  move);
-      document.removeEventListener('mousedown',  down);
-      document.removeEventListener('mouseup',    up);
-      document.removeEventListener('mouseover',  over);
-      document.removeEventListener('mouseleave', leave);
-      document.removeEventListener('mouseenter', enter);
+      document.documentElement.classList.remove('has-custom-cursor');
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseover', over);
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('mouseup', up);
+      document.documentElement.removeEventListener('mouseleave', leave);
+      window.removeEventListener('blur', leave);
       cancelAnimationFrame(rafId);
     };
   }, []);
 
   return (
     <>
-      <div ref={dotRef}  className="cc-dot"  />
-      <div ref={r1Ref}   className="cc-ring1" />
-      <div ref={r2Ref}   className="cc-ring2" />
+      <div ref={ringRef} className="cc-ring is-hidden" aria-hidden="true"><span /></div>
+      <div ref={dotRef} className="cc-dot is-hidden" aria-hidden="true"><span /></div>
     </>
   );
 }

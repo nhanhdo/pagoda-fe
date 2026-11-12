@@ -86,7 +86,7 @@ const AppRoutes = () => {
 
 export default function App() {
   return (
-    <ConfigProvider renderEmpty={() => <LotusEmpty />}>
+    <ConfigProvider renderEmpty={(componentName) => <LotusEmpty compact={!['Table', 'List'].includes(componentName)} />}>
       <BrowserRouter>
         <AuthProvider>
           <CustomCursor />

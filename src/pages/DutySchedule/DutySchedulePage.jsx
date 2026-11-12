@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Card, Table, Button, Select, DatePicker, Space, Tag, Modal, Form,
-  Input, message, Popconfirm, Badge, Row, Col, Tabs, Calendar, Popover, Descriptions,
+  Input, message, Popconfirm, Badge, Row, Col, Tabs, Descriptions,
 } from 'antd';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined,
@@ -15,17 +15,11 @@ import {
 } from './useDutySchedulePage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { exportToExcel } from '../../utils/exportData';
+import DutyCalendar, { monthGridRange } from './DutyCalendar';
 import './DutySchedulePage.css';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
-
-const SHIFT_DOT = {
-  'sáng':    '#f59e0b',
-  'chiều':   '#f97316',
-  'tối':     '#6366f1',
-  'cả_ngày': '#22c55e',
-};
 
 export default function DutySchedulePage() {
   const {
@@ -36,11 +30,10 @@ export default function DutySchedulePage() {
     fetchData, handleDelete,
   } = useDutySchedulePage();
 
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [form] = Form.useForm();
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'calendar'
   const [calendarValue, setCalendarValue] = useState(dayjs());
-  const [popRecord, setPopRecord] = useState(null); // duty record shown in info popover
 
   const openModal = (record = null, defaultDate = null) => {
     setEditRecord(record);
@@ -83,16 +76,13 @@ export default function DutySchedulePage() {
     ], 'lich-truc');
   };
 
-  // Khi đổi tháng trên calendar, cập nhật dateRange để fetch dữ liệu tháng đó
-  const handleCalendarPanelChange = (value) => {
+  // Load every day visible in the grid, including leading/trailing days of adjacent months
+  const handleCalendarMonthChange = (value) => {
     setCalendarValue(value);
-    const start = value.startOf('month');
-    const end = value.endOf('month');
-    setDateRange([start, end]);
+    setDateRange(monthGridRange(value));
   };
 
-  // Info popover content for a duty record
-  const dutyPopoverContent = (d) => (
+  const dutyPopoverContent = (d, close) => (
     <div style={{ width: 260 }}>
       <Descriptions column={1} size="small" style={{ marginBottom: canManage() ? 10 : 0 }}>
         <Descriptions.Item label={t.dutySchedule.fields.person}>
@@ -123,15 +113,15 @@ export default function DutySchedulePage() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
           <Popconfirm
             title={t.dutySchedule.confirmDelete}
-            onConfirm={() => { setPopRecord(null); handleDelete(d.id); }}
+            onConfirm={() => { close(); handleDelete(d.id); }}
             okText={t.common.delete} cancelText={t.common.cancel}
+            okButtonProps={{ danger: true }}
           >
             <Button size="small" danger icon={<DeleteOutlined />}>{t.common.delete}</Button>
           </Popconfirm>
           <Button
             size="small" type="primary" icon={<EditOutlined />}
-            style={{ background: '#8B4513', borderColor: '#8B4513' }}
-            onClick={() => { setPopRecord(null); openModal(d); }}
+            onClick={() => { close(); openModal(d); }}
           >
             {t.common.edit}
           </Button>
@@ -139,54 +129,6 @@ export default function DutySchedulePage() {
       )}
     </div>
   );
-
-  // Render nội dung mỗi ô ngày trên calendar
-  const calendarCellRender = (value) => {
-    const dateStr = value.format('YYYY-MM-DD');
-    const dayDuties = data.filter((d) => {
-      const dStr = typeof d.dutyDate === 'string' ? d.dutyDate.slice(0, 10) : dayjs(d.dutyDate).format('YYYY-MM-DD');
-      return dStr === dateStr;
-    });
-    if (!dayDuties.length) return null;
-    return (
-      <div className="duty-cell-events">
-        {dayDuties.slice(0, 3).map((d) => (
-          <Popover
-            key={d.id}
-            open={popRecord?.id === d.id}
-            onOpenChange={(v) => { if (!v) setPopRecord(null); }}
-            title={
-              <span style={{ color: '#5c3317', fontWeight: 700 }}>
-                {t.dutySchedule.shifts[d.shift] || d.shift} · {dayjs(d.dutyDate).format('DD/MM')}
-              </span>
-            }
-            content={dutyPopoverContent(d)}
-            trigger="click"
-            placement="right"
-            overlayInnerStyle={{ padding: '10px 14px' }}
-          >
-            <div
-              onClick={(e) => { e.stopPropagation(); setPopRecord(d); }}
-              className={`duty-event duty-shift-${d.shift?.replace('_', '-')}`}
-            >
-              <span className="duty-event-pill">
-                {t.dutySchedule.shifts[d.shift]?.charAt(0) || '?'}
-              </span>
-              <span className="duty-event-name">
-                {d.personnel?.dharmName || d.personnel?.fullName || '?'}
-              </span>
-              {d.startTime && (
-                <span className="duty-event-time">{d.startTime}</span>
-              )}
-            </div>
-          </Popover>
-        ))}
-        {dayDuties.length > 3 && (
-          <div className="duty-event-more">+{dayDuties.length - 3} ca</div>
-        )}
-      </div>
-    );
-  };
 
   const columns = [
     {
@@ -248,22 +190,21 @@ export default function DutySchedulePage() {
       {/* Toolbar */}
       <div className="duty-schedule-toolbar section-anim section-d0">
         <Space wrap>
-          <RangePicker
-            value={dateRange}
-            onChange={setDateRange}
-            format="DD/MM/YYYY"
-            disabled={viewMode === 'calendar'}
-            placeholder={[t.dutySchedule.rangePickerFrom, t.dutySchedule.rangePickerTo]}
-          />
+          {viewMode === 'table' && (
+            <RangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              format="DD/MM/YYYY"
+              placeholder={[t.dutySchedule.rangePickerFrom, t.dutySchedule.rangePickerTo]}
+            />
+          )}
         </Space>
         <Space>
-          <Button icon={<FileExcelOutlined />} onClick={handleExport}
-            style={{ color: '#217346', borderColor: '#217346' }}>
+          <Button icon={<FileExcelOutlined />} onClick={handleExport}>
             Excel
           </Button>
           {canManage() && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}
-              style={{ backgroundColor: '#1565c0', borderColor: '#1565c0' }}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
               {t.dutySchedule.addNew}
             </Button>
           )}
@@ -276,11 +217,7 @@ export default function DutySchedulePage() {
         activeKey={viewMode}
         onChange={(k) => {
           setViewMode(k);
-          if (k === 'calendar') {
-            const start = calendarValue.startOf('month');
-            const end = calendarValue.endOf('month');
-            setDateRange([start, end]);
-          }
+          if (k === 'calendar') setDateRange(monthGridRange(calendarValue));
         }}
         size="small"
         style={{ marginBottom: 8 }}
@@ -311,78 +248,18 @@ export default function DutySchedulePage() {
 
       {/* Calendar view */}
       {viewMode === 'calendar' && (
-        <div className="duty-calendar-wrap">
-          {/* Stats row */}
-          <div className="duty-stats-row">
-            {Object.entries(SHIFT_DOT).map(([shift, color]) => {
-              const count = data.filter((d) => d.shift === shift).length;
-              return (
-                <div key={shift} className="duty-stat-chip">
-                  <span className="duty-stat-dot" style={{ background: color }} />
-                  <span>{t.dutySchedule.shifts[shift]}</span>
-                  <span className="duty-stat-count" style={{ color }}>{count}</span>
-                </div>
-              );
-            })}
-            <div className="duty-stat-chip" style={{ marginLeft: 'auto', background: '#f9f3ed', borderColor: '#d4b896' }}>
-              <span style={{ color: '#8B4513', fontWeight: 700, fontSize: 13 }}>{data.length}</span>
-              <span style={{ color: '#6b4226' }}>ca tổng</span>
-            </div>
-          </div>
-
-          <Calendar
-            value={calendarValue}
-            onPanelChange={handleCalendarPanelChange}
-            cellRender={(current, info) => {
-              if (info.type === 'date') return calendarCellRender(current);
-              return null;
-            }}
-            onSelect={(date, { source }) => {
-              if (source === 'date') {
-                setPopRecord(null);
-                if (canManage()) openModal(null, date);
-              }
-            }}
-            headerRender={({ value, onChange }) => {
-              const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `Th ${i + 1}` }));
-              const years = Array.from({ length: 30 }, (_, i) => {
-                const y = dayjs().year() - 5 + i;
-                return { value: y, label: `${y}` };
-              });
-              return (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, padding: '8px 16px' }}>
-                  <Select
-                    size="small"
-                    value={value.year()}
-                    options={years}
-                    style={{ width: 80 }}
-                    onChange={(y) => onChange(value.year(y))}
-                  />
-                  <Select
-                    size="small"
-                    value={value.month()}
-                    options={months}
-                    style={{ width: 72 }}
-                    onChange={(m) => onChange(value.month(m))}
-                  />
-                </div>
-              );
-            }}
-          />
-
-          {/* Legend */}
-          <div className="duty-legend-bar">
-            {Object.entries(SHIFT_DOT).map(([k, color]) => (
-              <div key={k} className="duty-legend-item">
-                <span className="duty-legend-swatch" style={{ background: color }} />
-                <span>{t.dutySchedule.shifts[k]}</span>
-              </div>
-            ))}
-            {canManage() && (
-              <span className="duty-legend-hint">{t.dutySchedule.calendarClickHint}</span>
-            )}
-          </div>
-        </div>
+        <DutyCalendar
+          data={data}
+          month={calendarValue}
+          onMonthChange={handleCalendarMonthChange}
+          canManage={canManage()}
+          onAdd={(day) => openModal(null, day)}
+          onEdit={(d) => openModal(d)}
+          onDelete={handleDelete}
+          renderDetails={dutyPopoverContent}
+          t={t}
+          lang={lang}
+        />
       )}
       </div>
 
@@ -394,7 +271,7 @@ export default function DutySchedulePage() {
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
-        okButtonProps={{ style: { backgroundColor: '#8B4513', borderColor: '#8B4513' } }}
+        okButtonProps={{ style: { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } }}
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>

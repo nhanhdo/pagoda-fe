@@ -1,25 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import CountUp from '../../components/CountUp/CountUp';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
-  Card, Table, Button, Space, Tag, Modal, Form, Input, Select,
-  message, Popconfirm, Switch, Tooltip, Typography, Avatar, Badge,
+  Table, Button, Modal, Form, Input, Select, message, Popconfirm, Switch,
+  Tooltip, Avatar,
 } from 'antd';
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined,
-  UserOutlined, LockOutlined, CheckCircleOutlined, StopOutlined,
+  PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined, UserOutlined,
+  LockOutlined, UnlockOutlined, SearchOutlined, CrownOutlined,
+  SafetyCertificateOutlined, FileTextOutlined, TeamOutlined, CheckCircleOutlined,
+  StopOutlined, ClockCircleOutlined, SafetyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import api from '../../api/axios';
-import { useUserManagementPage, ROLE_CONFIG } from './useUserManagementPage';
+import { useUserManagementPage, ROLE_CONFIG, ROLE_ORDER } from './useUserManagementPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import './UserManagementPage.css';
 
-const { Text } = Typography;
+dayjs.extend(relativeTime);
 
-/* ── Reset Password Modal ─────────────────────────────── */
+const ROLE_ICON = {
+  admin: <CrownOutlined />,
+  truotri: <SafetyCertificateOutlined />,
+  thuki: <FileTextOutlined />,
+  truongban: <TeamOutlined />,
+  user: <UserOutlined />,
+};
+
+const toneOf = (role) => ROLE_CONFIG[role] || ROLE_CONFIG.user;
+
+function RolePill({ role, label }) {
+  const tone = toneOf(role);
+  return (
+    <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>
+      {ROLE_ICON[role] || ROLE_ICON.user}{label}
+    </span>
+  );
+}
+
+/* ── Reset password ─────────────────────────────────────── */
 function ResetPasswordModal({ open, user, onClose }) {
   const { t } = useLanguage();
+  const U = t.users;
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +52,7 @@ function ResetPasswordModal({ open, user, onClose }) {
     setLoading(true);
     try {
       await api.put(`/users/${user.id}/reset-password`, { newPassword });
-      message.success(t.users.resetPasswordSuccess.replace('{username}', user.username));
+      message.success(U.resetPasswordSuccess.replace('{username}', user.username));
       form.resetFields();
       onClose();
     } catch (err) {
@@ -39,72 +64,94 @@ function ResetPasswordModal({ open, user, onClose }) {
 
   return (
     <Modal
-      title={<><KeyOutlined style={{ marginRight: 8, color: '#8B4513' }} />{t.users.resetPassword} — <Text code>@{user?.username}</Text></>}
-      open={open} onCancel={() => { form.resetFields(); onClose(); }}
+      title={
+        <div className="um-modal-title">
+          <span className="um-modal-title__icon" style={{ color: '#4d8fc7', background: '#e9f1fb' }}><KeyOutlined /></span>
+          <div>
+            <div>{U.resetPassword}</div>
+            <div className="um-modal-title__sub">{U.resetFor} <span className="tbl-mono">@{user?.username}</span></div>
+          </div>
+        </div>
+      }
+      open={open}
+      onCancel={() => { form.resetFields(); onClose(); }}
       onOk={() => form.submit()}
-      okText={t.users.resetPassword} cancelText={t.common.cancel} okButtonProps={{ loading, style: { background: '#8B4513', borderColor: '#8B4513' } }}
-      destroyOnClose width={420}
+      okText={U.resetPassword}
+      cancelText={t.common.cancel}
+      okButtonProps={{ loading }}
+      destroyOnClose
+      width={440}
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false} style={{ marginTop: 12 }}>
         <Form.Item
           name="newPassword"
           label={t.auth.newPassword}
-          rules={[{ required: true, message: t.users.passwordRequired }, { min: 6, message: t.users.minSixChars }]}
+          rules={[{ required: true, message: U.passwordRequired }, { min: 6, message: U.minSixChars }]}
         >
-          <Input.Password placeholder={t.users.newPasswordPlaceholder} />
+          <Input.Password prefix={<LockOutlined style={{ color: '#c9b49a' }} />} placeholder={U.newPasswordPlaceholder} />
         </Form.Item>
         <Form.Item
           name="confirmPassword"
           label={t.auth.confirmPassword}
           dependencies={['newPassword']}
           rules={[
-            { required: true, message: t.users.confirmPasswordRequired },
+            { required: true, message: U.confirmPasswordRequired },
             ({ getFieldValue }) => ({
               validator(_, value) {
                 if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
-                return Promise.reject(new Error(t.users.passwordMismatch));
+                return Promise.reject(new Error(U.passwordMismatch));
               },
             }),
           ]}
+          style={{ marginBottom: 0 }}
         >
-          <Input.Password placeholder={t.users.confirmPasswordPlaceholder} />
+          <Input.Password prefix={<LockOutlined style={{ color: '#c9b49a' }} />} placeholder={U.confirmPasswordPlaceholder} />
         </Form.Item>
       </Form>
     </Modal>
   );
 }
 
-/* ── Create / Edit Modal ──────────────────────────────── */
-function UserFormModal({ open, editRecord, personnelList, onClose, onSaved }) {
+/* ── Create / edit ──────────────────────────────────────── */
+function UserFormModal({ open, editRecord, personnelList, users, currentUserId, onClose, onSaved }) {
   const { t } = useLanguage();
+  const U = t.users;
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const isSelf = !!editRecord && editRecord.id === currentUserId;
 
   useEffect(() => {
-    if (open) {
-      if (editRecord) {
-        form.setFieldsValue({
-          username: editRecord.username,
-          role: editRecord.role,
-          personnelId: editRecord.personnelId || undefined,
-          isActive: editRecord.isActive,
-        });
-      } else {
-        form.resetFields();
-        form.setFieldsValue({ role: 'user', isActive: true });
-      }
+    if (!open) return;
+    if (editRecord) {
+      form.setFieldsValue({
+        username: editRecord.username,
+        role: editRecord.role,
+        personnelId: editRecord.personnelId || undefined,
+        isActive: editRecord.isActive,
+      });
+    } else {
+      form.resetFields();
+      form.setFieldsValue({ role: 'user', isActive: true });
     }
   }, [open, editRecord, form]);
 
+  const linkedTo = useMemo(() => {
+    const map = new Map();
+    users.forEach(u => { if (u.personnelId && u.id !== editRecord?.id) map.set(u.personnelId, u.username); });
+    return map;
+  }, [users, editRecord]);
+
   const handleSubmit = async (values) => {
+    const payload = { ...values };
+    if (isSelf) { delete payload.isActive; delete payload.role; }
     setLoading(true);
     try {
       if (editRecord) {
-        await api.put(`/users/${editRecord.id}`, values);
-        message.success(t.users.updateSuccess);
+        await api.put(`/users/${editRecord.id}`, payload);
+        message.success(U.updateSuccess);
       } else {
-        await api.post('/users', values);
-        message.success(t.users.createSuccess);
+        await api.post('/users', payload);
+        message.success(U.createSuccess);
       }
       onSaved();
       onClose();
@@ -118,227 +165,334 @@ function UserFormModal({ open, editRecord, personnelList, onClose, onSaved }) {
   return (
     <Modal
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fdf5ee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <UserOutlined style={{ color: '#8B4513', fontSize: 18 }} />
-          </div>
-          <span style={{ fontWeight: 700 }}>{editRecord ? t.users.editTitle : t.users.addTitle}</span>
+        <div className="um-modal-title">
+          <span className="um-modal-title__icon"><UserOutlined /></span>
+          <div>{editRecord ? U.editTitle : U.addTitle}</div>
         </div>
       }
-      open={open} onCancel={onClose} onOk={() => form.submit()}
-      okText={editRecord ? t.common.update : t.users.addNew}
+      open={open}
+      onCancel={onClose}
+      onOk={() => form.submit()}
+      okText={editRecord ? t.common.update : U.addNew}
       cancelText={t.common.cancel}
-      okButtonProps={{ loading, style: { background: '#8B4513', borderColor: '#8B4513' } }}
-      width={500} destroyOnClose
+      okButtonProps={{ loading }}
+      width={520}
+      destroyOnClose
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false} style={{ marginTop: 12 }}>
         <Form.Item
           name="username"
-          label={t.users.usernameLabel}
+          label={U.usernameLabel}
           rules={[
-            { required: true, message: t.users.usernameRequired },
-            { min: 3, message: t.users.minThreeChars },
-            { pattern: /^[a-zA-Z0-9._]+$/, message: t.users.usernamePattern },
+            { required: true, message: U.usernameRequired },
+            { min: 3, message: U.minThreeChars },
+            { pattern: /^[a-zA-Z0-9._]+$/, message: U.usernamePattern },
           ]}
         >
-          <Input prefix={<UserOutlined style={{ color: '#ccc' }} />} placeholder={t.users.usernamePlaceholder} disabled={!!editRecord} />
+          <Input prefix={<span className="um-at">@</span>} placeholder={U.usernamePlaceholder} disabled={!!editRecord} />
         </Form.Item>
 
         {!editRecord && (
-          <Form.Item
-            name="password"
-            label={t.users.passwordLabel}
-            extra={t.users.passwordDefaultHint}
-          >
-            <Input.Password prefix={<LockOutlined style={{ color: '#ccc' }} />} placeholder={t.users.defaultPasswordPlaceholder} />
+          <Form.Item name="password" label={U.passwordLabel} extra={U.passwordDefaultHint}>
+            <Input.Password prefix={<LockOutlined style={{ color: '#c9b49a' }} />} placeholder={U.defaultPasswordPlaceholder} />
           </Form.Item>
         )}
 
-        <Form.Item name="role" label={t.users.colRole} rules={[{ required: true }]}>
-          <Select>
-            {Object.entries(ROLE_CONFIG).map(([v, c]) => (
-              <Select.Option key={v} value={v}>
-                <Tag color={c.color} style={{ marginRight: 6 }}>{c.label}</Tag>
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
-
-        <Form.Item name="personnelId" label={t.users.personnelLinkLabel} extra={t.users.personnelLinkHint}>
+        <Form.Item name="role" label={U.colRole} rules={[{ required: true }]} extra={isSelf ? U.selfRoleHint : undefined}>
           <Select
-            showSearch allowClear placeholder={t.users.selectPersonnelPlaceholder}
-            filterOption={(input, opt) => opt?.label?.toLowerCase().includes(input.toLowerCase())}
-            options={personnelList.map(p => ({
-              value: p.id,
-              label: `${p.dharmName || p.fullName} (${p.code})`,
+            disabled={isSelf}
+            options={ROLE_ORDER.map(r => ({
+              value: r,
+              label: <span className="um-role-option"><span style={{ color: toneOf(r).c }}>{ROLE_ICON[r]}</span>{U.roles[r] || r}</span>,
             }))}
           />
         </Form.Item>
 
-        <Form.Item name="isActive" label={t.common.status} valuePropName="checked">
-          <Switch checkedChildren={t.users.active} unCheckedChildren={t.users.locked} defaultChecked />
+        <Form.Item name="personnelId" label={U.personnelLinkLabel} extra={U.personnelLinkHint}>
+          <Select
+            showSearch
+            allowClear
+            placeholder={U.selectPersonnelPlaceholder}
+            optionFilterProp="search"
+            options={personnelList.map(p => {
+              const owner = linkedTo.get(p.id);
+              return {
+                value: p.id,
+                disabled: !!owner,
+                search: `${p.fullName || ''} ${p.dharmName || ''} ${p.code || ''}`.toLowerCase(),
+                label: (
+                  <span className="um-person-option">
+                    <span>{p.dharmName || p.fullName}</span>
+                    <span className="tbl-mono">{p.code}</span>
+                    {owner && <span className="um-person-option__taken">@{owner} · {U.alreadyLinked}</span>}
+                  </span>
+                ),
+              };
+            })}
+          />
+        </Form.Item>
+
+        <Form.Item name="isActive" label={t.common.status} valuePropName="checked" style={{ marginBottom: 0 }}>
+          <Switch checkedChildren={U.active} unCheckedChildren={U.locked} disabled={isSelf} />
         </Form.Item>
       </Form>
     </Modal>
   );
 }
 
-/* ── Main Page ────────────────────────────────────────── */
+/* ── Page ───────────────────────────────────────────────── */
 export default function UserManagementPage() {
   const { t } = useLanguage();
-  const { isAdmin } = useAuth();
+  const U = t.users;
+  const { isAdmin, user: me } = useAuth();
   const {
     users, personnelList, loading,
     modalOpen, setModalOpen,
     resetModal, setResetModal,
-    editRecord, setEditRecord,
+    editRecord,
     fetchUsers, openCreate, openEdit,
     handleDelete, toggleActive,
-  } = useUserManagementPage();
+  } = useUserManagementPage(t);
+
+  const [query, setQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return users.filter(u => {
+      if (roleFilter && u.role !== roleFilter) return false;
+      if (statusFilter === 'active' && !u.isActive) return false;
+      if (statusFilter === 'locked' && u.isActive) return false;
+      if (!q) return true;
+      const p = u.personnel || {};
+      return [u.username, p.fullName, p.dharmName, p.code].some(v => v?.toLowerCase().includes(q));
+    });
+  }, [users, query, roleFilter, statusFilter]);
+
+  const admin = isAdmin();
+  const monthAgo = dayjs().subtract(30, 'day');
+  const stats = [
+    { label: U.totalAccounts,  value: users.length, icon: <UserOutlined />, tone: { c: '#c47f36', s: '#fbf1e4' },
+      hint: U.unlinkedCount.replace('{n}', users.filter(u => !u.personnelId).length) },
+    { label: U.activeAccounts, value: users.filter(u => u.isActive).length, icon: <CheckCircleOutlined />, tone: { c: '#4f9a72', s: '#e8f4ed' },
+      hint: U.recentLogin.replace('{n}', users.filter(u => u.lastLogin && dayjs(u.lastLogin).isAfter(monthAgo)).length) },
+    { label: U.lockedAccounts, value: users.filter(u => !u.isActive).length, icon: <StopOutlined />, tone: { c: '#8c7a6b', s: '#f2ede6' } },
+    { label: U.adminAccounts,  value: users.filter(u => u.role === 'admin').length, icon: <CrownOutlined />, tone: { c: '#d9646c', s: '#fdeeee' } },
+  ];
 
   const columns = [
     {
-      title: t.users.colAccount,
-      width: 250,
-      render: (_, r) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar size={38} style={{ background: ROLE_CONFIG[r.role]?.color === 'default' ? '#8B4513' : ROLE_CONFIG[r.role]?.color, fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
-            {r.username.charAt(0).toUpperCase()}
-          </Avatar>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a1a' }}>@{r.username}</div>
-            <div style={{ fontSize: 11, color: '#777', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: r.isActive ? '#52c41a' : '#ff4d4f', flexShrink: 0 }} />
-              {r.lastLogin ? `${t.users.lastLogin}: ${dayjs(r.lastLogin).format('DD/MM/YYYY HH:mm')}` : t.users.neverLoggedIn}
+      title: U.colAccount,
+      key: 'account',
+      width: 300,
+      render: (_, r) => {
+        const tone = toneOf(r.role);
+        const p = r.personnel;
+        const isMe = r.id === me?.id;
+        return (
+          <div className="person-cell">
+            <Avatar size={40} className="person-cell__avatar" style={{ background: tone.s, color: tone.c }}>
+              {r.username.charAt(0).toUpperCase()}
+            </Avatar>
+            <div className="person-cell__text">
+              <div className="person-cell__name">
+                <span className="um-username">@{r.username}</span>
+                {isMe && <span className="um-you">{U.you}</span>}
+              </div>
+              <div className="person-cell__sub">
+                {p ? (
+                  <>
+                    <span>{p.dharmName || p.fullName}</span>
+                    {p.code && <><span className="person-cell__sep">·</span><span className="tbl-mono">{p.code}</span></>}
+                  </>
+                ) : <span className="um-unlinked">{U.noPersonnelLinked}</span>}
+              </div>
             </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      title: t.users.colRole,
-      dataIndex: 'role',
-      width: 130,
-      align: 'center',
-      render: (role) => {
-        const cfg = ROLE_CONFIG[role] || ROLE_CONFIG.user;
-        return <Tag color={cfg.color} style={{ borderRadius: 10, fontWeight: 600, minWidth: 88, textAlign: 'center', display: 'inline-block' }}>{t.users.roles[role] || cfg.label}</Tag>;
+        );
       },
     },
     {
-      title: t.users.colPersonnel,
-      width: 180,
-      render: (_, r) => r.personnel ? (
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>{r.personnel.dharmName || r.personnel.fullName}</div>
-          <span style={{ fontSize: 11, color: '#666' }}>{r.personnel.code}</span>
-        </div>
-      ) : <span style={{ fontSize: 12, color: '#666' }}>—</span>,
+      title: U.colRole,
+      dataIndex: 'role',
+      width: 150,
+      render: (role) => <RolePill role={role} label={U.roles[role] || role} />,
     },
     {
       title: t.common.status,
-      width: 130,
-      align: 'center',
-      render: (_, r) => (
-        <Tag
-          icon={r.isActive ? <CheckCircleOutlined /> : <StopOutlined />}
-          color={r.isActive ? 'success' : 'default'}
-          style={{
-            borderRadius: 10, minWidth: 88, textAlign: 'center', display: 'inline-block',
-            cursor: isAdmin() ? 'pointer' : 'default',
-          }}
-          onClick={isAdmin() ? () => toggleActive(r) : undefined}
-        >
-          {r.isActive ? t.users.active : t.users.locked}
-        </Tag>
+      dataIndex: 'isActive',
+      width: 140,
+      render: (v) => (
+        <span className="tbl-pill" style={v ? { color: '#3f8461', background: '#e8f4ed' } : { color: '#8c7a6b', background: '#f2ede6' }}>
+          <span className="tbl-pill__dot" />{v ? U.active : U.locked}
+        </span>
       ),
     },
     {
-      title: t.common.actions,
-      width: 120,
-      align: 'center',
-      render: (_, r) => isAdmin() ? (
-        <Space size={4}>
-          <Tooltip title={t.common.edit}>
-            <Button type="text" size="small" icon={<EditOutlined />} style={{ color: '#8B4513' }} onClick={() => openEdit(r)} />
-          </Tooltip>
-          <Tooltip title={t.users.resetPassword}>
-            <Button type="text" size="small" icon={<KeyOutlined />} style={{ color: '#1565c0' }} onClick={() => setResetModal({ open: true, user: r })} />
-          </Tooltip>
-          <Popconfirm title={t.users.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel}>
-            <Tooltip title={t.common.delete}>
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ) : null,
+      title: U.colLastLogin,
+      dataIndex: 'lastLogin',
+      width: 170,
+      sorter: (a, b) => (a.lastLogin ? dayjs(a.lastLogin).valueOf() : 0) - (b.lastLogin ? dayjs(b.lastLogin).valueOf() : 0),
+      render: (v) => v ? (
+        <Tooltip title={dayjs(v).format('DD/MM/YYYY HH:mm')}>
+          <span className="um-login"><ClockCircleOutlined />{dayjs(v).fromNow()}</span>
+        </Tooltip>
+      ) : <span className="tbl-muted">{U.neverLoggedIn}</span>,
     },
-  ];
-
-  const stats = [
-    { label: t.users.totalAccounts, value: users.length, color: '#8B4513' },
-    { label: t.users.activeAccounts, value: users.filter(u => u.isActive).length, color: '#52c41a' },
-    { label: t.users.lockedAccounts, value: users.filter(u => !u.isActive).length, color: '#ff4d4f' },
-    { label: t.users.adminAccounts, value: users.filter(u => u.role === 'admin').length, color: '#e74c3c' },
+    ...(admin ? [{
+      title: '',
+      key: 'actions',
+      width: 160,
+      align: 'right',
+      render: (_, r) => {
+        const isMe = r.id === me?.id;
+        return (
+          <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
+            <Tooltip title={t.common.edit}>
+              <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+            </Tooltip>
+            <Tooltip title={U.resetPassword}>
+              <Button type="text" icon={<KeyOutlined />} onClick={() => setResetModal({ open: true, user: r })} />
+            </Tooltip>
+            {isMe ? (
+              <Tooltip title={U.selfActionBlocked}>
+                <Button type="text" icon={<LockOutlined />} disabled />
+              </Tooltip>
+            ) : (
+              <Popconfirm
+                title={r.isActive ? U.confirmLock : U.confirmUnlock}
+                description={r.isActive ? U.lockNote : undefined}
+                onConfirm={() => toggleActive(r)}
+                okText={r.isActive ? U.lockAction : U.unlockAction}
+                cancelText={t.common.cancel}
+                okButtonProps={r.isActive ? { danger: true } : undefined}
+              >
+                <Tooltip title={r.isActive ? U.lockAction : U.unlockAction}>
+                  <Button type="text" icon={r.isActive ? <LockOutlined /> : <UnlockOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            )}
+            {isMe ? (
+              <Tooltip title={U.selfActionBlocked}>
+                <Button type="text" danger icon={<DeleteOutlined />} disabled />
+              </Tooltip>
+            ) : (
+              <Popconfirm
+                title={U.confirmDelete}
+                description={U.deleteNote}
+                onConfirm={() => handleDelete(r.id)}
+                okText={t.common.delete}
+                cancelText={t.common.cancel}
+                okButtonProps={{ danger: true }}
+              >
+                <Tooltip title={t.common.delete}>
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            )}
+          </div>
+        );
+      },
+    }] : []),
   ];
 
   if (loading && !users.length) return <PageSpinner />;
 
+  const isFiltered = Boolean(query || roleFilter || statusFilter);
+
   return (
-    <div>
-      {/* Header */}
-      <div className="user-banner section-anim section-d0">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(255,200,100,0.12)', border: '1px solid rgba(255,200,100,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <UserOutlined style={{ fontSize: 24, color: '#ffd59e' }} />
-          </div>
+    <div className="um-page">
+      {/* ── Header ── */}
+      <section className="um-hero section-anim section-d0">
+        <div className="um-hero__main">
+          <div className="um-hero__icon"><SafetyOutlined /></div>
           <div>
-            <div style={{ color: '#ffd59e', fontWeight: 800, fontSize: 20 }}>{t.users.title}</div>
-            <div style={{ color: 'rgba(255,210,160,0.6)', fontSize: 12, marginTop: 2 }}>{t.users.subtitle}</div>
+            <h1 className="um-hero__title">{U.title}</h1>
+            <p className="um-hero__sub">{U.subtitle}</p>
           </div>
         </div>
-        {isAdmin() && (
-          <Button
-            icon={<PlusOutlined />} onClick={openCreate}
-            style={{ background: '#ffc44d', borderColor: '#ffa500', color: '#3d1a06', fontWeight: 700, height: 38, borderRadius: 10 }}
-          >
-            {t.users.addNew}
+        {admin && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} className="um-hero__btn">
+            {U.addNew}
           </Button>
         )}
-      </div>
+      </section>
 
-      {/* Stats */}
-      <div className="user-stats-grid section-anim section-d1">
+      {/* ── Stats ── */}
+      <div className="um-stats section-anim section-d1">
         {stats.map(s => (
-          <div key={s.label} style={{ background: '#fff', borderRadius: 10, padding: '14px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f0f0f0', borderLeft: `4px solid ${s.color}` }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{s.label}</div>
+          <div key={s.label} className="um-stat" style={{ '--st': s.tone.c, '--st-soft': s.tone.s }}>
+            <span className="um-stat__icon">{s.icon}</span>
+            <div className="um-stat__body">
+              <div className="um-stat__value"><CountUp value={s.value} /></div>
+              <div className="um-stat__label">{s.label}</div>
+              {s.hint && <div className="um-stat__hint">{s.hint}</div>}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="section-anim section-d2">
-      <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #f0f0f0' }} bodyStyle={{ padding: 0 }}>
+      {/* ── List ── */}
+      <section className="um-card section-anim section-d2">
+        <div className="um-toolbar">
+          <Input
+            className="um-search"
+            placeholder={U.searchPlaceholder}
+            prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            allowClear
+          />
+          <Select
+            className="um-filter"
+            value={roleFilter}
+            onChange={setRoleFilter}
+            options={[
+              { value: '', label: U.allRoles },
+              ...ROLE_ORDER.map(r => ({ value: r, label: <span className="um-role-option"><span style={{ color: toneOf(r).c }}>{ROLE_ICON[r]}</span>{U.roles[r]}</span> })),
+            ]}
+          />
+          <Select
+            className="um-filter"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: '', label: U.allStatuses },
+              { value: 'active', label: U.active },
+              { value: 'locked', label: U.locked },
+            ]}
+          />
+        </div>
+
         <Table
-          dataSource={users}
+          dataSource={filtered}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: false, showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ${t.users.totalLabel}` }}
-          rowClassName={(r) => !r.isActive ? 'row-inactive' : ''}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: false,
+            hideOnSinglePage: false,
+            showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${U.totalLabel}`,
+          }}
+          rowClassName={(r) => (r.isActive ? '' : 'um-row-locked')}
           className="personnel-table"
           scroll={{ x: 'max-content' }}
-          style={{ borderRadius: 12, overflow: 'hidden' }}
+          locale={{
+            emptyText: isFiltered
+              ? <LotusEmpty description={U.emptyFiltered} hint={U.emptyFilteredHint} />
+              : <LotusEmpty description={U.emptyTitle} hint={admin ? U.emptyHint : ''} />,
+          }}
         />
-      </Card>
-      </div>
-
-      <style>{`.row-inactive td { opacity: 0.5; }`}</style>
+      </section>
 
       <UserFormModal
-        open={modalOpen} editRecord={editRecord}
+        open={modalOpen}
+        editRecord={editRecord}
         personnelList={personnelList}
+        users={users}
+        currentUserId={me?.id}
         onClose={() => setModalOpen(false)}
         onSaved={fetchUsers}
       />

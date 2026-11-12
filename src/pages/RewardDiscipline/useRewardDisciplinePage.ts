@@ -7,9 +7,9 @@ export const rewardSubTypes = ['giấy_khen', 'công_đức_xuất_sắc', 'bằ
 export const disciplineSubTypes = ['khiển_trách', 'cảnh_cáo', 'tạm_đình_chỉ', 'đình_chỉ'];
 
 export function useRewardDisciplinePage() {
+  // All records are loaded once (the API is unpaginated) so stats, counts and filters cover everything
   const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [activeType, setActiveType] = useState('khen_thưởng');
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<any>(null);
   const [personnel, setPersonnel] = useState<any[]>([]);
@@ -18,21 +18,22 @@ export function useRewardDisciplinePage() {
 
   useEffect(() => {
     api
-      .get('/personnel', { params: { limit: 200, status: 'đang_hoạt_động' } })
-      .then((resp: any) => setPersonnel(resp.data.data));
+      .get('/personnel', { params: { limit: 1000 } })
+      .then((resp: any) => setPersonnel(resp.data.data || []))
+      .catch(() => setPersonnel([]));
   }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const resp: any = await api.get('/reward-disciplines', { params: { type: activeType } });
-      setData(resp.data);
+      const resp: any = await api.get('/reward-disciplines');
+      setData(resp.data || []);
     } catch {
       message.error('Không thể tải dữ liệu');
     } finally {
       setLoading(false);
     }
-  }, [activeType]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -51,8 +52,6 @@ export function useRewardDisciplinePage() {
   return {
     data,
     loading,
-    activeType,
-    setActiveType,
     modalOpen,
     setModalOpen,
     editRecord,

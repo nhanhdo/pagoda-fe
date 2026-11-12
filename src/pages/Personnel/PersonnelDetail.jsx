@@ -24,7 +24,7 @@ function JourneyTimeline({ events, t }) {
       {/* Vertical connecting line */}
       <div style={{
         position: 'absolute', left: 11, top: 0, bottom: 0, width: 2,
-        background: 'linear-gradient(to bottom, #8B4513, #d4a017, #8B4513)',
+        background: 'linear-gradient(to bottom, #b06f2c, #d4a017, #b06f2c)',
         opacity: 0.25, borderRadius: 1,
       }} />
 
@@ -34,9 +34,9 @@ function JourneyTimeline({ events, t }) {
           <div style={{
             position: 'absolute', left: -21, top: 4,
             width: 14, height: 14, borderRadius: '50%',
-            background: ev.color || '#8B4513',
+            background: ev.color || '#b06f2c',
             border: '2.5px solid #fff',
-            boxShadow: `0 0 0 2.5px ${ev.color || '#8B4513'}55, 0 2px 6px rgba(0,0,0,0.15)`,
+            boxShadow: `0 0 0 2.5px ${ev.color || '#b06f2c'}55, 0 2px 6px rgba(0,0,0,0.15)`,
             zIndex: 1,
           }} />
 
@@ -44,7 +44,7 @@ function JourneyTimeline({ events, t }) {
           <div style={{
             background: '#fafafa',
             border: '1px solid #f0ebe3',
-            borderLeft: `3px solid ${ev.color || '#8B4513'}`,
+            borderLeft: `3px solid ${ev.color || '#b06f2c'}`,
             borderRadius: '0 10px 10px 0',
             padding: '10px 14px',
             transition: 'box-shadow 0.2s',
@@ -56,7 +56,7 @@ function JourneyTimeline({ events, t }) {
               <span style={{ fontSize: 18, lineHeight: 1 }}>{ev.icon}</span>
               <span style={{ fontWeight: 700, fontSize: 14, color: '#222', flex: 1 }}>{ev.title}</span>
               <span style={{
-                fontSize: 11, color: '#fff', background: ev.color || '#8B4513',
+                fontSize: 11, color: '#fff', background: ev.color || '#b06f2c',
                 padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', opacity: 0.88,
               }}>{ev.dateStr}</span>
             </div>
@@ -125,7 +125,7 @@ export default function PersonnelDetail() {
     push(person?.joinDate || person?.createdAt, {
       icon: '🏛️', title: t.personnel.journeyJoinTemple,
       subtitle: person?.department?.name ? `${t.personnel.journeyDeptPrefix}: ${person.department.name}` : undefined,
-      color: '#8B4513',
+      color: '#b06f2c',
     });
 
     // Ordination / precept
@@ -165,7 +165,7 @@ export default function PersonnelDetail() {
       push(d.dutyDate, {
         icon: '📅', title: `${t.personnel.journeyDutyPrefix} ${d.dutyType || t.personnel.journeyDutyTemple}`,
         subtitle: d.shift ? `${t.common.shift}: ${d.shift}` : undefined,
-        color: '#2e7d32',
+        color: '#4f9a72',
       });
     });
 
@@ -188,19 +188,19 @@ export default function PersonnelDetail() {
           <Col xs={24} sm={6} style={{ textAlign: 'center' }}>
             {person.photo
               ? <Avatar src={imgSrc(person.photo)} size={120} />
-              : <Avatar size={120} style={{ backgroundColor: '#8B4513', fontSize: 48 }}>{person.fullName?.[0]}</Avatar>
+              : <Avatar size={120} style={{ backgroundColor: '#b06f2c', fontSize: 48 }}>{person.fullName?.[0]}</Avatar>
             }
             <div style={{ marginTop: 12 }}>
               <Tag>{person.code}</Tag>
             </div>
           </Col>
           <Col xs={24} sm={18}>
-            <Title level={3} style={{ margin: 0, color: '#5c3317' }}>{person.fullName}</Title>
+            <Title level={3} style={{ margin: 0, color: '#5a3a22' }}>{person.fullName}</Title>
             {person.dharmName && (
-              <Title level={5} style={{ color: '#8B4513', margin: '4px 0 12px' }}>{person.dharmName}</Title>
+              <Title level={5} style={{ color: '#b06f2c', margin: '4px 0 12px' }}>{person.dharmName}</Title>
             )}
             <Space wrap>
-              <Tag color="#8B4513" style={{ color: '#fff' }}>{typeLabels[person.type]}</Tag>
+              <Tag color="#b06f2c" style={{ color: '#fff' }}>{typeLabels[person.type]}</Tag>
               {person.position && <Tag>{person.position.replace(/_/g, ' ')}</Tag>}
               <Badge
                 status={person.status === 'đang_hoạt_động' ? 'success' : 'default'}
@@ -251,7 +251,7 @@ export default function PersonnelDetail() {
           </TabPane>
 
           <TabPane
-            tab={<span>🛤️ {t.personnel.tabJourney} {journeyEvents.length > 0 && <Tag color="#8B4513" style={{ marginLeft: 4, fontSize: 11, color: '#fff' }}>{journeyEvents.length}</Tag>}</span>}
+            tab={<span>🛤️ {t.personnel.tabJourney} {journeyEvents.length > 0 && <Tag color="#b06f2c" style={{ marginLeft: 4, fontSize: 11, color: '#fff' }}>{journeyEvents.length}</Tag>}</span>}
             key="journey"
           >
             <div style={{ maxWidth: 640, margin: '0 auto', padding: '8px 0' }}>
@@ -265,7 +265,7 @@ export default function PersonnelDetail() {
                 }}>
                   {person.joinDate && (
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#8B4513' }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#b06f2c' }}>
                         {dayjs().diff(dayjs(person.joinDate), 'year')}
                       </div>
                       <div style={{ fontSize: 11, color: '#999' }}>{t.personnel.statYearsOfPractice}</div>
@@ -279,7 +279,7 @@ export default function PersonnelDetail() {
                   )}
                   {duties.length > 0 && (
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#2e7d32' }}>{duties.length}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#4f9a72' }}>{duties.length}</div>
                       <div style={{ fontSize: 11, color: '#999' }}>{t.personnel.statDuties}</div>
                     </div>
                   )}

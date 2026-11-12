@@ -1,0 +1,77 @@
+.le-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px 30px;
+  text-align: center;
+  user-select: none;
+}
+
+.le-art {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.le-halo {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #fff6ec 0%, #fdebd8 55%, #fbe1c9 100%);
+  box-shadow: inset 0 -6px 14px rgba(235,154,118,.12), 0 8px 24px rgba(196,127,54,.10);
+}
+.le-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(224,164,84,.45);
+  animation: le-spin 28s linear infinite;
+}
+.le-lotus {
+  position: relative;
+  animation: le-float 4.5s ease-in-out infinite;
+  filter: drop-shadow(0 4px 6px rgba(217,120,90,.18));
+}
+.le-spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f2c26e;
+  box-shadow: 0 0 8px rgba(242,194,110,.8);
+  animation: le-twinkle 2.6s ease-in-out infinite;
+}
+.le-spark--1 { top: 10px; right: 14px; }
+.le-spark--2 { bottom: 18px; left: 8px; width: 4px; height: 4px; background: #f4a9b0; box-shadow: 0 0 8px rgba(244,169,176,.8); animation-delay: .9s; }
+.le-spark--3 { top: 30px; left: 2px; width: 3px; height: 3px; background: #b9a3e6; box-shadow: 0 0 6px rgba(185,163,230,.8); animation-delay: 1.7s; }
+
+.le-title { font-size: 14px; font-weight: 700; color: #7a5a40; }
+.le-hint { margin-top: 4px; max-width: 280px; font-size: 12.5px; line-height: 1.5; color: #b3a08b; }
+
+.le-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  font-size: 13px;
+  color: #a8978a;
+}
+
+@keyframes le-spin { to { transform: rotate(360deg); } }
+@keyframes le-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+@keyframes le-twinkle {
+  0%, 100% { opacity: .25; transform: scale(.7); }
+  50%      { opacity: 1;   transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .le-ring, .le-lotus, .le-spark { animation: none; }
+}

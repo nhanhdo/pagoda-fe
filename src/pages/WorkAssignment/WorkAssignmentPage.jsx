@@ -44,7 +44,7 @@ function KanbanCard({ record, canManage, onEdit, onDelete, onDragStart, onDragEn
           <div className="kanban-card__actions">
             <Tooltip title={t.common.edit}>
               <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}
-                style={{ color: '#8B4513', padding: '0 4px' }} />
+                style={{ color: '#b06f2c', padding: '0 4px' }} />
             </Tooltip>
             <Popconfirm title={t.workAssignment.confirmDelete} onConfirm={() => onDelete(record.id)}
               okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
@@ -268,13 +268,13 @@ export default function WorkAssignmentPage() {
               type={viewMode === 'table' ? 'primary' : 'default'}
               icon={<TableOutlined />}
               onClick={() => setViewMode('table')}
-              style={viewMode === 'table' ? { background: '#2e7d32', borderColor: '#2e7d32' } : {}}
+              style={viewMode === 'table' ? { background: '#c47f36', borderColor: '#c47f36', color: '#fff' } : {}}
             /></Tooltip>
             <Tooltip title={t.workAssignment.tooltipKanban}><Button
               type={viewMode === 'kanban' ? 'primary' : 'default'}
               icon={<ProjectOutlined />}
               onClick={() => setViewMode('kanban')}
-              style={viewMode === 'kanban' ? { background: '#2e7d32', borderColor: '#2e7d32' } : {}}
+              style={viewMode === 'kanban' ? { background: '#c47f36', borderColor: '#c47f36', color: '#fff' } : {}}
             /></Tooltip>
           </div>
 
@@ -292,8 +292,7 @@ export default function WorkAssignmentPage() {
         </Space>
 
         {canManage() && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}
-            style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
             {t.workAssignment.addNew}
           </Button>
         )}
@@ -321,7 +320,7 @@ export default function WorkAssignmentPage() {
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
-        okButtonProps={{ style: { backgroundColor: '#8B4513', borderColor: '#8B4513' } }}
+        okButtonProps={{ style: { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } }}
         width={600}
         destroyOnClose
       >

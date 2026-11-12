@@ -213,7 +213,7 @@ export default function PersonnelForm({ record, onSuccess, onCancel }) {
       <div style={{ textAlign: 'right', marginTop: 16 }}>
         <Button onClick={onCancel} style={{ marginRight: 8 }}>{t.common.cancel}</Button>
         <Button type="primary" htmlType="submit" loading={loading}
-          style={{ backgroundColor: '#8B4513', borderColor: '#8B4513' }}>
+          style={{ backgroundColor: '#b06f2c', borderColor: '#b06f2c' }}>
           {record ? t.common.update : t.personnel.form.addNew}
         </Button>
       </div>

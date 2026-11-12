@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useOutlet, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Layout, Dropdown, Space, Typography, Modal, Form, Input,
@@ -10,7 +10,7 @@ import {
   AppstoreFilled, TeamOutlined, CalendarFilled, CheckSquareFilled,
   BookFilled, HeartFilled, TrophyFilled, BankFilled, NotificationFilled,
   LogoutOutlined, UserOutlined, KeyOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  BellOutlined, SafetyCertificateFilled, DollarCircleOutlined,
+  BellOutlined, SafetyCertificateFilled, DollarCircleOutlined, DownOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/axios';
@@ -131,6 +131,12 @@ function NotificationBell() {
   const [open, setOpen]                   = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread]               = useState(0);
+  const [ringing, setRinging]             = useState(false);
+  const prevUnread = useRef(0);
+  useEffect(() => {
+    if (unread > prevUnread.current) setRinging(true);
+    prevUnread.current = unread;
+  }, [unread]);
   const { t } = useLanguage();
   const { isAdmin, hasRole } = useAuth();
   const navigate = useNavigate();
@@ -252,18 +258,21 @@ function NotificationBell() {
       overlayInnerStyle={{ padding: 0, borderRadius: 10, overflow: 'hidden' }}
       overlayStyle={{ zIndex: 1100 }}
     >
-      <Badge count={unread} size="small" offset={[-2, 2]}>
-        <Button
-          type="text"
-          icon={<BellOutlined style={{ fontSize: 18, color: '#5c3317' }} />}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36 }}
-        />
+      <Badge count={unread} size="small" offset={[-4, 4]} color="#d9646c">
+        <button
+          type="button"
+          className={`hdr-icon-btn${open ? ' is-open' : ''}${ringing ? ' is-ringing' : ''}`}
+          aria-label="notifications"
+          onAnimationEnd={() => setRinging(false)}
+        >
+          <BellOutlined />
+        </button>
       </Badge>
     </Popover>
   );
 }
 
-const SIDEBAR_BG = 'linear-gradient(180deg, #1a0800 0%, #3d1a06 30%, #6b2e10 65%, #8B4513 100%)';
+const SIDEBAR_BG = '#ffffff';
 
 /* ── Custom sidebar menu — replaces Ant Design <Menu> ── */
 function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
@@ -274,14 +283,13 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
         if (item.type === 'divider') {
           return (
             <div key={`div-${idx}`} style={{
-              height: 1, margin: '10px 18px',
-              background: 'linear-gradient(90deg, transparent, rgba(255,195,95,.22), transparent)',
+              height: 1, margin: '10px 20px',
+              background: '#f1e8db',
             }} />
           );
         }
         const sel = selectedKey === item.key;
         const hov = hovered === item.key;
-        const isAdminItem = item.key === '/app/users';
         return (
           <div
             key={item.key}
@@ -296,44 +304,30 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
-              gap: collapsed ? 0 : 11,
+              gap: collapsed ? 0 : 10,
               justifyContent: collapsed ? 'center' : 'flex-start',
-              padding: collapsed ? '13px 0' : '10px 14px',
-              margin: '2px 10px',
-              borderRadius: 10,
+              padding: collapsed ? '6px 0' : '5px 10px 5px 6px',
+              margin: '2px 12px',
+              borderRadius: 12,
               cursor: 'pointer',
               outline: 'none',
               overflow: 'hidden',
               background: sel
-                ? 'linear-gradient(135deg, rgba(255,185,50,.30) 0%, rgba(160,60,0,.18) 100%)'
-                : hov ? 'rgba(255,185,50,.09)' : 'transparent',
-              boxShadow: sel
-                ? 'inset 0 0 0 1px rgba(255,160,40,.22), 0 3px 10px rgba(100,30,0,.28)'
-                : 'none',
-              transition: 'background 0.17s ease, box-shadow 0.17s ease',
+                ? 'linear-gradient(135deg, #dca35e 0%, #c47f36 60%, #b56f28 100%)'
+                : hov ? '#f8f2ea' : 'transparent',
+              boxShadow: sel ? '0 6px 16px rgba(196,127,54,.30)' : 'none',
+              transition: 'background 0.18s ease, box-shadow 0.18s ease',
             }}
           >
-            {/* animated left accent */}
-            <div style={{
-              position: 'absolute', left: 0,
-              top: sel ? '14%' : '50%', bottom: sel ? '14%' : '50%',
-              width: sel ? 3.5 : 0,
-              borderRadius: '0 3px 3px 0',
-              background: isAdminItem
-                ? 'linear-gradient(180deg, #ffd700, #ffc44d)'
-                : 'linear-gradient(180deg, #ffc44d, #c85000)',
-              boxShadow: sel ? '0 0 10px rgba(255,196,77,.65)' : 'none',
-              transition: 'top 0.22s ease, bottom 0.22s ease, width 0.15s ease',
-            }} />
-
-            {/* icon */}
+            {/* icon tile */}
             <span style={{
-              fontSize: 16, lineHeight: 1, flexShrink: 0,
-              color: sel
-                ? isAdminItem ? '#ffd700' : '#ffd59e'
-                : hov ? 'rgba(255,210,140,.9)' : 'rgba(255,175,85,.58)',
-              filter: sel ? 'drop-shadow(0 0 5px rgba(255,190,70,.75))' : 'none',
-              transition: 'color 0.17s, filter 0.17s',
+              width: 32, height: 32, flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 10,
+              fontSize: 15.5, lineHeight: 1,
+              background: sel ? 'rgba(255,255,255,.22)' : hov ? '#fff' : '#f7f2ec',
+              color: sel ? '#ffffff' : hov ? '#c47f36' : '#a8957f',
+              transition: 'color 0.18s, background 0.18s',
             }}>
               {item.icon}
             </span>
@@ -342,13 +336,11 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
             {!collapsed && (
               <span style={{
                 fontSize: 13.5, flex: 1,
-                fontWeight: sel ? 700 : 400,
-                letterSpacing: sel ? 0.25 : 0.05,
+                fontWeight: sel ? 650 : 500,
+                letterSpacing: 0.1,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                color: sel
-                  ? isAdminItem ? '#ffd700' : '#ffd59e'
-                  : hov ? 'rgba(255,225,175,.92)' : 'rgba(255,205,150,.58)',
-                transition: 'color 0.17s',
+                color: sel ? '#ffffff' : hov ? '#3e2c1f' : '#5f5046',
+                transition: 'color 0.18s',
               }}>
                 {item.label}
               </span>
@@ -357,11 +349,11 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
             {/* collapsed selected dot */}
             {sel && collapsed && (
               <span style={{
-                position: 'absolute', bottom: 5,
+                position: 'absolute', bottom: 1,
                 left: '50%', transform: 'translateX(-50%)',
                 display: 'block', width: 4, height: 4,
-                borderRadius: '50%', background: '#ffc44d',
-                boxShadow: '0 0 6px rgba(255,196,77,.9)',
+                borderRadius: '50%', background: '#ffffff',
+                boxShadow: 'none',
               }} />
             )}
           </div>
@@ -388,16 +380,19 @@ export default function MainLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const outlet = useOutlet();
   const { lang, setLang, t } = useLanguage();
 
+  const contentRef = useRef(null);
   const isFirstNav = useRef(true);
   useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
     if (isFirstNav.current) { isFirstNav.current = false; return; }
     setNavState(1);
     const done  = setTimeout(() => setNavState(2), 340);
     const reset = setTimeout(() => setNavState(0), 660);
     return () => { clearTimeout(done); clearTimeout(reset); };
-  }, [location.key]);
+  }, [location.pathname]);
 
   const screens = useBreakpoint();
   const isMobile = screens.md === false;
@@ -446,7 +441,7 @@ export default function MainLayout() {
     { key: '/app/news',               icon: <NotificationFilled />,   label: t.nav.news },
     ...(user?.role === 'admin' ? [
       { type: 'divider' },
-      { key: '/app/users', icon: <SafetyCertificateFilled />, label: t.nav.users, style: { color: '#ffc44d' } },
+      { key: '/app/users', icon: <SafetyCertificateFilled />, label: t.nav.users },
     ] : []),
   ];
 
@@ -488,22 +483,17 @@ export default function MainLayout() {
   const displayName = user?.personnel?.dharmName || user?.personnel?.fullName || user?.username;
   const initials = displayName?.charAt(0)?.toUpperCase() || 'U';
 
-  const handleMenuClick = ({ key }) => {
-    navigate(key);
+  const goTo = (path) => {
+    if (path !== location.pathname) navigate(path);
     if (isMobile) setCollapsed(true);
   };
 
-  const handleLogoClick = () => {
-    navigate('/app/dashboard');
-    if (isMobile) setCollapsed(true);
-  };
+  const handleLogoClick = () => goTo('/app/dashboard');
 
   const sidebarContent = (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', bottom: -60, right: -60, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,81,0,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
-
       <div
-        style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid rgba(255,210,140,0.15)', cursor: 'pointer', gap: 10 }}
+        style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid #f0e6d8', cursor: 'pointer', gap: 10 }}
         onClick={handleLogoClick}
       >
         {/* Logo Buddha circle */}
@@ -512,8 +502,8 @@ export default function MainLayout() {
           return (
             <div style={{
               width: sz, height: sz, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-              border: '1.5px solid rgba(255,215,0,0.55)',
-              boxShadow: '0 0 10px rgba(255,200,60,0.40)',
+              border: '2px solid #fff',
+              boxShadow: '0 0 0 1.5px rgba(214,160,96,.6), 0 4px 12px rgba(196,127,54,.25)',
             }}>
               <img src="/adida.PNG" alt="" style={{
                 width: '100%', height: '100%',
@@ -525,8 +515,8 @@ export default function MainLayout() {
         })()}
         {showFullLabel && (
           <div style={{ whiteSpace: 'nowrap' }}>
-            <Text style={{ color: '#ffd59e', fontWeight: 800, fontSize: 13, letterSpacing: 0.3 }}>{t.app.title1} </Text>
-            <Text style={{ color: '#ffedd5', fontWeight: 600, fontSize: 13, opacity: 0.9 }}>{t.app.title2}</Text>
+            <Text style={{ color: '#a2652a', fontWeight: 800, fontSize: 13.5, letterSpacing: 0.3 }}>{t.app.title1} </Text>
+            <Text style={{ color: '#6f5a49', fontWeight: 600, fontSize: 13 }}>{t.app.title2}</Text>
           </div>
         )}
       </div>
@@ -534,13 +524,13 @@ export default function MainLayout() {
       <SidebarMenu
         items={menuItems}
         selectedKey={location.pathname}
-        onSelect={(key) => { navigate(key); if (isMobile) setCollapsed(true); }}
+        onSelect={goTo}
         collapsed={collapsed && !isMobile}
       />
 
       {/* Buddha mandala — bottom decoration, click for halo effect */}
       {showFullLabel && (
-        <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto' }}>
+        <div className="sider-buddha" style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', padding: '22px 0 18px' }}>
           <div
             onClick={handleBuddhaClick}
             style={{ position: 'relative', width: 112, height: 112, cursor: 'pointer' }}
@@ -548,7 +538,7 @@ export default function MainLayout() {
             {/* Soft ambient glow */}
             <div style={{
               position: 'absolute', inset: '-30%', borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255,220,80,0.28) 0%, rgba(255,160,30,0.10) 55%, transparent 72%)',
+              background: 'radial-gradient(circle, rgba(250,222,170,0.40) 0%, rgba(250,230,200,0.14) 50%, transparent 72%)',
               pointerEvents: 'none',
             }}/>
 
@@ -564,16 +554,16 @@ export default function MainLayout() {
             {/* Outer golden ring */}
             <div style={{
               position: 'absolute', inset: -4, borderRadius: '50%',
-              border: '1.5px solid rgba(255,215,0,0.40)',
-              boxShadow: '0 0 14px rgba(255,200,60,0.28)',
+              border: '1.5px solid #ecd6b5',
+              boxShadow: '0 6px 16px rgba(176,111,44,0.14)',
               pointerEvents: 'none',
             }}/>
             {/* Circle-cropped Buddha image */}
             <div style={{
               borderRadius: '50%', overflow: 'hidden',
               width: 112, height: 112,
-              border: '1.5px solid rgba(255,215,0,0.28)',
-              opacity: 0.72,
+              border: '2px solid #fff',
+              opacity: 0.92,
             }}>
               <img
                 src="/adida.PNG"
@@ -596,7 +586,7 @@ export default function MainLayout() {
     <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       {!isMobile && (
         <Sider trigger={null} collapsible collapsed={collapsed} width={240}
-          style={{ background: SIDEBAR_BG, boxShadow: '3px 0 16px rgba(0,0,0,0.35)', position: 'relative', overflow: 'hidden', height: '100vh' }}>
+          style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #f1e8db, 6px 0 24px rgba(120,90,50,0.04)', position: 'relative', overflow: 'hidden', height: '100vh' }}>
           {sidebarContent}
         </Sider>
       )}
@@ -613,13 +603,13 @@ export default function MainLayout() {
       </Drawer>
 
       <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Header style={{ background: '#fdf8f2', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(139,69,19,.15)', boxShadow: '0 1px 8px rgba(139,69,19,.06)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
+        <Header style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f0e6d8', boxShadow: '0 1px 12px rgba(120,90,50,.04)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
 
           {/* ── Navigation progress bar ── */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>
             <div style={{
               height: '100%',
-              background: 'linear-gradient(90deg, #8B4513 0%, #ffc44d 55%, #ff9800 100%)',
+              background: 'linear-gradient(90deg, #e7b35a 0%, #c47f36 55%, #e98a6a 100%)',
               width:   navState === 1 ? '80%' : navState === 2 ? '100%' : '0%',
               opacity: navState === 0 ? 0 : 1,
               transition: navState === 1
@@ -630,7 +620,7 @@ export default function MainLayout() {
             }} />
           </div>
 
-          <div onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 18, cursor: 'pointer', color: '#5c3317', padding: '0 8px' }}>
+          <div onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 18, cursor: 'pointer', color: '#5a3a22', padding: '0 8px' }}>
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </div>
 
@@ -638,8 +628,8 @@ export default function MainLayout() {
             <div style={{
               position: 'absolute', left: '50%', transform: 'translateX(-50%)',
               display: 'flex', alignItems: 'center', gap: 7,
-              background: 'rgba(139,69,19,0.07)',
-              border: '1px solid rgba(139,69,19,0.16)',
+              background: 'linear-gradient(135deg, #fff8ee 0%, #fcefdc 100%)',
+              border: '1px solid #f0dfc6',
               borderRadius: 20,
               padding: '5px 14px 5px 10px',
               pointerEvents: 'none', userSelect: 'none',
@@ -647,13 +637,13 @@ export default function MainLayout() {
             }}>
               <span style={{
                 fontSize: 14, lineHeight: 1, flexShrink: 0,
-                color: '#8B4513',
+                color: '#c47f36',
                 display: 'flex', alignItems: 'center',
               }}>
                 {currentPage.icon}
               </span>
               <Text style={{
-                fontWeight: 700, fontSize: 14, color: '#5c3317',
+                fontWeight: 700, fontSize: 14, color: '#5a3a22',
                 letterSpacing: 0.2, whiteSpace: 'nowrap',
                 overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
@@ -662,74 +652,81 @@ export default function MainLayout() {
             </div>
           )}
 
-          <Space size={8}>
-            {/* Language toggle — pill switch */}
-            <div
-              onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}
-              title={lang === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-              style={{
-                cursor: 'pointer',
-                width: 52, height: 26,
-                borderRadius: 13,
-                background: '#f0dcc8',
-                border: '1.5px solid rgba(139,69,19,0.28)',
-                position: 'relative',
-                flexShrink: 0,
-                userSelect: 'none',
-              }}
-            >
-              {/* thumb with label inside */}
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: lang === 'vi' ? 'calc(100% - 24px)' : 3,
-                transform: 'translateY(-50%)',
-                width: 21, height: 21,
-                borderRadius: '50%',
-                background: '#8B4513',
-                boxShadow: '0 1px 5px rgba(0,0,0,0.28)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'left 0.25s cubic-bezier(0.34,1.4,0.64,1)',
-              }}>
-                <span style={{ color: '#fff', fontSize: 8, fontWeight: 800, letterSpacing: 0.3, lineHeight: 1 }}>
-                  {lang === 'vi' ? 'VN' : 'EN'}
-                </span>
-              </div>
+          <div className="hdr-actions">
+            {/* Language switch */}
+            <div className={`hdr-lang is-${lang}`} role="radiogroup" aria-label="Language">
+              <span className="hdr-lang__thumb" aria-hidden="true" />
+              {['vi', 'en'].map(code => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={lang === code}
+                  className={`hdr-lang__opt${lang === code ? ' is-active' : ''}`}
+                  onClick={() => setLang(code)}
+                  title={code === 'vi' ? 'Tiếng Việt' : 'English'}
+                >
+                  {code.toUpperCase()}
+                </button>
+              ))}
             </div>
 
             <NotificationBell />
 
-            <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenu }} placement="bottomRight">
-              <Space style={{ cursor: 'pointer' }}>
-                <div className="avatar-placeholder">{initials}</div>
-                {!isMobile && (
-                  <div style={{ lineHeight: 1.3 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: '#333' }}>{displayName}</div>
-                    <div style={{ fontSize: 11, color: '#888' }}>{t.roles[user?.role] || user?.role}</div>
+            <span className="hdr-divider" aria-hidden="true" />
+
+            <Dropdown
+              menu={{ items: userMenuItems, onClick: handleUserMenu }}
+              placement="bottomRight"
+              trigger={['click']}
+              popupRender={(menu) => (
+                <div className="hdr-menu">
+                  <div className="hdr-menu__profile">
+                    <div className="hdr-avatar hdr-avatar--lg">{initials}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="hdr-menu__name">{displayName}</div>
+                      <div className="hdr-menu__user">@{user?.username}</div>
+                      <span className="hdr-role">{t.roles[user?.role] || user?.role}</span>
+                    </div>
                   </div>
+                  {menu}
+                </div>
+              )}
+            >
+              <button type="button" className="hdr-user">
+                <span className="hdr-avatar">
+                  {initials}
+                  <i className="hdr-avatar__status" />
+                </span>
+                {!isMobile && (
+                  <span className="hdr-user__text">
+                    <span className="hdr-user__name">{displayName}</span>
+                    <span className="hdr-user__role">{t.roles[user?.role] || user?.role}</span>
+                  </span>
                 )}
-              </Space>
+                <DownOutlined className="hdr-user__chevron" />
+              </button>
             </Dropdown>
-          </Space>
+          </div>
         </Header>
 
-        <Content style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
+        <Content ref={contentRef} style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={location.key}
+              key={location.pathname}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { duration: 0.18, ease: 'easeOut' } }}
               exit={{ opacity: 0, transition: { duration: 0.08, ease: 'easeIn' } }}
               style={{ minHeight: '100%' }}
             >
-              <Outlet />
+              {outlet}
             </motion.div>
           </AnimatePresence>
         </Content>
       </Layout>
 
       <Modal open={profileOpen} onCancel={() => setProfileOpen(false)} footer={null}
-        title={<span style={{ color: '#5c3317', fontWeight: 700 }}>{t.auth.profile}</span>} width={480}>
+        title={<span style={{ color: '#5a3a22', fontWeight: 700 }}>{t.auth.profile}</span>} width={480}>
         {profileData && (
           <Descriptions column={1} bordered size="small" style={{ marginTop: 8 }}>
             <Descriptions.Item label={t.auth.username}><strong>{profileData.username}</strong></Descriptions.Item>
@@ -756,8 +753,8 @@ export default function MainLayout() {
 
       <Modal open={changePassOpen} onCancel={() => setChangePassOpen(false)} onOk={() => changePassForm.submit()}
         okText={t.common.confirm} cancelText={t.common.cancel}
-        okButtonProps={{ loading: changePassLoading, style: { background: '#8B4513', borderColor: '#8B4513' } }}
-        title={<span style={{ color: '#5c3317', fontWeight: 700 }}>{t.auth.changePassword}</span>} width={400}>
+        okButtonProps={{ loading: changePassLoading, style: { background: '#c47f36', borderColor: '#c47f36' } }}
+        title={<span style={{ color: '#5a3a22', fontWeight: 700 }}>{t.auth.changePassword}</span>} width={400}>
         <Form form={changePassForm} layout="vertical" onFinish={handleChangePassword} style={{ marginTop: 16 }}>
           <Form.Item name="oldPassword" label={t.auth.oldPassword} rules={[{ required: true, message: `${t.auth.oldPassword}` }]}>
             <Input.Password />

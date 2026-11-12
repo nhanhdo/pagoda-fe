@@ -1,146 +1,200 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import CountUp from '../../components/CountUp/CountUp';
 import {
-  Card, Table, Button, Input, Select, Space, Tag, Modal, Form,
-  Popconfirm, Badge, Row, Col, DatePicker, InputNumber, Typography,
+  Table, Button, Input, Select, Space, Modal, Form, Avatar, Tooltip,
+  Popconfirm, Row, Col, DatePicker, InputNumber,
 } from 'antd';
 import {
   PlusOutlined, SearchOutlined, DeleteOutlined, EditOutlined,
-  HeartFilled, TeamOutlined, FireFilled,
+  HeartOutlined, TeamOutlined, FireOutlined, SmileOutlined, TrophyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useBuddhistFollowerPage, typeColors, statusColors } from './useBuddhistFollowerPage';
+import { useBuddhistFollowerPage } from './useBuddhistFollowerPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './BuddhistFollowerPage.css';
 
 const { Option } = Select;
-const { Text } = Typography;
 
-/* ── Deterministic monthly distribution from total hours ── */
-function monthlyDist(totalHours) {
-  if (!totalHours || totalHours <= 0) return Array(12).fill(0);
-  const raw = Array.from({ length: 12 }, (_, m) =>
-    Math.max(0, Math.sin(m * 1.7 + totalHours * 0.01) * 0.5 + 0.5 + Math.sin(m * 0.9) * 0.3)
-  );
-  const sum = raw.reduce((a, b) => a + b, 0);
-  return raw.map(v => Math.round((v / sum) * totalHours));
+/* ── Merit tiers — derived only from the real total hours ─────────── */
+const TIERS = [
+  { min: 0,   c: '#8fb87a', s: '#eef6e8' },
+  { min: 20,  c: '#4f9a72', s: '#e8f4ed' },
+  { min: 50,  c: '#d98a9a', s: '#fcecef' },
+  { min: 100, c: '#d9646c', s: '#fdeeee' },
+  { min: 200, c: '#d39a2c', s: '#fdf3dc' },
+  { min: 500, c: '#8b6fc9', s: '#f1edfb' },
+];
+
+function meritOf(hours = 0) {
+  let i = 0;
+  while (i + 1 < TIERS.length && hours >= TIERS[i + 1].min) i++;
+  const tier = TIERS[i];
+  const next = TIERS[i + 1];
+  const progress = next ? (hours - tier.min) / (next.min - tier.min) : 1;
+  return { index: i, tier, next, progress: Math.max(0, Math.min(1, progress)), remaining: next ? next.min - hours : 0 };
 }
 
-/* ── Volunteer stats expandable panel ─────────────────── */
-function VolunteerStats({ person }) {
-  const { t } = useLanguage();
-  const hours = person.publicServiceHours || 0;
-  const months = monthlyDist(hours);
-  const maxMonth = Math.max(...months, 1);
-  const avg = Math.round(hours / 12);
-  const peakIdx = months.indexOf(maxMonth);
-  const monthNames = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
-  const currentMonth = months[new Date().getMonth()];
-  const activeMonths = months.filter(h => h > 0).length;
+const fmtHours = (h = 0) => (Number.isInteger(h) ? h : Number(h.toFixed(1))).toLocaleString('vi-VN');
 
-  if (hours === 0) {
-    return (
-      <div style={{ color: '#aaa', padding: '8px 12px', fontStyle: 'italic' }}>
-        {t.buddhistFollower.volunteer.noData}
+const TYPE_KEY = { 'phật_tử': 'phat_tu', 'tình_nguyện_viên': 'tinh_nguyen_vien', 'cả_hai': 'ca_hai' };
+const TYPE_TONE = {
+  'phật_tử':          { c: '#4d8fc7', s: '#e9f1fb' },
+  'tình_nguyện_viên': { c: '#d9646c', s: '#fdeeee' },
+  'cả_hai':           { c: '#8b6fc9', s: '#f1edfb' },
+};
+const STATUS_TONE = {
+  'đang_sinh_hoạt': { c: '#3f8461', s: '#e8f4ed' },
+  'tạm_ngưng':      { c: '#b9841f', s: '#fdf3dc' },
+  'đã_rời':         { c: '#8c7a6b', s: '#f2ede6' },
+};
+const isVolunteer = (r) => r.type === 'tình_nguyện_viên' || r.type === 'cả_hai';
+const initialOf = (name = '') => name.trim().split(/\s+/).pop()?.[0]?.toUpperCase() || '?';
+
+/* ── Visual atoms ──────────────────────────────────────────────────── */
+function Lotus({ color, size = 28 }) {
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true">
+      {[-58, 58, -29, 29, 0].map((a, i) => (
+        <g key={a} transform={`rotate(${a} 32 46)`}>
+          <path d="M32 14 C39.5 23 39.5 36 32 46 C24.5 36 24.5 23 32 14 Z" fill={color} opacity={i < 2 ? 0.45 : i < 4 ? 0.7 : 1} />
+        </g>
+      ))}
+      <path d="M16 48 Q32 55 48 48" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" opacity=".6" />
+    </svg>
+  );
+}
+
+function MeritMedal({ hours, size = 96 }) {
+  const m = meritOf(hours);
+  const stroke = size >= 80 ? 6 : 4;
+  const r = (size - stroke) / 2;
+  const C = 2 * Math.PI * r;
+  return (
+    <div className="bf-medal" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={m.tier.s} strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={m.tier.c} strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={`${C * m.progress} ${C}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          className="bf-medal__arc"
+        />
+      </svg>
+      <div className="bf-medal__core" style={{ background: m.tier.s, inset: stroke + 4 }}>
+        <Lotus color={m.tier.c} size={size * 0.5} />
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+function Pill({ tone, children, dot }) {
+  return (
+    <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>
+      {dot && <span className="tbl-pill__dot" />}{children}
+    </span>
+  );
+}
+
+/* ── Expanded row: merit journey ───────────────────────────────────── */
+function MeritPanel({ person, ranking, totalHours, t }) {
+  const M = t.buddhistFollower.merit;
+  const hours = person.publicServiceHours || 0;
+  const m = meritOf(hours);
+  const rank = ranking.get(person.id);
+  const share = totalHours > 0 ? Math.round((hours / totalHours) * 100) : 0;
 
   return (
-    <div className="volunteer-stats">
-      {/* Big number */}
-      <div style={{ textAlign: 'center', minWidth: 100 }}>
-        <div style={{ fontSize: 11, color: '#888', marginBottom: 4, letterSpacing: 1 }}>{t.buddhistFollower.volunteer.totalHoursLabel}</div>
-        <div className="volunteer-stats__num">🔥 {hours}</div>
-        <div style={{ fontSize: 11, color: '#8B4513', marginTop: 2 }}>{t.buddhistFollower.volunteer.hoursUnit}</div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ flex: '0 0 180px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <Text style={{ fontSize: 11, color: '#888' }}>0h</Text>
-          <Text style={{ fontSize: 11, color: '#888' }}>500h</Text>
-        </div>
-        <div style={{ height: 10, background: '#f0e8df', borderRadius: 5, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%',
-            width: `${Math.min(100, (hours / 500) * 100)}%`,
-            background: 'linear-gradient(to right, #d4a017, #8B4513)',
-            borderRadius: 5,
-            transition: 'width 1s ease',
-          }} />
-        </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
-          <div>
-            <div style={{ fontSize: 11, color: '#888' }}>{t.buddhistFollower.volunteer.peakMonth}</div>
-            <div style={{ fontWeight: 700, color: '#8B4513', fontSize: 13 }}>{monthNames[peakIdx]}: {maxMonth}h</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: '#888' }}>{t.buddhistFollower.volunteer.avgPerMonth}</div>
-            <div style={{ fontWeight: 700, color: '#8B4513', fontSize: 13 }}>{avg}h</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: '#888' }}>{t.buddhistFollower.volunteer.thisMonth}</div>
-            <div style={{ fontWeight: 700, color: currentMonth > avg ? '#389e0d' : '#8B4513', fontSize: 13 }}>
-              {currentMonth}h {currentMonth > avg ? '↑' : ''}
-            </div>
-          </div>
+    <div className="bf-merit" style={{ '--tier': m.tier.c, '--tier-soft': m.tier.s }}>
+      <div className="bf-merit__hero">
+        <MeritMedal hours={hours} />
+        <div>
+          <div className="bf-merit__hours">{fmtHours(hours)}<span>{M.hours}</span></div>
+          <div className="bf-merit__tier">{M.level} {m.index + 1} · {M.tiers[m.index]}</div>
         </div>
       </div>
 
-      {/* Monthly bar chart */}
-      <div>
-        <div style={{ fontSize: 11, color: '#888', marginBottom: 6, letterSpacing: 1 }}>
-          {t.buddhistFollower.volunteer.activeMonths.replace('{n}', activeMonths)}
+      <div className="bf-merit__journey">
+        <div className="bf-merit__label">{M.journey}</div>
+        <div className="bf-merit__next">
+          {m.next
+            ? M.toNext.replace('{n}', fmtHours(m.remaining)).replace('{tier}', M.tiers[m.index + 1])
+            : M.maxTier}
         </div>
-        <div className="volunteer-months">
-          {months.map((h, i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <div
-                className="volunteer-month-bar"
-                style={{ height: maxMonth > 0 ? `${Math.max(3, (h / maxMonth) * 44)}px` : '3px' }}
-                title={`${monthNames[i]}: ${h}h`}
-              />
-              <span style={{ fontSize: 9, color: '#aaa' }}>{monthNames[i]}</span>
-            </div>
-          ))}
+        <div className="bf-ladder">
+          {TIERS.map((tier, i) => {
+            const state = i < m.index ? 'done' : i === m.index ? 'current' : 'todo';
+            return (
+              <Tooltip key={tier.min} title={`${M.tiers[i]} · ≥ ${tier.min} ${M.hours}`}>
+                <div className={`bf-ladder__step is-${state}`} style={{ '--step': tier.c, '--step-soft': tier.s }}>
+                  <div className="bf-ladder__bar">
+                    <span style={{ width: state === 'done' ? '100%' : state === 'current' ? `${m.progress * 100}%` : 0 }} />
+                  </div>
+                  <span className="bf-ladder__name">{M.tiers[i]}</span>
+                </div>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="bf-merit__facts">
+        <div className="bf-fact">
+          <strong>{M.workDays.replace('{n}', fmtHours(Math.round((hours / 8) * 10) / 10))}</strong>
+          <span>{t.buddhistFollower.merit.ladderHint}</span>
+        </div>
+        {rank && (
+          <div className="bf-fact">
+            <strong>#{rank.rank}<small> / {rank.of}</small></strong>
+            <span>{M.rank}</span>
+          </div>
+        )}
+        <div className="bf-fact">
+          <strong>{share}%</strong>
+          <span>{M.share} {M.shareHint}</span>
         </div>
       </div>
     </div>
   );
 }
 
-/* ── Main page ─────────────────────────────────────────── */
+/* ── Main page ─────────────────────────────────────────────────────── */
 export default function BuddhistFollowerPage() {
   const { t } = useLanguage();
+  const B = t.buddhistFollower;
+  const M = B.merit;
   const {
-    data,
-    loading,
-    total,
-    page,
-    setPage,
-    search,
-    setSearch,
-    filterType,
-    setFilterType,
-    modalOpen,
-    setModalOpen,
-    editRecord,
-    setEditRecord,
-    handleSubmit,
-    handleDelete,
-    canManage,
-    isAdmin,
-    hasRole,
+    data, allData, loading, total, page, setPage, search, setSearch,
+    filterType, setFilterType, modalOpen, setModalOpen, editRecord, setEditRecord,
+    handleSubmit, handleDelete, canManage, isAdmin, hasRole,
   } = useBuddhistFollowerPage();
 
   const [form] = Form.useForm();
+  const [showAllBoard, setShowAllBoard] = useState(false);
+  const BOARD_LIMIT = 5;
 
-  /* Stats computed from current page data */
-  const totalFollowers  = data.length;
-  const totalVolunteers = data.filter(r => r.type === 'tình_nguyện_viên' || r.type === 'cả_hai').length;
-  const totalHours      = data.reduce((s, r) => s + (r.publicServiceHours || 0), 0);
-  const totalPurePhatTu = data.filter(r => r.type === 'phật_tử').length;
+  const summary = useMemo(() => {
+    const everyone = allData.length ? allData : data;
+    const contributors = everyone
+      .filter(r => (r.publicServiceHours || 0) > 0)
+      .sort((a, b) => (b.publicServiceHours || 0) - (a.publicServiceHours || 0));
+    const ranking = new Map();
+    contributors.forEach(r => {
+      const higher = contributors.filter(x => (x.publicServiceHours || 0) > (r.publicServiceHours || 0)).length;
+      ranking.set(r.id, { rank: higher + 1, of: contributors.length });
+    });
+    const tierCounts = TIERS.map(() => 0);
+    contributors.forEach(r => { tierCounts[meritOf(r.publicServiceHours).index]++; });
+    return {
+      pure: everyone.filter(r => r.type === 'phật_tử').length,
+      volunteers: everyone.filter(isVolunteer).length,
+      totalHours: everyone.reduce((s, r) => s + (r.publicServiceHours || 0), 0),
+      contributors,
+      ranking,
+      tierCounts,
+    };
+  }, [allData, data]);
 
   const openModal = (record = null) => {
     setEditRecord(record);
@@ -156,211 +210,361 @@ export default function BuddhistFollowerPage() {
     setModalOpen(true);
   };
 
+  const topHours = summary.contributors[0]?.publicServiceHours || 1;
+
   const columns = [
-    { title: t.common.code, dataIndex: 'code', width: 90, render: (v) => <Tag>{v}</Tag> },
     {
-      title: t.buddhistFollower.colName,
-      width: 220,
-      render: (_, r) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{r.fullName}</div>
-          {r.dharmName && <div style={{ fontSize: 12, color: '#888' }}>{r.dharmName}</div>}
-        </div>
-      ),
+      title: B.colName,
+      key: 'name',
+      width: 260,
+      render: (_, r) => {
+        const tone = TYPE_TONE[r.type] || TYPE_TONE['phật_tử'];
+        return (
+          <div className="person-cell">
+            <Avatar size={40} className="person-cell__avatar" style={{ background: tone.s, color: tone.c }}>{initialOf(r.fullName)}</Avatar>
+            <div className="person-cell__text">
+              <div className="person-cell__name">{r.fullName}</div>
+              <div className="person-cell__sub">
+                {r.dharmName && <span>{r.dharmName}</span>}
+                {r.dharmName && r.code && <span className="person-cell__sep">·</span>}
+                {r.code && <span className="tbl-mono">{r.code}</span>}
+              </div>
+            </div>
+          </div>
+        );
+      },
     },
     {
-      title: t.buddhistFollower.colType,
+      title: B.colType,
       dataIndex: 'type',
-      width: 130,
-      render: (v) => <Tag style={{ color: typeColors[v] }}>{v?.replace(/_/g, ' ')}</Tag>,
+      width: 150,
+      render: (v) => <Pill tone={TYPE_TONE[v] || TYPE_TONE['phật_tử']}>{B.types[TYPE_KEY[v]] || v}</Pill>,
     },
-    { title: t.buddhistFollower.colArea, dataIndex: 'region', width: 120, render: (v) => v || '—' },
-    { title: t.buddhistFollower.colPhone, dataIndex: 'phone', width: 120, render: (v) => v || '—' },
+    { title: B.colArea, dataIndex: 'region', width: 130, render: (v) => v || <span className="tbl-muted">—</span> },
+    { title: B.colPhone, dataIndex: 'phone', width: 130, render: (v) => v ? <span className="tbl-mono">{v}</span> : <span className="tbl-muted">—</span> },
     {
-      title: t.buddhistFollower.colServiceHours,
+      title: B.colServiceHours,
       dataIndex: 'publicServiceHours',
-      width: 110,
-      render: (v) => v > 0 ? <Tag color="orange">🔥 {v}h</Tag> : <span style={{ color: '#ccc' }}>—</span>,
+      width: 190,
+      sorter: (a, b) => (a.publicServiceHours || 0) - (b.publicServiceHours || 0),
+      render: (v) => {
+        if (!v) return <span className="tbl-muted">—</span>;
+        const m = meritOf(v);
+        return (
+          <Tooltip title={`${M.level} ${m.index + 1} · ${M.tiers[m.index]}`}>
+            <div className="bf-hours-cell" style={{ '--tier': m.tier.c, '--tier-soft': m.tier.s }}>
+              <span className="bf-hours-cell__icon"><Lotus color={m.tier.c} size={20} /></span>
+              <div className="bf-hours-cell__text">
+                <strong>{fmtHours(v)}h</strong>
+                <span className="bf-hours-cell__bar"><i style={{ width: `${m.progress * 100}%` }} /></span>
+              </div>
+            </div>
+          </Tooltip>
+        );
+      },
     },
     {
       title: t.common.status,
       dataIndex: 'status',
-      width: 130,
-      render: (v) => <Badge status={statusColors[v] || 'default'} text={v?.replace(/_/g, ' ')} />,
+      width: 150,
+      render: (v) => <Pill dot tone={STATUS_TONE[v] || STATUS_TONE['đã_rời']}>{B.statuses[v] || v?.replace(/_/g, ' ')}</Pill>,
     },
     {
-      title: t.common.actions,
-      width: 100,
+      title: '',
+      key: 'actions',
+      width: 96,
+      align: 'right',
       render: (_, r) => canManage() && (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+        <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
+          <Tooltip title={t.common.edit}>
+            <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+          </Tooltip>
           {(isAdmin() || hasRole('truotri')) && (
-            <Popconfirm title={t.common.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel}>
-              <Button type="text" danger icon={<DeleteOutlined />} />
+            <Popconfirm title={t.common.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
+              <Tooltip title={t.common.delete}>
+                <Button type="text" danger icon={<DeleteOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
-        </Space>
+        </div>
       ),
     },
   ];
 
   if (loading && !data.length) return <PageSpinner />;
 
+  const stats = [
+    { label: B.statTotalList,         value: total,                                  icon: <TeamOutlined />,  tone: { c: '#c47f36', s: '#fbf1e4' } },
+    { label: B.statPureBuddhist,      value: summary.pure,                           icon: <HeartOutlined />, tone: { c: '#4d8fc7', s: '#e9f1fb' } },
+    { label: B.statVolunteers,        value: summary.volunteers,                     icon: <SmileOutlined />, tone: { c: '#d9646c', s: '#fdeeee' } },
+    { label: B.statTotalServiceHours, value: summary.totalHours, format: (n) => `${fmtHours(n)}h`,     icon: <FireOutlined />,  tone: { c: '#d39a2c', s: '#fdf3dc' },
+      hint: M.workDays.replace('{n}', fmtHours(Math.round(summary.totalHours / 8))) },
+  ];
+
   return (
-    <Card>
-      {/* ── Summary stats ── */}
-      <div className="follower-stats-row section-anim section-d0">
-        {[
-          { label: t.buddhistFollower.statTotalList,         value: total,                 icon: <TeamOutlined />, color: '#8B4513' },
-          { label: t.buddhistFollower.statPureBuddhist,      value: totalPurePhatTu,       icon: <HeartFilled />,  color: '#8B4513' },
-          { label: t.buddhistFollower.statVolunteers,        value: totalVolunteers,       icon: <HeartFilled />,  color: '#e74c3c' },
-          { label: t.buddhistFollower.statTotalServiceHours, value: `${totalHours}h`,     icon: <FireFilled />,   color: '#d48806' },
-        ].map(({ label, value, icon, color }) => (
-          <div key={label} className="follower-stat-card" style={{ borderTopColor: color }}>
-            <div style={{ fontSize: 22, color, marginBottom: 4 }}>{icon}</div>
-            <div style={{ fontSize: 26, fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{label}</div>
+    <div className="bf-page">
+      {/* ── Header ── */}
+      <section className="bf-hero section-anim section-d0">
+        <div className="bf-hero__main">
+          <div className="bf-hero__icon"><HeartOutlined /></div>
+          <div>
+            <h1 className="bf-hero__title">{B.title}</h1>
+            <p className="bf-hero__sub">{B.subtitle}</p>
+          </div>
+        </div>
+        {canManage() && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="bf-hero__btn">
+            {B.addNew}
+          </Button>
+        )}
+      </section>
+
+      {/* ── Stats ── */}
+      <div className="bf-stats section-anim section-d1">
+        {stats.map(s => (
+          <div key={s.label} className="bf-stat" style={{ '--st': s.tone.c, '--st-soft': s.tone.s }}>
+            <span className="bf-stat__icon">{s.icon}</span>
+            <div className="bf-stat__body">
+              <div className="bf-stat__value"><CountUp value={s.value} format={s.format} /></div>
+              <div className="bf-stat__label">{s.label}</div>
+              {s.hint && <div className="bf-stat__hint">{s.hint}</div>}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* ── Toolbar ── */}
-      <div className="page-toolbar section-anim section-d1">
-        <Space wrap>
-          <Input placeholder={t.buddhistFollower.searchPlaceholder} prefix={<SearchOutlined />}
-            value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            style={{ width: 240 }} allowClear />
-          <Select value={filterType} onChange={(v) => { setFilterType(v); setPage(1); }} style={{ width: 160 }} placeholder={t.buddhistFollower.allTypes}>
-            <Option value="">{t.buddhistFollower.allTypes}</Option>
-            <Option value="phật_tử">{t.buddhistFollower.types['phat_tu']}</Option>
-            <Option value="tình_nguyện_viên">{t.buddhistFollower.types['tinh_nguyen_vien']}</Option>
-            <Option value="cả_hai">{t.buddhistFollower.types['ca_hai']}</Option>
-          </Select>
-        </Space>
-        {canManage() && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}
-            style={{ backgroundColor: '#2e7d32', borderColor: '#2e7d32' }}>
-            {t.buddhistFollower.addNew}
-          </Button>
-        )}
+      {/* ── Honor board + tier ladder ── */}
+      <div className="bf-grid section-anim section-d2">
+        <section className="bf-card">
+          <header className="bf-card__head">
+            <span className="bf-card__icon" style={{ color: '#d39a2c', background: '#fdf3dc' }}><TrophyOutlined /></span>
+            {M.leaderboard}
+          </header>
+          {summary.contributors.length === 0 ? (
+            <div className="bf-empty"><FireOutlined /> {M.empty}</div>
+          ) : (
+            <ol className={`bf-board${showAllBoard ? ' is-expanded' : ''}`}>
+              {(showAllBoard ? summary.contributors : summary.contributors.slice(0, BOARD_LIMIT)).map((r) => {
+                const h = r.publicServiceHours || 0;
+                const m = meritOf(h);
+                const rank = summary.ranking.get(r.id)?.rank;
+                return (
+                  <li key={r.id} className={`bf-board__row${rank <= 3 ? ` is-top is-top-${rank}` : ''}`}>
+                    <span className="bf-board__rank">{rank}</span>
+                    <MeritMedal hours={h} size={40} />
+                    <div className="bf-board__who">
+                      <div className="bf-board__name">{r.dharmName || r.fullName}</div>
+                      <div className="bf-board__tier" style={{ color: m.tier.c }}>{M.tiers[m.index]}</div>
+                    </div>
+                    <div className="bf-board__score">
+                      <strong>{fmtHours(h)}h</strong>
+                      <span className="bf-board__bar"><i style={{ width: `${(h / topHours) * 100}%`, background: m.tier.c }} /></span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+
+          {summary.contributors.length > BOARD_LIMIT && (
+            <button type="button" className="bf-board__toggle" onClick={() => setShowAllBoard(v => !v)}>
+              {showAllBoard ? M.collapse : M.showAll.replace('{n}', summary.contributors.length)}
+              <span className={`bf-board__chev${showAllBoard ? ' is-up' : ''}`}>›</span>
+            </button>
+          )}
+
+          {summary.contributors.length > 0 && (
+            <div className="bf-board__summary">
+              <div className="bf-dist">
+                <div className="bf-dist__label">{M.distribution}</div>
+                <div className="bf-dist__bar">
+                  {TIERS.map((tier, i) => summary.tierCounts[i] > 0 && (
+                    <Tooltip key={tier.min} title={`${M.tiers[i]}: ${summary.tierCounts[i]} ${M.people}`}>
+                      <span style={{ flex: summary.tierCounts[i], background: tier.c }} />
+                    </Tooltip>
+                  ))}
+                </div>
+                <div className="bf-dist__legend">
+                  {TIERS.map((tier, i) => summary.tierCounts[i] > 0 && (
+                    <span key={tier.min}><i style={{ background: tier.c }} />{M.tiers[i]} <strong>{summary.tierCounts[i]}</strong></span>
+                  ))}
+                </div>
+              </div>
+              <div className="bf-mini">
+                <div className="bf-mini__item">
+                  <strong>{fmtHours(Math.round((summary.totalHours / summary.contributors.length) * 10) / 10)}h</strong>
+                  <span>{M.avgPerPerson}</span>
+                </div>
+                <div className="bf-mini__item">
+                  <strong>{fmtHours(topHours)}h</strong>
+                  <span>{M.topHours}</span>
+                </div>
+                <div className="bf-mini__item">
+                  <strong>{summary.contributors.length}<small>/{Math.max(summary.volunteers, summary.contributors.length)}</small></strong>
+                  <span>{M.participation}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="bf-card">
+          <header className="bf-card__head">
+            <span className="bf-card__icon"><Lotus color="#c47f36" size={18} /></span>
+            {M.ladder}
+          </header>
+          <ul className="bf-tiers">
+            {TIERS.map((tier, i) => (
+              <li key={tier.min} className="bf-tiers__row">
+                <span className="bf-tiers__icon" style={{ background: tier.s }}><Lotus color={tier.c} size={22} /></span>
+                <div className="bf-tiers__text">
+                  <div className="bf-tiers__name">{M.tiers[i]}</div>
+                  <div className="bf-tiers__range">
+                    {TIERS[i + 1] ? `${tier.min} – ${TIERS[i + 1].min - 1}` : `≥ ${tier.min}`} {M.hours}
+                  </div>
+                </div>
+                <span className="bf-tiers__count" style={summary.tierCounts[i] ? { color: tier.c, background: tier.s } : undefined}>
+                  {summary.tierCounts[i]} {M.people}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="bf-tiers__hint">{M.ladderHint}</div>
+        </section>
       </div>
 
-      {/* ── Table with expandable volunteer stats ── */}
-      <div className="section-anim section-d2">
-      <Table
-        dataSource={data}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          current: page, total, pageSize: 10, onChange: setPage,
-          showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ${t.buddhistFollower.totalLabel}`,
-        }}
-        scroll={{ x: 'max-content' }}
-        size="small"
-        className="personnel-table"
-        expandable={{
-          expandedRowRender: (record) => <VolunteerStats person={record} />,
-          rowExpandable: (record) =>
-            (record.type === 'tình_nguyện_viên' || record.type === 'cả_hai') &&
-            (record.publicServiceHours || 0) > 0,
-          expandRowByClick: false,
-        }}
-      />
-      </div>
+      {/* ── List ── */}
+      <section className="bf-card bf-card--table section-anim section-d3">
+        <div className="bf-toolbar">
+          <Input
+            className="bf-search"
+            placeholder={B.searchPlaceholder}
+            prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            allowClear
+          />
+          <Select value={filterType} onChange={(v) => { setFilterType(v); setPage(1); }} style={{ width: 180 }}>
+            <Option value="">{B.allTypes}</Option>
+            <Option value="phật_tử">{B.types['phat_tu']}</Option>
+            <Option value="tình_nguyện_viên">{B.types['tinh_nguyen_vien']}</Option>
+            <Option value="cả_hai">{B.types['ca_hai']}</Option>
+          </Select>
+        </div>
+
+        <Table
+          dataSource={data}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            current: page, total, pageSize: 10, onChange: setPage,
+            showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${B.totalLabel}`,
+          }}
+          scroll={{ x: 'max-content' }}
+          className="personnel-table"
+          expandable={{
+            expandedRowRender: (record) => (
+              <MeritPanel person={record} ranking={summary.ranking} totalHours={summary.totalHours} t={t} />
+            ),
+            rowExpandable: (record) => (record.publicServiceHours || 0) > 0,
+            expandRowByClick: true,
+          }}
+          onRow={(r) => ({ style: { cursor: (r.publicServiceHours || 0) > 0 ? 'pointer' : 'default' } })}
+        />
+      </section>
 
       {/* ── Modal ── */}
       <Modal
-        title={editRecord ? t.buddhistFollower.editTitle : t.buddhistFollower.addTitle}
+        title={editRecord ? B.editTitle : B.addTitle}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
-        okButtonProps={{ style: { backgroundColor: '#8B4513', borderColor: '#8B4513' } }}
         width={680}
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="fullName" label={t.common.name} rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="dharmName" label={t.buddhistFollower.form.dharmName}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="dharmName" label={B.form.dharmName}>
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="gender" label={t.buddhistFollower.form.gender}>
+            <Col xs={24} sm={8}>
+              <Form.Item name="gender" label={B.form.gender}>
                 <Select allowClear>
-                  <Option value="nam">{t.buddhistFollower.form.genderMale}</Option>
-                  <Option value="nữ">{t.buddhistFollower.form.genderFemale}</Option>
+                  <Option value="nam">{B.form.genderMale}</Option>
+                  <Option value="nữ">{B.form.genderFemale}</Option>
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="dateOfBirth" label={t.buddhistFollower.form.dateOfBirth}>
+            <Col xs={24} sm={8}>
+              <Form.Item name="dateOfBirth" label={B.form.dateOfBirth}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="type" label={t.buddhistFollower.colType} initialValue="phật_tử">
+            <Col xs={24} sm={8}>
+              <Form.Item name="type" label={B.colType} initialValue="phật_tử">
                 <Select>
-                  <Option value="phật_tử">{t.buddhistFollower.types['phat_tu']}</Option>
-                  <Option value="tình_nguyện_viên">{t.buddhistFollower.types['tinh_nguyen_vien']}</Option>
-                  <Option value="cả_hai">{t.buddhistFollower.types['ca_hai']}</Option>
+                  <Option value="phật_tử">{B.types['phat_tu']}</Option>
+                  <Option value="tình_nguyện_viên">{B.types['tinh_nguyen_vien']}</Option>
+                  <Option value="cả_hai">{B.types['ca_hai']}</Option>
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label={t.buddhistFollower.form.phone}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="phone" label={B.form.phone}>
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="email" label={t.common.email}>
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="occupation" label={t.buddhistFollower.form.occupation}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="occupation" label={B.form.occupation}>
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="region" label={t.buddhistFollower.colArea}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="region" label={B.colArea}>
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="preceptDate" label={t.buddhistFollower.form.preceptDate}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="preceptDate" label={B.form.preceptDate}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="preceptorName" label={t.buddhistFollower.form.preceptorName}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="preceptorName" label={B.form.preceptorName}>
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="publicServiceHours" label={t.buddhistFollower.form.serviceHours} initialValue={0}>
-                <InputNumber min={0} style={{ width: '100%' }} />
+            <Col xs={24} sm={12}>
+              <Form.Item name="publicServiceHours" label={B.form.serviceHours} initialValue={0}>
+                <InputNumber min={0} step={0.5} style={{ width: '100%' }} addonAfter={M.hours} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="status" label={t.common.status} initialValue="đang_sinh_hoạt">
                 <Select>
-                  <Option value="đang_sinh_hoạt">{t.buddhistFollower.statuses['đang_sinh_hoạt']}</Option>
-                  <Option value="tạm_ngưng">{t.buddhistFollower.statuses['tạm_ngưng']}</Option>
-                  <Option value="đã_rời">{t.buddhistFollower.statuses['đã_rời']}</Option>
+                  <Option value="đang_sinh_hoạt">{B.statuses['đang_sinh_hoạt']}</Option>
+                  <Option value="tạm_ngưng">{B.statuses['tạm_ngưng']}</Option>
+                  <Option value="đã_rời">{B.statuses['đã_rời']}</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={24}>
-              <Form.Item name="address" label={t.buddhistFollower.form.address}>
+              <Form.Item name="address" label={B.form.address}>
                 <Input.TextArea rows={2} />
               </Form.Item>
             </Col>
@@ -372,6 +576,6 @@ export default function BuddhistFollowerPage() {
           </Row>
         </Form>
       </Modal>
-    </Card>
+    </div>
   );
 }

@@ -14,7 +14,9 @@ export function useDonationPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<any>(null);
   const [followers, setFollowers] = useState<any[]>([]);
-  const [summary, setSummary]     = useState({ totalAmount: 0, count: 0, thisMonthAmount: 0 });
+  const [summary, setSummary]     = useState<any>({
+    totalAmount: 0, count: 0, thisMonthAmount: 0, lastMonthAmount: 0, anonymousCount: 0, byMethod: [],
+  });
 
   const { isAdmin, hasRole } = useAuth() as any;
 

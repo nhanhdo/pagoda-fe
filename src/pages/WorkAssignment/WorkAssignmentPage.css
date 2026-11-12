@@ -34,11 +34,21 @@
   gap: 8px;
   border: 2px solid transparent;
   transition: background 0.18s, border-color 0.18s;
+  max-height: max(420px, calc(100vh - 300px));
+  overflow-y: auto;
+}
+.kanban-col .kanban-col__header {
+  position: sticky;
+  top: -12px;
+  z-index: 1;
+  margin: -12px -12px 4px;
+  padding: 12px 12px 8px;
+  background: inherit;
 }
 
 .kanban-col--over {
   background: rgba(46, 125, 50, 0.06);
-  border: 2px dashed #2e7d32;
+  border: 2px dashed #4f9a72;
 }
 
 .kanban-col__header {

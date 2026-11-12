@@ -25,7 +25,7 @@
   display: inline-flex;
   align-items: center;
   background: #f5ece3;
-  color: #8B4513;
+  color: #b06f2c;
   border: 1px solid #ddbfa0;
   border-radius: 6px;
   padding: 2px 8px;
@@ -48,9 +48,10 @@
 
 /* ── Action button group ── */
 .personnel-action-group {
-  display: flex;
-  gap: 4px;
+  display: inline-flex;
+  gap: 2px;
   align-items: center;
+  justify-content: flex-end;
 }
 .personnel-action-btn {
   width: 30px !important;
@@ -109,7 +110,7 @@
 
 .personnel-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 28px rgba(139,69,19,0.14);
+  box-shadow: 0 10px 28px rgba(176,111,44,0.14);
   border-color: #c8956c;
 }
 
@@ -140,7 +141,7 @@
   padding: 1px 7px;
   font-size: 10px;
   font-weight: 700;
-  color: #8B4513;
+  color: #b06f2c;
   letter-spacing: 0.4px;
 }
 

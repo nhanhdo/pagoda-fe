@@ -39,6 +39,18 @@ export function useBuddhistFollowerPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Whole list (unfiltered) so summary stats, ranks and the leaderboard aren't limited to the current page
+  const [allData, setAllData] = useState<any[]>([]);
+  const fetchAll = useCallback(async () => {
+    try {
+      const { data: r } = await api.get('/buddhist-followers', { params: { page: 1, limit: 10000 } });
+      setAllData((r as any).data || []);
+    } catch {
+      setAllData([]);
+    }
+  }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
   const handleSubmit = async (values: any) => {
     try {
       const payload = {
@@ -55,6 +67,7 @@ export function useBuddhistFollowerPage() {
       }
       setModalOpen(false);
       fetchData();
+      fetchAll();
     } catch {
       message.error('Có lỗi xảy ra');
     }
@@ -65,6 +78,7 @@ export function useBuddhistFollowerPage() {
       await api.delete(`/buddhist-followers/${id}`);
       message.success('Đã xóa');
       fetchData();
+      fetchAll();
     } catch {
       message.error('Không thể xóa');
     }
@@ -72,6 +86,7 @@ export function useBuddhistFollowerPage() {
 
   return {
     data,
+    allData,
     loading,
     total,
     page,
