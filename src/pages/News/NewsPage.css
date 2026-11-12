@@ -148,17 +148,45 @@
   margin-bottom: 16px;
   overflow: hidden;
   width: 100%;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
   min-width: 0;
   transition: box-shadow .25s ease, border-color .25s ease;
 }
 .post-card:hover { box-shadow: var(--shadow-card-hover); border-color: #ecdcc5; }
-
-.post-card__cover { overflow: hidden; max-height: 300px; }
-.post-card__cover img {
-  width: 100%; max-height: 300px; object-fit: cover; display: block;
-  transition: transform .5s ease;
+.post-card.is-focused { animation: post-focus 2.4s ease both; scroll-margin-top: 16px; }
+@keyframes post-focus {
+  0%, 30% { box-shadow: 0 0 0 3px rgba(224,164,84,.55), var(--shadow-card-hover); border-color: #e0a454; }
+  100%    { box-shadow: var(--shadow-card); border-color: #f1e8da; }
 }
-.post-card:hover .post-card__cover img { transform: scale(1.02); }
+@media (prefers-reduced-motion: reduce) { .post-card.is-focused { animation: none; } }
+
+/* Photo inside the post (Facebook-style): full width under the text, never cropped */
+.post-card__media {
+  position: relative;
+  overflow: hidden;
+  background: #f4efe8;
+  border-top: 1px solid #f3ebdf;
+}
+.post-card__media::before {
+  content: '';
+  position: absolute;
+  inset: -24px;
+  background: var(--media-bg) center / cover no-repeat;
+  filter: blur(26px) saturate(1.1);
+  opacity: .5;
+  transform: scale(1.1);
+}
+.post-card__img.ant-image { position: relative; display: block; width: 100%; }
+.post-card__img .ant-image-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(680px, 78vh);
+  object-fit: contain;
+  cursor: zoom-in;
+}
 
 .post-card__body { padding: 18px 22px 16px; min-width: 0; }
 
@@ -452,6 +480,13 @@
   padding: 8px 0;
   border-bottom: 1px solid #fafafa;
 }
+.comment-item.is-fresh { animation: comment-fresh 2.6s ease both; border-radius: 10px; }
+@keyframes comment-fresh {
+  0%   { background: rgba(224,164,84,.28); transform: translateY(6px); opacity: 0; }
+  15%  { background: rgba(224,164,84,.22); transform: none; opacity: 1; }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .comment-item.is-fresh { animation: none; } }
 .comment-item:last-child {
   border-bottom: none;
 }

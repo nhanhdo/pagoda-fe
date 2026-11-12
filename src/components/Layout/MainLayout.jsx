@@ -72,6 +72,7 @@ function NotificationPanel({ notifications, onNavigate }) {
   }
 
   const grouped = {
+    new_comment:  notifications.filter(n => n.type === 'new_comment'),
     pending_post: notifications.filter(n => n.type === 'pending_post'),
     overdue_task: notifications.filter(n => n.type === 'overdue_task'),
     today_duty:   notifications.filter(n => n.type === 'today_duty'),
@@ -79,6 +80,7 @@ function NotificationPanel({ notifications, onNavigate }) {
   };
 
   const groupMeta = {
+    new_comment:  { label: t.layout.newCommentsGroup,      color: '#3a9483' },
     pending_post: { label: t.layout.pendingPostGroup,      color: '#d46b08' },
     overdue_task: { label: t.layout.overdueTasksGroup,     color: '#ff4d4f' },
     today_duty:   { label: t.layout.todayDutyGroup,        color: '#1890ff' },
@@ -126,6 +128,16 @@ function NotificationPanel({ notifications, onNavigate }) {
   );
 }
 
+function relTime(iso, t) {
+  const diff = Math.max(0, Date.now() - new Date(iso).getTime());
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return t.layout.justNow;
+  if (m < 60) return t.layout.minutesAgo.replace('{n}', m);
+  const h = Math.floor(m / 60);
+  if (h < 24) return t.layout.hoursAgo.replace('{n}', h);
+  return t.layout.daysAgo.replace('{n}', Math.floor(h / 24));
+}
+
 /* ── Notification Bell ────────────────────────────────── */
 function NotificationBell() {
   const [open, setOpen]                   = useState(false);
@@ -143,12 +155,24 @@ function NotificationBell() {
   const canApprove = isAdmin() || hasRole('truotri') || hasRole('thuki');
   // ref so handleOpenChange always has latest list (avoids stale closure)
   const notifsRef = React.useRef([]);
+  const openRef = React.useRef(false);
+  const tRef = React.useRef(t);
+  tRef.current = t;
+  const signatureRef = React.useRef('');
+  const loadRef = React.useRef(() => {});
 
   useEffect(() => {
+    let cancelled = false;
+    let inFlight = false;
+
     const load = async () => {
+      if (inFlight || document.hidden) return;
+      inFlight = true;
+      const t = tRef.current;
       const items = [];
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const todayStr = ymd(today);
 
       // 1. Overdue work assignments
       try {
@@ -189,14 +213,16 @@ function NotificationBell() {
         });
       } catch { /* silent */ }
 
-      // 3. Buddhist holidays in next 7 days
+      // 3. Buddhist holidays in next 7 days (may cross into next year)
       try {
-        const holidays = getBuddhistHolidays(today.getFullYear());
+        const holidayMaps = {};
         for (let i = 0; i <= 7; i++) {
           const d = new Date(today);
           d.setDate(d.getDate() + i);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          const h = holidays.get(key);
+          const key = ymd(d);
+          const y = d.getFullYear();
+          if (!holidayMaps[y]) holidayMaps[y] = getBuddhistHolidays(y);
+          const h = holidayMaps[y].get(key);
           if (h) {
             h.names.forEach((name, idx) => items.push({
               id: `holiday-${key}-${idx}`,
@@ -227,20 +253,65 @@ function NotificationBell() {
         } catch { /* silent */ }
       }
 
+      inFlight = false;
+      if (cancelled) return;
+
+      // While the panel is open, anything newly loaded counts as seen
+      if (openRef.current) {
+        localStorage.setItem('notif_seen_ids', JSON.stringify(items.map(n => n.id)));
+      }
+      // 5. New comments from others on posts I wrote or joined
+      try {
+        const res = await api.get('/posts/comments/recent', { params: { limit: 20, days: 7 } });
+        const list = Array.isArray(res.data) ? res.data : [];
+        list.forEach(c => {
+          const who = c.commentAuthor?.dharmName || c.commentAuthor?.fullName || c.commentUser?.username || '—';
+          const text = String(c.content || '').replace(/\s+/g, ' ');
+          items.push({
+            id: `comment-${c.id}`,
+            type: 'new_comment',
+            icon: '💬',
+            title: `${who} ${c.onMyPost ? t.layout.commentedOnYourPost : t.layout.alsoCommented}`,
+            subtitle: `“${text.length > 60 ? `${text.slice(0, 60)}…` : text}” · ${c.post?.title || ''}`,
+            time: relTime(c.createdAt, t),
+            link: `/app/news?post=${c.postId}`,
+          });
+        });
+      } catch { /* silent */ }
+
       // Only count items the user hasn't seen yet (persisted across page loads)
       const seenIds = new Set(JSON.parse(localStorage.getItem('notif_seen_ids') || '[]'));
       const newCount = items.filter(n => !seenIds.has(n.id)).length;
 
-      notifsRef.current = items;
-      setNotifications(items);
+      // Skip re-rendering when nothing changed between polls
+      const signature = items.map(n => `${n.id}|${n.title}|${n.subtitle}|${n.time}`).join('§');
+      if (signature !== signatureRef.current) {
+        signatureRef.current = signature;
+        notifsRef.current = items;
+        setNotifications(items);
+      }
       setUnread(newCount);
     };
+
+    loadRef.current = load;
     load();
+    const id = setInterval(load, 3000);
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
   }, [canApprove]);
 
   const handleOpenChange = (v) => {
     setOpen(v);
+    openRef.current = v;
     if (v) {
+      loadRef.current();
       // Mark all currently loaded notifications as seen
       const ids = notifsRef.current.map(n => n.id);
       localStorage.setItem('notif_seen_ids', JSON.stringify(ids));

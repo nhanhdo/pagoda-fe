@@ -3,7 +3,7 @@ import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   Tabs, Tag, Button, Modal, Form, Input, Select, DatePicker,
   message, Popconfirm, Space, Spin, Upload, Switch, Typography, Avatar, Dropdown,
-  Calendar, Badge, Tooltip, Segmented,
+  Calendar, Badge, Tooltip, Segmented, Image,
 } from 'antd';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined, CalendarOutlined,
@@ -13,6 +13,7 @@ import {
   CommentOutlined, SendOutlined, ScheduleOutlined, InboxOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -21,6 +22,7 @@ import { useNewsPage, imgSrc } from './useNewsPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { solarToLunar, getBuddhistHolidays, getSolarTerm, getHoangDaoHours, getTruc } from '../../utils/lunarCalendar';
 import './NewsPage.css';
+import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -46,26 +48,67 @@ function CommentSection({ postId, onCountChange }) {
   const [loadingCmt, setLoadingCmt] = useState(false);
   const [inputVal, setInputVal] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [freshIds, setFreshIds] = useState([]);
+  const onCountRef = React.useRef(onCountChange);
+  onCountRef.current = onCountChange;
 
-  const updateComments = (list) => {
-    setComments(list);
-    onCountChange?.(list.length);
+  const updateComments = (next) => {
+    setComments(prev => {
+      const list = typeof next === 'function' ? next(prev) : next;
+      onCountRef.current?.(list.length);
+      return list;
+    });
   };
 
+  // Initial load + live refresh every 3s while this thread is open
   useEffect(() => {
+    let cancelled = false;
+    let inFlight = false;
+    let known = null;
+
+    const load = async (initial = false) => {
+      if (inFlight || (!initial && document.hidden)) return;
+      inFlight = true;
+      try {
+        const r = await api.get(`/posts/${postId}/comments`);
+        if (cancelled) return;
+        const list = Array.isArray(r.data) ? r.data : [];
+        const ids = list.map(c => c.id).join(',');
+        if (ids === known) return;
+        if (known !== null) {
+          const before = new Set(known.split(',').filter(Boolean).map(Number));
+          const added = list.filter(c => !before.has(c.id) && c.userId !== user?.id).map(c => c.id);
+          if (added.length) {
+            setFreshIds(f => [...f, ...added]);
+            setTimeout(() => setFreshIds(f => f.filter(id => !added.includes(id))), 2600);
+          }
+        }
+        known = ids;
+        updateComments(list);
+      } catch { /* silent */ } finally {
+        inFlight = false;
+        if (initial && !cancelled) setLoadingCmt(false);
+      }
+    };
+
     setLoadingCmt(true);
-    api.get(`/posts/${postId}/comments`)
-      .then(r => updateComments(r.data))
-      .catch(() => {})
-      .finally(() => setLoadingCmt(false));
-  }, [postId]);
+    load(true);
+    const id = setInterval(load, 3000);
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [postId, user?.id]);
 
   const handleSend = async () => {
     if (!inputVal.trim()) return;
     setSubmitting(true);
     try {
       const r = await api.post(`/posts/${postId}/comments`, { content: inputVal.trim() });
-      updateComments([...comments, r.data]);
+      updateComments(prev => (prev.some(c => c.id === r.data.id) ? prev : [...prev, r.data]));
       setInputVal('');
     } catch {
       message.error('Không thể gửi bình luận');
@@ -77,7 +120,7 @@ function CommentSection({ postId, onCountChange }) {
   const handleDelete = async (commentId) => {
     try {
       await api.delete(`/posts/${postId}/comments/${commentId}`);
-      updateComments(comments.filter(c => c.id !== commentId));
+      updateComments(prev => prev.filter(c => c.id !== commentId));
     } catch {
       message.error('Không thể xóa bình luận');
     }
@@ -105,7 +148,7 @@ function CommentSection({ postId, onCountChange }) {
             const initial = name.charAt(name.length - 1).toUpperCase();
             const canDel = user?.id === c.userId || ['admin', 'truotri'].includes(user?.role);
             return (
-              <div key={c.id} className="comment-item">
+              <div key={c.id} className={`comment-item${freshIds.includes(c.id) ? ' is-fresh' : ''}`}>
                 <Avatar size={30} style={{ background: '#b06f2c', fontSize: 12, flexShrink: 0, fontWeight: 700 }}>{initial}</Avatar>
                 <div style={{ flex: 1, background: '#fdf8f2', borderRadius: 8, padding: '6px 10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -153,9 +196,16 @@ function CommentSection({ postId, onCountChange }) {
 }
 
 /* ─── Single Post Card (Facebook style) ─────────────────── */
-function PostCard({ post, canEdit, onEdit, onDelete }) {
+function PostCard({ post, canEdit, onEdit, onDelete, focused }) {
   const { t } = useLanguage();
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(!!focused);
+  const cardRef = React.useRef(null);
+  useEffect(() => {
+    if (!focused) return;
+    setShowComments(true);
+    const id = setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    return () => clearTimeout(id);
+  }, [focused]);
   const [commentCount, setCommentCount] = useState(post.commentCount ?? 0);
   const cfg = TYPE_CFG[post.type] || TYPE_CFG.article;
   const typeLabel = { event: t.news.typeEvent, news: t.news.typeNews, article: t.news.typeArticle }[post.type] || t.news.typeArticle;
@@ -174,13 +224,7 @@ function PostCard({ post, canEdit, onEdit, onDelete }) {
   ];
 
   return (
-    <article className="post-card">
-      {post.coverImage && (
-        <div className="post-card__cover">
-          <img src={imgSrc(post.coverImage)} alt="" />
-        </div>
-      )}
-
+    <article ref={cardRef} id={`post-${post.id}`} className={`post-card${focused ? ' is-focused' : ''}`}>
       <div className="post-card__body">
         <header className="post-card__head">
           <Avatar size={40} style={{ background: cfg.bg, color: cfg.color, fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
@@ -237,6 +281,17 @@ function PostCard({ post, canEdit, onEdit, onDelete }) {
           </Paragraph>
         )}
       </div>
+
+      {post.coverImage && (
+        <div className="post-card__media" style={{ '--media-bg': `url("${imgSrc(post.coverImage)}")` }}>
+          <Image
+            src={imgSrc(post.coverImage)}
+            alt={post.title || ''}
+            preview={{ mask: null }}
+            rootClassName="post-card__img"
+          />
+        </div>
+      )}
 
       <footer className="post-card__foot">
         <button
@@ -446,15 +501,21 @@ function LoadMore({ shown, total, onMore }) {
   );
 }
 
-function FeedTab({ posts, loading, canEdit, onEdit, onDelete, emptyIcon, emptyText, resetKey }) {
+function FeedTab({ posts, loading, canEdit, onEdit, onDelete, emptyIcon, emptyText, resetKey, focusPostId }) {
   const [limit, setLimit] = useState(FEED_PAGE);
   useEffect(() => { setLimit(FEED_PAGE); }, [resetKey]);
+  // Make sure a post opened from a notification is within the visible page
+  useEffect(() => {
+    if (!focusPostId) return;
+    const idx = posts.findIndex(p => String(p.id) === String(focusPostId));
+    if (idx >= 0) setLimit(l => Math.max(l, Math.ceil((idx + 1) / FEED_PAGE) * FEED_PAGE));
+  }, [focusPostId, posts]);
   if (loading) return <PageSpinner />;
   if (posts.length === 0) return <NewsEmpty icon={emptyIcon} text={emptyText} />;
   return (
     <div>
       {posts.slice(0, limit).map(p => (
-        <PostCard key={p.id} post={p} canEdit={canEdit} onEdit={onEdit} onDelete={onDelete} />
+        <PostCard key={p.id} post={p} canEdit={canEdit} onEdit={onEdit} onDelete={onDelete} focused={String(p.id) === String(focusPostId)} />
       ))}
       <LoadMore shown={Math.min(limit, posts.length)} total={posts.length} onMore={() => setLimit(l => l + FEED_PAGE)} />
     </div>
@@ -670,6 +731,19 @@ export default function NewsPage() {
   const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
+  // ?post=<id> (from a notification): switch to that post's tab and focus it
+  const location = useLocation();
+  const focusPostId = new URLSearchParams(location.search).get('post');
+  useEffect(() => {
+    if (!focusPostId || loading) return;
+    const type = ['article', 'news', 'event'].find(k => (posts[k] || []).some(p => String(p.id) === String(focusPostId)));
+    if (type) {
+      setSearchText('');
+      setActiveFilter('all');
+      setActiveTab(type);
+    }
+  }, [focusPostId, loading, posts]);
+
   const getDisplayPosts = (type) => {
     let arr = posts[type] || [];
     if (searchText.trim()) {
@@ -693,7 +767,7 @@ export default function NewsPage() {
     : null;
 
   const feed = (type, icon, emptyText) => (
-    <FeedTab posts={getDisplayPosts(type)} loading={loading} canEdit={canEdit} onEdit={openEdit} onDelete={handleDelete} emptyIcon={icon} emptyText={emptyText} resetKey={`${activeFilter}|${searchText}`} />
+    <FeedTab posts={getDisplayPosts(type)} loading={loading} canEdit={canEdit} onEdit={openEdit} onDelete={handleDelete} emptyIcon={icon} emptyText={emptyText} resetKey={`${activeFilter}|${searchText}`} focusPostId={focusPostId} />
   );
 
   const tabs = [
@@ -743,7 +817,7 @@ export default function NewsPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             fontSize: 28,
           }}>
-            ☸
+            <DharmaWheel />
           </div>
           <div>
             <div style={{ color: '#5a3a22', fontWeight: 800, fontSize: 20, letterSpacing: 0.3 }}>{t.news.title}</div>

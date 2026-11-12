@@ -3,6 +3,7 @@ import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
+import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 
 /* ── Falling petals canvas ───────────────────────────── */
 function usePetals(ref) {
@@ -298,14 +299,14 @@ export default function Login() {
               <p className="lg-quote">"Tâm bình thì thế giới bình, tâm an thì vạn sự an"</p>
             </div>
 
-            <div className="lg-orn" aria-hidden="true"><i /><span>☸</span><i /></div>
+            <div className="lg-orn" aria-hidden="true"><i /><DharmaWheel /><i /></div>
           </div>
 
           {/* ── Form panel ── */}
           <div className="lg-form">
             <div className="lg-form-inner">
               <div className="lg-head">
-                <div className="lg-head-icon">☸</div>
+                <div className="lg-head-icon"><DharmaWheel /></div>
                 <h2>{t.login.sectionLabel || 'Đăng nhập'}</h2>
                 <p>Vui lòng đăng nhập để tiếp tục</p>
               </div>

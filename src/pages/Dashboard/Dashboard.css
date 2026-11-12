@@ -18,11 +18,13 @@
   overflow: hidden;
 }
 .db-hero::after {
-  content: '☸';
+  content: '';
+  width: 190px; height: 190px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-width='6' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='36'/%3E%3Ccircle cx='50' cy='50' r='9'/%3E%3Cline x1='59.00' y1='50.00' x2='86.00' y2='50.00'/%3E%3Ccircle cx='94.00' cy='50.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='56.36' y1='56.36' x2='75.46' y2='75.46'/%3E%3Ccircle cx='81.11' cy='81.11' r='4' fill='black' stroke='none'/%3E%3Cline x1='50.00' y1='59.00' x2='50.00' y2='86.00'/%3E%3Ccircle cx='50.00' cy='94.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='43.64' y1='56.36' x2='24.54' y2='75.46'/%3E%3Ccircle cx='18.89' cy='81.11' r='4' fill='black' stroke='none'/%3E%3Cline x1='41.00' y1='50.00' x2='14.00' y2='50.00'/%3E%3Ccircle cx='6.00' cy='50.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='43.64' y1='43.64' x2='24.54' y2='24.54'/%3E%3Ccircle cx='18.89' cy='18.89' r='4' fill='black' stroke='none'/%3E%3Cline x1='50.00' y1='41.00' x2='50.00' y2='14.00'/%3E%3Ccircle cx='50.00' cy='6.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='56.36' y1='43.64' x2='75.46' y2='24.54'/%3E%3Ccircle cx='81.11' cy='18.89' r='4' fill='black' stroke='none'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-width='6' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='36'/%3E%3Ccircle cx='50' cy='50' r='9'/%3E%3Cline x1='59.00' y1='50.00' x2='86.00' y2='50.00'/%3E%3Ccircle cx='94.00' cy='50.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='56.36' y1='56.36' x2='75.46' y2='75.46'/%3E%3Ccircle cx='81.11' cy='81.11' r='4' fill='black' stroke='none'/%3E%3Cline x1='50.00' y1='59.00' x2='50.00' y2='86.00'/%3E%3Ccircle cx='50.00' cy='94.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='43.64' y1='56.36' x2='24.54' y2='75.46'/%3E%3Ccircle cx='18.89' cy='81.11' r='4' fill='black' stroke='none'/%3E%3Cline x1='41.00' y1='50.00' x2='14.00' y2='50.00'/%3E%3Ccircle cx='6.00' cy='50.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='43.64' y1='43.64' x2='24.54' y2='24.54'/%3E%3Ccircle cx='18.89' cy='18.89' r='4' fill='black' stroke='none'/%3E%3Cline x1='50.00' y1='41.00' x2='50.00' y2='14.00'/%3E%3Ccircle cx='50.00' cy='6.00' r='4' fill='black' stroke='none'/%3E%3Cline x1='56.36' y1='43.64' x2='75.46' y2='24.54'/%3E%3Ccircle cx='81.11' cy='18.89' r='4' fill='black' stroke='none'/%3E%3C/svg%3E") center / contain no-repeat;
   position: absolute;
   right: 190px; bottom: -46px;
-  font-size: 190px; line-height: 1;
-  color: rgba(196,127,54,.06);
+  background: rgba(196,127,54,.06);
   pointer-events: none;
 }
 .db-hero__main { position: relative; z-index: 1; flex: 1; min-width: 0; }

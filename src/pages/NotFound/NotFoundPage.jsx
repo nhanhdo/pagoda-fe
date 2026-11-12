@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 import { Button } from 'antd';
 
 export default function NotFoundPage() {
@@ -12,7 +13,7 @@ export default function NotFoundPage() {
       alignItems: 'center', justifyContent: 'center',
       gap: 20, padding: 24, textAlign: 'center',
     }}>
-      <div style={{ fontSize: 72, color: '#e0a454', filter: 'drop-shadow(0 6px 18px rgba(224,164,84,.35))' }}>☸</div>
+      <div style={{ fontSize: 72, color: '#e0a454', filter: 'drop-shadow(0 6px 18px rgba(224,164,84,.35))' }}><DharmaWheel strokeWidth={5} /></div>
       <div style={{ color: '#c47f36', fontSize: 'clamp(48px,8vw,96px)', fontWeight: 900, lineHeight: 1 }}>
         404
       </div>

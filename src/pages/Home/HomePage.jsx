@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 import dayjs from 'dayjs';
 import { LoginOutlined, StarFilled, StarOutlined, CalendarOutlined, ArrowRightOutlined, MoonOutlined } from '@ant-design/icons';
 import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
@@ -372,7 +373,7 @@ export default function HomePage() {
       <main className="hp__main">
         {/* Text */}
         <section className="hp__text">
-          <span className="hp__eyebrow">☸ Nam Mô A Di Đà Phật</span>
+          <span className="hp__eyebrow"><DharmaWheel /> Nam Mô A Di Đà Phật</span>
           <h1 className="hp__title">Chùa<span>Tân Thành</span></h1>
           <p className="hp__lead">
             Nơi an lạc, nơi tu tập và kết nối thiện duyên. Hệ thống quản lý giúp đại chúng
