@@ -14,6 +14,8 @@ export function useDonationPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<any>(null);
   const [followers, setFollowers] = useState<any[]>([]);
+  const [funds, setFunds] = useState<any[]>([]);
+  const [fundFilter, setFundFilter] = useState<any>(undefined);
   const [summary, setSummary]     = useState<any>({
     totalAmount: 0, count: 0, thisMonthAmount: 0, lastMonthAmount: 0, anonymousCount: 0, byMethod: [],
   });
@@ -26,22 +28,25 @@ export function useDonationPage() {
     api.get('/buddhist-followers', { params: { limit: 500, status: 'đang_sinh_hoạt' } })
       .then((r: any) => setFollowers(r.data.data || []))
       .catch(() => {});
+    api.get('/funds')
+      .then((r: any) => setFunds(r.data || []))
+      .catch(() => {});
   }, []);
 
   const fetchSummary = useCallback(async () => {
     try {
-      const params: any = {};
+      const params: any = { fundId: fundFilter };
       if (dateRange?.[0]) params.startDate = dayjs(dateRange[0]).format('YYYY-MM-DD');
       if (dateRange?.[1]) params.endDate   = dayjs(dateRange[1]).format('YYYY-MM-DD');
       const r: any = await api.get('/donations/summary', { params });
       setSummary(r.data);
     } catch { /* silent */ }
-  }, [dateRange]);
+  }, [dateRange, fundFilter]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: any = { page, limit: 10, search };
+      const params: any = { page, limit: 10, search, fundId: fundFilter };
       if (dateRange?.[0]) params.startDate = dayjs(dateRange[0]).format('YYYY-MM-DD');
       if (dateRange?.[1]) params.endDate   = dayjs(dateRange[1]).format('YYYY-MM-DD');
       const r: any = await api.get('/donations', { params });
@@ -52,7 +57,7 @@ export function useDonationPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, dateRange]);
+  }, [page, search, dateRange, fundFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
@@ -94,6 +99,7 @@ export function useDonationPage() {
     data, loading, total, page, setPage,
     search, setSearch,
     dateRange, setDateRange,
+    funds, fundFilter, setFundFilter,
     modalOpen, setModalOpen,
     editRecord, setEditRecord,
     followers,

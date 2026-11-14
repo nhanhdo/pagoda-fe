@@ -10,13 +10,14 @@ import {
   PlusOutlined, SearchOutlined, DeleteOutlined, EditOutlined,
   HeartOutlined, CalendarOutlined, UserOutlined, DownloadOutlined,
   WalletOutlined, BankOutlined, EllipsisOutlined, RiseOutlined, FallOutlined,
-  EyeInvisibleOutlined,
+  EyeInvisibleOutlined, PrinterOutlined, FileDoneOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useDonationPage } from './useDonationPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { exportToExcel } from '../../utils/exportData';
 import api from '../../api/axios';
+import { printReceipt, printThankYou } from '../../utils/printDocs';
 import './DonationPage.css';
 
 const { RangePicker } = DatePicker;
@@ -54,6 +55,7 @@ export default function DonationPage() {
     data, loading, total, page, setPage,
     search, setSearch,
     dateRange, setDateRange,
+    funds, fundFilter, setFundFilter,
     modalOpen, setModalOpen,
     editRecord, setEditRecord,
     followers, summary,
@@ -88,6 +90,8 @@ export default function DonationPage() {
             : (row.donorName || 'Ẩn danh') },
         { header: 'Mã PT',          render: (row) => row.buddhistFollower?.code || '' },
         { header: 'Số tiền (VNĐ)',  render: (row) => Number(row.amount) || 0 },
+        { header: 'Quỹ',            render: (row) => row.fund?.name || '' },
+        { header: 'Số phiếu thu',   render: (row) => row.receiptNo || '' },
         { header: 'Mục đích',       render: (row) => row.purpose || '' },
         { header: 'Hình thức',      render: (row) => ({ 'tiền_mặt': 'Tiền mặt', 'chuyển_khoản': 'Chuyển khoản', 'khác': 'Khác' }[row.paymentMethod] || '') },
         { header: 'Người nhận',     render: (row) => row.receivedBy || '' },
@@ -106,7 +110,8 @@ export default function DonationPage() {
       form.setFieldsValue({ ...record, donationDate: record.donationDate ? dayjs(record.donationDate) : null });
     } else {
       form.resetFields();
-      form.setFieldsValue({ paymentMethod: 'tiền_mặt', donationDate: dayjs() });
+      const general = funds.find(x => x.code === 'QUY_CHUNG');
+      form.setFieldsValue({ paymentMethod: 'tiền_mặt', donationDate: dayjs(), fundId: general?.id });
     }
     setModalOpen(true);
   };
@@ -136,10 +141,11 @@ export default function DonationPage() {
       title: D.colDate,
       dataIndex: 'donationDate',
       width: 130,
-      render: (v) => v ? (
+      render: (v, r) => v ? (
         <div className="dn-date">
           <div className="dn-date__main tbl-mono">{dayjs(v).format('DD/MM/YYYY')}</div>
           <div className="dn-date__sub">{new Date(v).toLocaleDateString(dateLocale, { weekday: 'long' })}</div>
+          {r.receiptNo && <div className="dn-date__receipt tbl-mono">{r.receiptNo}</div>}
         </div>
       ) : <span className="tbl-muted">—</span>,
     },
@@ -194,6 +200,15 @@ export default function DonationPage() {
       render: (v) => <span className="dn-amount tbl-mono">{vnd(v)}</span>,
     },
     {
+      title: D.colFund,
+      key: 'fund',
+      width: 130,
+      render: (_, r) => {
+        const color = r.fund?.color || '#c47f36';
+        return r.fund ? <span className="tbl-pill" style={{ color, background: `${color}1f` }}>{r.fund.name}</span> : <span className="tbl-muted">—</span>;
+      },
+    },
+    {
       title: D.colPurpose,
       dataIndex: 'purpose',
       width: 220,
@@ -219,13 +234,21 @@ export default function DonationPage() {
     {
       title: '',
       key: 'actions',
-      width: 96,
+      width: 170,
       align: 'right',
-      render: (_, r) => canManage() && (
+      render: (_, r) => (
         <div className="personnel-action-group">
-          <Tooltip title={t.common.edit}>
-            <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+          <Tooltip title={D.printReceipt}>
+            <Button type="text" icon={<PrinterOutlined />} onClick={() => printReceipt(r)} />
           </Tooltip>
+          <Tooltip title={D.printThanks}>
+            <Button type="text" icon={<FileDoneOutlined />} onClick={() => printThankYou(r)} />
+          </Tooltip>
+          {canManage() && (
+            <Tooltip title={t.common.edit}>
+              <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+            </Tooltip>
+          )}
           {(isAdmin() || hasRole('truotri')) && (
             <Popconfirm title={D.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
               <Tooltip title={t.common.delete}>
@@ -344,6 +367,14 @@ export default function DonationPage() {
             className="dn-range"
             allowClear
           />
+          <Select
+            allowClear
+            className="dn-fund-filter"
+            placeholder={D.allFunds}
+            value={fundFilter}
+            onChange={(v) => { setFundFilter(v); setPage(1); }}
+            options={funds.map(x => ({ value: x.id, label: x.name }))}
+          />
         </div>
 
         <Table
@@ -398,6 +429,12 @@ export default function DonationPage() {
           </Row>
 
           <div className="dn-form__section">{D.donationSection}</div>
+          <Form.Item name="fundId" label={D.fieldFund}>
+            <Select options={funds.filter(x => x.isActive !== false || x.id === editRecord?.fundId).map(x => ({
+              value: x.id,
+              label: <span className="dn-fund-opt"><i style={{ background: x.color || '#c47f36' }} />{x.name}</span>,
+            }))} />
+          </Form.Item>
           <Form.Item name="amount" label={D.form.amount} rules={[{ required: true, message: D.form.amountRequired }]} style={{ marginBottom: 8 }}>
             <InputNumber
               min={0}

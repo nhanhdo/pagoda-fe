@@ -4,6 +4,21 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
+import ShaderCanvas from '../../components/ShaderCanvas/ShaderCanvas';
+import { HALO_FRAG } from '../Home/homeShaders';
+
+// Shader halo only where the brand panel is large (desktop/tablet); phones keep the CSS glow.
+function useWideBrand() {
+  const query = '(min-width: 721px)';
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setWide(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return wide;
+}
 
 /* ── Falling petals canvas ───────────────────────────── */
 function usePetals(ref) {
@@ -114,6 +129,10 @@ const CSS = `
     animation:lgGlow 5s ease-in-out infinite; pointer-events:none;
   }
   .lg-buddha{position:relative; z-index:1; margin-bottom:24px; animation:lgFloat 6s ease-in-out infinite}
+  /* WebGL halo centred on the medallion (shared with the homepage); sits behind the image */
+  .lg-halo-gl{position:absolute; left:50%; top:50%; width:340%; aspect-ratio:1/1; transform:translate(-50%,-50%); z-index:-1; pointer-events:none}
+  .lg-halo-gl .lg-rays--fallback{left:50%; top:50%; width:100%}
+  .lg-halo-gl .lg-halo--fallback{left:50%; top:50%; width:53%}
   .lg-buddha-img{
     width:168px; aspect-ratio:1/1; border-radius:50%; overflow:hidden;
     border:3px solid #fff;
@@ -259,6 +278,7 @@ export default function Login() {
   const { login, loading } = useAuth();
   const [error, setError]  = useState('');
   const canvasRef          = useRef(null);
+  const wideBrand          = useWideBrand();
   usePetals(canvasRef);
 
   useEffect(() => {
@@ -284,10 +304,28 @@ export default function Login() {
 
           {/* ── Brand panel ── */}
           <div className="lg-brand">
-            <div className="lg-rays" aria-hidden="true" />
-            <div className="lg-halo" aria-hidden="true" />
+            {!wideBrand && (
+              <>
+                <div className="lg-rays" aria-hidden="true" />
+                <div className="lg-halo" aria-hidden="true" />
+              </>
+            )}
 
             <div className="lg-buddha">
+              {wideBrand && (
+                <div className="lg-halo-gl" aria-hidden="true">
+                  <ShaderCanvas
+                    fragment={HALO_FRAG}
+                    fps={45}
+                    fallback={(
+                      <>
+                        <div className="lg-rays lg-rays--fallback" />
+                        <div className="lg-halo lg-halo--fallback" />
+                      </>
+                    )}
+                  />
+                </div>
+              )}
               <div className="lg-buddha-img">
                 <img src="/adida.PNG" alt="" />
               </div>

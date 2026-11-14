@@ -4,6 +4,8 @@ import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 import dayjs from 'dayjs';
 import { LoginOutlined, StarFilled, StarOutlined, CalendarOutlined, ArrowRightOutlined, MoonOutlined } from '@ant-design/icons';
 import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
+import ShaderCanvas from '../../components/ShaderCanvas/ShaderCanvas';
+import { HALO_FRAG, POND_FRAG } from './homeShaders';
 
 /* ── Canvas: petals ─────────────────────────────────────── */
 function usePetals(ref) {
@@ -290,6 +292,11 @@ const CSS = `
   .hp__sun-core{width:150%;height:150%;margin:-75% 0 0 -75%;
     background:radial-gradient(circle,rgba(255,255,245,.95) 0%,rgba(255,236,170,.65) 36%,transparent 70%);
     animation:hpBreath 5s ease-in-out infinite}
+  /* WebGL halo canvas (2.6x the medallion); fallback CSS layers rescaled to the wrapper */
+  .hp__sun-gl{position:absolute;left:50%;top:50%;width:260%;height:260%;transform:translate(-50%,-50%);pointer-events:none}
+  .hp__sun-gl .hp__sun-rays{width:115%;height:115%;margin:-57.5% 0 0 -57.5%}
+  .hp__sun-gl .hp__sun-rainbow{width:81%;height:81%;margin:-40.5% 0 0 -40.5%}
+  .hp__sun-gl .hp__sun-core{width:58%;height:58%;margin:-29% 0 0 -29%}
   .hp__buddha{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:4px solid #fff;
     box-shadow:0 0 0 1.5px rgba(226,169,60,.6),0 16px 36px rgba(180,110,40,.3);animation:hpFloat 7s ease-in-out infinite}
   .hp__buddha img{width:100%;height:100%;object-fit:cover;object-position:center 18%;display:block}
@@ -303,6 +310,8 @@ const CSS = `
     background:linear-gradient(180deg,#cfe6ee 0%,#bcdbe7 60%,#aed2e0 100%)}
   .hp__pond::before{content:'';position:absolute;left:8%;right:8%;top:30%;height:2px;border-radius:2px;background:rgba(255,255,255,.75);animation:hpRipple 5s ease-in-out infinite}
   .hp__pond::after{content:'';position:absolute;left:22%;right:30%;top:62%;height:2px;border-radius:2px;background:rgba(255,255,255,.6);animation:hpRipple 6s ease-in-out infinite 1s}
+  .hp__pond canvas{position:absolute;inset:0}
+  .hp__pond:has(canvas)::before,.hp__pond:has(canvas)::after{display:none}
   .hp__lotus{position:absolute;z-index:6;pointer-events:none;animation:hpBob 4s ease-in-out infinite}
 
   /* Responsive */
@@ -413,9 +422,18 @@ export default function HomePage() {
             <div className="hp__cloud" style={{ top: '30%', width: '34%', animation: 'hpCloud 90s linear -60s infinite' }}><Cloud width="100%" opacity={.75} /></div>
 
             <div className="hp__sun">
-              <span className="hp__sun-rays" />
-              <span className="hp__sun-rainbow" />
-              <span className="hp__sun-core" />
+              <div className="hp__sun-gl">
+                <ShaderCanvas
+                  fragment={HALO_FRAG}
+                  fallback={(
+                    <>
+                      <span className="hp__sun-rays" />
+                      <span className="hp__sun-rainbow" />
+                      <span className="hp__sun-core" />
+                    </>
+                  )}
+                />
+              </div>
               <div className="hp__buddha"><img src="/adida.PNG" alt="" /></div>
             </div>
 
@@ -433,7 +451,9 @@ export default function HomePage() {
 
             <div className="hp__temple"><Temple /></div>
 
-            <div className="hp__pond" />
+            <div className="hp__pond">
+              <ShaderCanvas fragment={POND_FRAG} fps={40} fallback={<span className="hp__pond-fallback" />} />
+            </div>
             <div className="hp__lotus" style={{ left: '10%', bottom: '5%' }}><LotusFlower size={38} /></div>
             <div className="hp__lotus" style={{ right: '12%', bottom: '8%', animationDelay: '1.4s' }}><LotusFlower size={30} /></div>
             <div className="hp__lotus" style={{ left: '44%', bottom: '2%', animationDelay: '.7s' }}><LotusFlower size={26} /></div>

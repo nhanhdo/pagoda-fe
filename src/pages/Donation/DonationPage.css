@@ -161,3 +161,11 @@
 @media (max-width: 420px) {
   .dn-summary { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Fund + receipt */
+.dn-date__receipt { margin-top: 2px; font-size: 11px; color: #b9a893; }
+.dn-fund-filter { min-width: 170px; }
+.dn-fund-filter .ant-select-selector { border-radius: 999px !important; background: #fcf9f4 !important; }
+.dn-fund-opt { display: inline-flex; align-items: center; gap: 8px; }
+.dn-fund-opt i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+@media (max-width: 767px) { .dn-fund-filter { flex: 1 1 100%; } }

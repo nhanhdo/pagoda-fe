@@ -21,6 +21,9 @@ import RewardDisciplinePage from './pages/RewardDiscipline/RewardDisciplinePage'
 import DepartmentPage from './pages/Department/DepartmentPage';
 import NewsPage from './pages/News/NewsPage';
 import UserManagementPage from './pages/Users/UserManagementPage';
+import BackupPage from './pages/Backup/BackupPage';
+import FinancePage from './pages/Finance/FinancePage';
+import CeremonyPage from './pages/Ceremony/CeremonyPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -38,6 +41,13 @@ const DonationRoute = ({ children }) => {
   const { user, isAdmin, hasRole } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (!isAdmin() && !hasRole('thuki')) return <Navigate to="/app/dashboard" replace />;
+  return children;
+};
+
+const FinanceRoute = ({ children }) => {
+  const { user, isAdmin, hasRole } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isAdmin() && !hasRole('truotri') && !hasRole('thuki')) return <Navigate to="/app/dashboard" replace />;
   return children;
 };
 
@@ -73,10 +83,13 @@ const AppRoutes = () => {
         <Route path="work-assignment"    element={<WorkAssignmentPage />} />
         <Route path="training"           element={<TrainingPage />} />
         <Route path="buddhist-followers" element={<BuddhistFollowerPage />} />
+        <Route path="ceremonies"         element={<CeremonyPage />} />
         <Route path="donations"          element={<DonationRoute><DonationPage /></DonationRoute>} />
+        <Route path="finance"            element={<FinanceRoute><FinancePage /></FinanceRoute>} />
         <Route path="reward-discipline"  element={<RewardDisciplinePage />} />
         <Route path="news"               element={<NewsPage />} />
         <Route path="users"              element={<AdminRoute><UserManagementPage /></AdminRoute>} />
+        <Route path="backup"             element={<AdminRoute><BackupPage /></AdminRoute>} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

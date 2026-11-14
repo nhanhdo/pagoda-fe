@@ -1,6 +1,6 @@
-// Vietnamese Lunar Calendar (Âm lịch Việt Nam)
-// Algorithm by Hồ Ngọc Đức — standard for Vietnamese lunar calendar
-// Timezone: UTC+7
+// Vietnamese Lunar Calendar (Âm lịch Việt Nam), UTC+7.
+// Hồ Ngọc Đức's month/leap-month structure with Meeus' full new-moon algorithm — the simplified
+// series put some near-midnight new moons on the wrong day (e.g. Vu Lan 2026). Mirrors backend/src/utils/lunar.js.
 
 const TZ = 7;
 const DR = Math.PI / 180;
@@ -16,26 +16,73 @@ function jdFromDate(dd: number, mm: number, yy: number): number {
   return jd;
 }
 
-function getNewMoonDay(k: number): number {
+/* ── New moon: Jean Meeus, Astronomical Algorithms (2nd ed.) ch. 49, full series ──
+   k follows Hồ Ngọc Đức's numbering (k = 0 near 1900-01-01); Meeus' k = k − 1237.
+   Returns the local (UTC+7) Julian day number of the new moon. */
+function deltaTSeconds(y: number): number {
+  if (y < 1860) { const u = (y - 1820) / 100; return -20 + 32 * u * u; }
+  if (y < 1900) { const t = y - 1860; return 7.62 + 0.5737 * t - 0.251754 * t * t + 0.01680668 * t ** 3 - 0.0004473624 * t ** 4 + t ** 5 / 233174; }
+  if (y < 1920) { const t = y - 1900; return -2.79 + 1.494119 * t - 0.0598939 * t * t + 0.0061966 * t ** 3 - 0.000197 * t ** 4; }
+  if (y < 1941) { const t = y - 1920; return 21.20 + 0.84493 * t - 0.0761 * t * t + 0.0020936 * t ** 3; }
+  if (y < 1961) { const t = y - 1950; return 29.07 + 0.407 * t - t * t / 233 + t ** 3 / 2547; }
+  if (y < 1986) { const t = y - 1975; return 45.45 + 1.067 * t - t * t / 260 - t ** 3 / 718; }
+  if (y < 2005) { const t = y - 2000; return 63.86 + 0.3345 * t - 0.060374 * t * t + 0.0017275 * t ** 3 + 0.000651814 * t ** 4 + 0.00002373599 * t ** 5; }
+  if (y < 2050) { const t = y - 2000; return 62.92 + 0.32217 * t + 0.005589 * t * t; }
+  if (y < 2150) { return -20 + 32 * ((y - 1820) / 100) ** 2 - 0.5628 * (2150 - y); }
+  const u = (y - 1820) / 100; return -20 + 32 * u * u;
+}
+
+/** Exact new-moon instant as a Julian Date in UT. */
+function newMoonJDUT(kHo: number): number {
+  const k = kHo - 1237;
   const T = k / 1236.85;
-  const T2 = T * T;
-  const T3 = T2 * T;
-  let Jd1 = 2415020.75933 + 29.53058868 * k + 0.0001178 * T2 - 0.000000155 * T3;
-  Jd1 += 0.00033 * Math.sin((166.56 + 132.87 * T - 0.009173 * T2) * DR);
-  const M = 359.2242 + 29.10535608 * k - 0.0000333 * T2 - 0.00000347 * T3;
-  const Mpr = 306.0253 + 385.81691806 * k + 0.0107306 * T2 + 0.00001236 * T3;
-  const F = 21.2964 + 390.67050646 * k - 0.0016528 * T2 - 0.00000239 * T3;
-  let C1 = (0.1734 - 0.000393 * T) * Math.sin(M * DR) + 0.0021 * Math.sin(2 * DR * M);
-  C1 -= 0.4068 * Math.sin(Mpr * DR) + 0.0161 * Math.sin(DR * 2 * Mpr);
-  C1 -= 0.0004 * Math.sin(DR * 3 * Mpr);
-  C1 += 0.0104 * Math.sin(DR * 2 * F) - 0.0051 * Math.sin(DR * (M + Mpr));
-  C1 -= 0.0074 * Math.sin(DR * (M - Mpr)) + 0.0004 * Math.sin(DR * (2 * F + M));
-  C1 -= 0.0004 * Math.sin(DR * (2 * F - M)) - 0.0006 * Math.sin(DR * (2 * F + Mpr));
-  C1 += 0.001 * Math.sin(DR * (2 * F - Mpr)) + 0.0005 * Math.sin(DR * (M + 2 * Mpr));
-  const deltaT = T < -11
-    ? 0.001 + 0.000839 * T + 0.0002261 * T2 - 0.00000845 * T3 - 0.000000081 * T * T3
-    : -0.000278 + 0.000265 * T + 0.000262 * T2;
-  return Math.floor(Jd1 + C1 - deltaT + 0.5 + TZ / 24);
+  const T2 = T * T; const T3 = T2 * T; const T4 = T3 * T;
+  let jde = 2451550.09766 + 29.530588861 * k + 0.00015437 * T2 - 0.00000015 * T3 + 0.00000000073 * T4;
+  const E = 1 - 0.002516 * T - 0.0000074 * T2;
+  const M = (2.5534 + 29.1053567 * k - 0.0000014 * T2 - 0.00000011 * T3) * DR;
+  const Mp = (201.5643 + 385.81693528 * k + 0.0107582 * T2 + 0.00001238 * T3 - 0.000000058 * T4) * DR;
+  const F = (160.7108 + 390.67050284 * k - 0.0016118 * T2 - 0.00000227 * T3 + 0.000000011 * T4) * DR;
+  const Om = (124.7746 - 1.56375588 * k + 0.0020672 * T2 + 0.00000215 * T3) * DR;
+  const s = Math.sin;
+  jde += -0.40720 * s(Mp)
+    + 0.17241 * E * s(M)
+    + 0.01608 * s(2 * Mp)
+    + 0.01039 * s(2 * F)
+    + 0.00739 * E * s(Mp - M)
+    - 0.00514 * E * s(Mp + M)
+    + 0.00208 * E * E * s(2 * M)
+    - 0.00111 * s(Mp - 2 * F)
+    - 0.00057 * s(Mp + 2 * F)
+    + 0.00056 * E * s(2 * Mp + M)
+    - 0.00042 * s(3 * Mp)
+    + 0.00042 * E * s(M + 2 * F)
+    + 0.00038 * E * s(M - 2 * F)
+    - 0.00024 * E * s(2 * Mp - M)
+    - 0.00017 * s(Om)
+    - 0.00007 * s(Mp + 2 * M)
+    + 0.00004 * s(2 * Mp - 2 * F)
+    + 0.00004 * s(3 * M)
+    + 0.00003 * s(Mp + M - 2 * F)
+    + 0.00003 * s(2 * Mp + 2 * F)
+    - 0.00003 * s(Mp + M + 2 * F)
+    + 0.00003 * s(Mp - M + 2 * F)
+    - 0.00002 * s(Mp - M - 2 * F)
+    - 0.00002 * s(3 * Mp + M)
+    + 0.00002 * s(4 * Mp);
+  const A: number[][] = [
+    [299.77, 0.107408, -0.009173, 0.000325], [251.88, 0.016321, 0, 0.000165], [251.83, 26.651886, 0, 0.000164],
+    [349.42, 36.412478, 0, 0.000126], [84.66, 18.206239, 0, 0.000110], [141.74, 53.303771, 0, 0.000062],
+    [207.14, 2.453732, 0, 0.000060], [154.84, 7.30686, 0, 0.000056], [34.52, 27.261239, 0, 0.000047],
+    [207.19, 0.121824, 0, 0.000042], [291.34, 1.844379, 0, 0.000040], [161.72, 24.198154, 0, 0.000037],
+    [239.56, 25.513099, 0, 0.000035], [331.55, 3.592518, 0, 0.000023],
+  ];
+  for (const [a0, a1, a2, c] of A) jde += c * s((a0 + a1 * k + a2 * T2) * DR);
+  const year = 2000 + (jde - 2451545) / 365.25;
+  return jde - deltaTSeconds(year) / 86400;
+}
+
+function getNewMoonDay(k: number): number {
+  return Math.floor(newMoonJDUT(k) + 0.5 + TZ / 24);
 }
 
 function getSunLongitude(jdn: number): number {
@@ -110,18 +157,19 @@ export function solarToLunar(dd: number, mm: number, yy: number): LunarDate {
 
   const lunarDay = dayNumber - monthStart + 1;
   const diff = Math.floor((monthStart - a11) / 29);
-  let leapMonthDiff = 0;
   let isLeap = false;
+  let lunarMonth = diff + 11;
 
+  // Hồ Ngọc Đức's rule: months after the leap month shift back by one; the leap month repeats the previous number.
   if (b11 - a11 > 365) {
     const leapOffset = getLeapMonthOffset(a11);
-    const leapMonth = leapOffset - Math.floor(leapOffset / 2);
-    leapMonthDiff = leapOffset >= diff ? 0 : 1;
-    if (diff >= leapOffset && diff - leapMonthDiff === leapMonth) isLeap = true;
+    if (diff >= leapOffset) {
+      lunarMonth = diff + 10;
+      if (diff === leapOffset) isLeap = true;
+    }
   }
-
-  let lunarMonth = ((diff + 10 - leapMonthDiff) % 12) + 1;
-  if (lunarMonth >= 11 && diff < 4) lunarYear = yy - 1;
+  if (lunarMonth > 12) lunarMonth -= 12;
+  if (lunarMonth >= 11 && diff < 4) lunarYear -= 1;
 
   const yearCanIdx = (lunarYear + 6) % 10;
   const can = CAN[yearCanIdx];
@@ -193,8 +241,9 @@ export function getBuddhistHolidays(year: number): Map<string, { names: string[]
       const lunar = solarToLunar(d, m, year);
 
       // Check Buddhist holidays
+      // Festivals fall in the regular month, never in its leap repeat
       for (const h of LUNAR_HOLIDAYS) {
-        if (lunar.month === h.month && lunar.day === h.day) {
+        if (!lunar.leap && lunar.month === h.month && lunar.day === h.day) {
           const key = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           addDay(key, h.name, !!h.major);
         }
@@ -203,11 +252,11 @@ export function getBuddhistHolidays(year: number): Map<string, { names: string[]
       // Mark every lunar 1st (Sóc) and 15th (Vọng/Rằm)
       if (lunar.day === 1) {
         const key = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        addDay(key, `Mùng 1 tháng ${lunar.month}`, false);
+        addDay(key, `Mùng 1 tháng ${lunar.month}${lunar.leap ? ' nhuận' : ''}`, false);
       }
-      if (lunar.day === 15 && !LUNAR_HOLIDAYS.some(h => h.month === lunar.month && h.day === 15)) {
+      if (lunar.day === 15 && (lunar.leap || !LUNAR_HOLIDAYS.some(h => h.month === lunar.month && h.day === 15))) {
         const key = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        addDay(key, `Rằm tháng ${lunar.month}`, false);
+        addDay(key, `Rằm tháng ${lunar.month}${lunar.leap ? ' nhuận' : ''}`, false);
       }
     }
   }

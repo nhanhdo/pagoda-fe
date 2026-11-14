@@ -10,7 +10,7 @@ import {
   AppstoreFilled, TeamOutlined, CalendarFilled, CheckSquareFilled,
   BookFilled, HeartFilled, TrophyFilled, BankFilled, NotificationFilled,
   LogoutOutlined, UserOutlined, KeyOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  BellOutlined, SafetyCertificateFilled, DollarCircleOutlined, DownOutlined,
+  BellOutlined, SafetyCertificateFilled, DollarCircleOutlined, DownOutlined, CheckOutlined, CloudServerOutlined, AccountBookOutlined, FireOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/axios';
@@ -57,69 +57,74 @@ function LotusSVG({ size = 40, opacity = 1 }) {
 }
 
 /* ── Notification Panel ───────────────────────────────── */
-function NotificationPanel({ notifications, onNavigate }) {
+function NotificationPanel({ notifications, readIds, onItemClick, onMarkAllRead }) {
   const { t } = useLanguage();
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
+
+  const header = (
+    <div className="notif__head">
+      <span className="notif__title">{t.layout.notifications}</span>
+      {unreadCount > 0 ? (
+        <button type="button" className="notif__mark" onClick={onMarkAllRead}>
+          <CheckOutlined /> {t.layout.markAllRead}
+        </button>
+      ) : (
+        notifications.length > 0 && <span className="notif__count">{t.layout.allRead}</span>
+      )}
+    </div>
+  );
 
   if (!notifications.length) {
     return (
-      <div style={{ width: 'min(320px, calc(100vw - 24px))' }}>
-        <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 14, borderBottom: '1px solid #f0f0f0', color: '#333' }}>
-          {t.layout.notifications}
-        </div>
+      <div className="notif">
+        {header}
         <Empty description={t.layout.noNotifications} style={{ padding: '24px 0' }} />
       </div>
     );
   }
 
-  const grouped = {
-    new_comment:  notifications.filter(n => n.type === 'new_comment'),
-    pending_post: notifications.filter(n => n.type === 'pending_post'),
-    overdue_task: notifications.filter(n => n.type === 'overdue_task'),
-    today_duty:   notifications.filter(n => n.type === 'today_duty'),
-    holiday:      notifications.filter(n => n.type === 'holiday'),
-  };
-
+  const order = ['new_comment', 'pending_expense', 'pending_post', 'overdue_task', 'today_duty', 'holiday'];
   const groupMeta = {
     new_comment:  { label: t.layout.newCommentsGroup,      color: '#3a9483' },
+    pending_expense: { label: t.layout.pendingExpensesGroup, color: '#b9841f' },
     pending_post: { label: t.layout.pendingPostGroup,      color: '#d46b08' },
-    overdue_task: { label: t.layout.overdueTasksGroup,     color: '#ff4d4f' },
-    today_duty:   { label: t.layout.todayDutyGroup,        color: '#1890ff' },
-    holiday:      { label: t.layout.upcomingHolidaysGroup, color: '#d48806' },
+    overdue_task: { label: t.layout.overdueTasksGroup,     color: '#d9646c' },
+    today_duty:   { label: t.layout.todayDutyGroup,        color: '#4d8fc7' },
+    holiday:      { label: t.layout.upcomingHolidaysGroup, color: '#c98a1e' },
   };
 
   return (
-    <div style={{ width: 'min(320px, calc(100vw - 24px))' }}>
-      <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 14, borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ color: '#333' }}>{t.layout.notifications}</span>
-        <span style={{ fontSize: 11, color: '#999', fontWeight: 400 }}>{notifications.length} {t.layout.notifItems}</span>
-      </div>
-
-      <div style={{ maxHeight: 380, overflowY: 'auto' }}>
-        {Object.entries(grouped).map(([type, items]) => {
+    <div className="notif">
+      {header}
+      <div className="notif__list">
+        {order.map(type => {
+          const items = notifications.filter(n => n.type === type);
           if (!items.length) return null;
           const meta = groupMeta[type];
           return (
             <div key={type}>
-              <div style={{ padding: '8px 16px 4px', fontSize: 11, fontWeight: 600, color: meta.color, textTransform: 'uppercase', letterSpacing: 0.8, background: '#fafafa' }}>
-                {meta.label}
-              </div>
-              {items.map((n) => (
-                <div key={n.id}
-                  onClick={() => n.link && onNavigate?.(n.link)}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 16px', borderBottom: '1px solid #f5f5f5', transition: 'background 0.15s', cursor: n.link ? 'pointer' : 'default' }}
-                  onMouseEnter={e => e.currentTarget.style.background = n.link ? '#fff8ee' : '#f9f9f9'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: `${meta.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0, marginTop: 1 }}>
-                    {n.icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: '#222', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.title}</div>
-                    {n.subtitle && <div style={{ fontSize: 12, color: '#888', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.subtitle}</div>}
-                  </div>
-                  {n.time && <div style={{ fontSize: 11, color: '#bbb', flexShrink: 0, marginTop: 2 }}>{n.time}</div>}
-                </div>
-              ))}
+              <div className="notif__group" style={{ color: meta.color }}>{meta.label}</div>
+              {items.map((n) => {
+                const isUnread = !readIds.has(n.id);
+                return (
+                  <button
+                    type="button"
+                    key={n.id}
+                    className={`notif__item${isUnread ? ' is-unread' : ''}`}
+                    onClick={() => onItemClick(n)}
+                  >
+                    <span className="notif__icon" style={{ background: `${meta.color}18` }}>{n.icon}</span>
+                    <span className="notif__text">
+                      <span className="notif__item-title">{n.title}</span>
+                      {n.subtitle && <span className="notif__item-sub">{n.subtitle}</span>}
+                    </span>
+                    <span className="notif__meta">
+                      {n.time && <span className="notif__time">{n.time}</span>}
+                      {isUnread && <span className="notif__dot" aria-label="unread" />}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           );
         })}
@@ -127,6 +132,18 @@ function NotificationPanel({ notifications, onNavigate }) {
     </div>
   );
 }
+
+const SEEN_KEY = 'notif_seen_ids';
+const READ_KEY = 'notif_read_ids';
+const STORE_CAP = 500;
+const readStore = (key) => {
+  try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch { return new Set(); }
+};
+const addToStore = (key, ids) => {
+  const set = readStore(key);
+  ids.forEach(id => set.add(id));
+  localStorage.setItem(key, JSON.stringify(Array.from(set).slice(-STORE_CAP)));
+};
 
 function relTime(iso, t) {
   const diff = Math.max(0, Date.now() - new Date(iso).getTime());
@@ -143,6 +160,7 @@ function NotificationBell() {
   const [open, setOpen]                   = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread]               = useState(0);
+  const [readIds, setReadIds]             = useState(() => readStore(READ_KEY));
   const [ringing, setRinging]             = useState(false);
   const prevUnread = useRef(0);
   useEffect(() => {
@@ -236,6 +254,22 @@ function NotificationBell() {
         }
       } catch { /* silent */ }
 
+      // 4a. Expense vouchers waiting for admin approval
+      if (isAdmin()) {
+        try {
+          const res = await api.get('/expenses', { params: { status: 'chờ_duyệt', limit: 30 } });
+          (res.data?.data || []).forEach(e => items.push({
+            id: `pending-expense-${e.id}`,
+            type: 'pending_expense',
+            icon: '🧾',
+            title: `${e.code} · ${Math.round(Number(e.amount) || 0).toLocaleString('vi-VN')} ₫`,
+            subtitle: [e.fund?.name, e.payee || e.description, e.creator?.personnel?.dharmName || e.creator?.personnel?.fullName || e.creator?.username].filter(Boolean).join(' · '),
+            time: e.createdAt ? relTime(e.createdAt, t) : '',
+            link: `/app/finance?tab=expenses&expense=${e.id}`,
+          }));
+        } catch { /* silent */ }
+      }
+
       // 4. Pending posts for approval (admin / truotri / thuki only)
       if (canApprove) {
         try {
@@ -253,13 +287,6 @@ function NotificationBell() {
         } catch { /* silent */ }
       }
 
-      inFlight = false;
-      if (cancelled) return;
-
-      // While the panel is open, anything newly loaded counts as seen
-      if (openRef.current) {
-        localStorage.setItem('notif_seen_ids', JSON.stringify(items.map(n => n.id)));
-      }
       // 5. New comments from others on posts I wrote or joined
       try {
         const res = await api.get('/posts/comments/recent', { params: { limit: 20, days: 7 } });
@@ -279,8 +306,14 @@ function NotificationBell() {
         });
       } catch { /* silent */ }
 
-      // Only count items the user hasn't seen yet (persisted across page loads)
-      const seenIds = new Set(JSON.parse(localStorage.getItem('notif_seen_ids') || '[]'));
+      inFlight = false;
+      if (cancelled) return;
+
+      // While the panel is open, anything newly loaded counts as seen (badge-wise)
+      if (openRef.current) addToStore(SEEN_KEY, items.map(n => n.id));
+      // Badge = items never seen before. Stores only ever grow, so a failed
+      // request can't drop ids and make old items "new" again.
+      const seenIds = readStore(SEEN_KEY);
       const newCount = items.filter(n => !seenIds.has(n.id)).length;
 
       // Skip re-rendering when nothing changed between polls
@@ -311,12 +344,17 @@ function NotificationBell() {
     setOpen(v);
     openRef.current = v;
     if (v) {
-      loadRef.current();
-      // Mark all currently loaded notifications as seen
-      const ids = notifsRef.current.map(n => n.id);
-      localStorage.setItem('notif_seen_ids', JSON.stringify(ids));
+      // Opening clears the badge; items stay highlighted until read
+      addToStore(SEEN_KEY, notifsRef.current.map(n => n.id));
       setUnread(0);
+      loadRef.current();
     }
+  };
+
+  const markRead = (ids) => {
+    addToStore(READ_KEY, ids);
+    addToStore(SEEN_KEY, ids);
+    setReadIds(readStore(READ_KEY));
   };
 
   return (
@@ -325,7 +363,17 @@ function NotificationBell() {
       onOpenChange={handleOpenChange}
       trigger="click"
       placement="bottomRight"
-      content={<NotificationPanel notifications={notifications} onNavigate={(path) => { navigate(path); setOpen(false); }} />}
+      content={
+        <NotificationPanel
+          notifications={notifications}
+          readIds={readIds}
+          onItemClick={(n) => {
+            markRead([n.id]);
+            if (n.link) { navigate(n.link); setOpen(false); openRef.current = false; }
+          }}
+          onMarkAllRead={() => markRead(notifications.map(n => n.id))}
+        />
+      }
       overlayInnerStyle={{ padding: 0, borderRadius: 10, overflow: 'hidden' }}
       overlayStyle={{ zIndex: 1100 }}
     >
@@ -478,10 +526,13 @@ export default function MainLayout() {
     '/app/work-assignment':    { label: t.layout.pageTitle.workAssignment,    icon: <CheckSquareFilled /> },
     '/app/training':           { label: t.layout.pageTitle.training,          icon: <BookFilled /> },
     '/app/buddhist-followers': { label: t.layout.pageTitle.buddhistFollowers, icon: <HeartFilled /> },
+    '/app/ceremonies':         { label: t.layout.pageTitle.ceremonies,        icon: <FireOutlined /> },
     '/app/donations':          { label: t.layout.pageTitle.donations,          icon: <DollarCircleOutlined /> },
+    '/app/finance':            { label: t.layout.pageTitle.finance,            icon: <AccountBookOutlined /> },
     '/app/reward-discipline':  { label: t.layout.pageTitle.rewardDiscipline,  icon: <TrophyFilled /> },
     '/app/news':               { label: t.layout.pageTitle.news,              icon: <NotificationFilled /> },
     '/app/users':              { label: t.layout.pageTitle.users,             icon: <SafetyCertificateFilled /> },
+    '/app/backup':             { label: t.layout.pageTitle.backup,            icon: <CloudServerOutlined /> },
   };
 
   useEffect(() => {
@@ -505,14 +556,19 @@ export default function MainLayout() {
     { key: '/app/work-assignment',    icon: <CheckSquareFilled />,    label: t.nav.workAssignment },
     { key: '/app/training',           icon: <BookFilled />,           label: t.nav.training },
     { key: '/app/buddhist-followers', icon: <HeartFilled />,          label: t.nav.buddhistFollowers },
+    { key: '/app/ceremonies',         icon: <FireOutlined />,         label: t.nav.ceremonies },
     ...(['admin', 'thuki'].includes(user?.role) ? [
       { key: '/app/donations', icon: <DollarCircleOutlined />, label: t.nav.donations },
+    ] : []),
+    ...(['admin', 'truotri', 'thuki'].includes(user?.role) ? [
+      { key: '/app/finance', icon: <AccountBookOutlined />, label: t.nav.finance },
     ] : []),
     { key: '/app/reward-discipline',  icon: <TrophyFilled />,         label: t.nav.rewardDiscipline },
     { key: '/app/news',               icon: <NotificationFilled />,   label: t.nav.news },
     ...(user?.role === 'admin' ? [
       { type: 'divider' },
       { key: '/app/users', icon: <SafetyCertificateFilled />, label: t.nav.users },
+      { key: '/app/backup', icon: <CloudServerOutlined />, label: t.nav.backup },
     ] : []),
   ];
 
@@ -696,7 +752,7 @@ export default function MainLayout() {
           </div>
 
           {currentPage && !isPhone && (
-            <div style={{
+            <div className="hdr-page-pill" style={{
               position: 'absolute', left: '50%', transform: 'translateX(-50%)',
               display: 'flex', alignItems: 'center', gap: 7,
               background: 'linear-gradient(135deg, #fff8ee 0%, #fcefdc 100%)',
