@@ -1,3 +1,4 @@
+import { useCreateParam } from '../../utils/useCreateParam';
 import React, { useMemo, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import CountUp from '../../components/CountUp/CountUp';
@@ -12,6 +13,7 @@ import {
 import dayjs from 'dayjs';
 import { useBuddhistFollowerPage } from './useBuddhistFollowerPage';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { guardedClose, rules } from '../../utils/formGuard';
 import './BuddhistFollowerPage.css';
 
 const { Option } = Select;
@@ -166,9 +168,10 @@ export default function BuddhistFollowerPage() {
   const M = B.merit;
   const {
     data, allData, loading, total, page, setPage, search, setSearch,
-    filterType, setFilterType, modalOpen, setModalOpen, editRecord, setEditRecord,
+    filterType, setFilterType, modalOpen, setModalOpen, saving, editRecord, setEditRecord,
     handleSubmit, handleDelete, canManage, isAdmin, hasRole,
   } = useBuddhistFollowerPage();
+  useCreateParam(() => openModal(), canManage());
 
   const [form] = Form.useForm();
   const [showAllBoard, setShowAllBoard] = useState(false);
@@ -478,7 +481,9 @@ export default function BuddhistFollowerPage() {
       <Modal
         title={editRecord ? B.editTitle : B.addTitle}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => guardedClose(form, () => setModalOpen(false), t)}
+        maskClosable={false}
+        confirmLoading={saving}
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
@@ -488,7 +493,7 @@ export default function BuddhistFollowerPage() {
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
-              <Form.Item name="fullName" label={t.common.name} rules={[{ required: true }]}>
+              <Form.Item name="fullName" label={t.common.name} rules={[{ ...rules(t).required(t.common.name), whitespace: true }]}>
                 <Input />
               </Form.Item>
             </Col>
@@ -520,12 +525,12 @@ export default function BuddhistFollowerPage() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name="phone" label={B.form.phone}>
+              <Form.Item name="phone" label={B.form.phone} rules={[rules(t).phone]}>
                 <Input />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name="email" label={t.common.email}>
+              <Form.Item name="email" label={t.common.email} rules={[rules(t).email]}>
                 <Input />
               </Form.Item>
             </Col>

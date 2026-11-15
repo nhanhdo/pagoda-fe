@@ -19,6 +19,7 @@ export function useBuddhistFollowerPage() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editRecord, setEditRecord] = useState<any>(null);
   const { canManage, isAdmin, hasRole } = useAuth();
 
@@ -52,6 +53,8 @@ export function useBuddhistFollowerPage() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleSubmit = async (values: any) => {
+    if (saving) return;
+    setSaving(true);
     try {
       const payload = {
         ...values,
@@ -68,8 +71,10 @@ export function useBuddhistFollowerPage() {
       setModalOpen(false);
       fetchData();
       fetchAll();
-    } catch {
-      message.error('Có lỗi xảy ra');
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Có lỗi xảy ra');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -97,6 +102,7 @@ export function useBuddhistFollowerPage() {
     setFilterType,
     modalOpen,
     setModalOpen,
+    saving,
     editRecord,
     setEditRecord,
     fetchData,

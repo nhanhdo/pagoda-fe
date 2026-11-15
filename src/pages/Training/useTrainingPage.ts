@@ -3,6 +3,7 @@ import { message } from 'antd';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export const TRAINING_TYPES = ['khóa_phật_học', 'an_cư_kiết_hạ', 'giới_đàn', 'bồi_dưỡng', 'khác'];
 
@@ -17,6 +18,8 @@ export function effectiveStatus(r: any): string {
 }
 
 export function useTrainingPage() {
+  const { t } = useLanguage() as any;
+  const T = t.training;
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,7 +43,7 @@ export function useTrainingPage() {
       const { data: r } = await api.get('/trainings');
       setData(r as any[]);
     } catch {
-      message.error('Không thể tải danh sách khóa học');
+      message.error(T.loadError);
     } finally {
       setLoading(false);
     }
@@ -65,15 +68,15 @@ export function useTrainingPage() {
       };
       if (editRecord) {
         await api.put(`/trainings/${editRecord.id}`, payload);
-        message.success('Cập nhật thành công');
+        message.success(T.updateSuccess);
       } else {
         await api.post('/trainings', payload);
-        message.success('Thêm khóa học thành công');
+        message.success(T.addSuccess);
       }
       setModalOpen(false);
       fetchData();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Có lỗi xảy ra');
+      message.error(err?.response?.data?.message || t.common.error);
     } finally {
       setSaving(false);
     }
@@ -82,10 +85,10 @@ export function useTrainingPage() {
   const handleDelete = async (id: any) => {
     try {
       await api.delete(`/trainings/${id}`);
-      message.success('Đã xóa khóa học');
+      message.success(T.deleteSuccess);
       fetchData();
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Không thể xóa');
+      message.error(err?.response?.data?.message || T.deleteError);
     }
   };
 
@@ -93,11 +96,11 @@ export function useTrainingPage() {
     if (!selectedPersonnelIds.length || !participantModal) return;
     try {
       await api.post(`/trainings/${participantModal.id}/participants`, { personnelIds: selectedPersonnelIds });
-      message.success('Đã thêm học viên');
+      message.success(T.participantsAdded);
       setSelectedPersonnelIds([]);
       fetchData();
     } catch {
-      message.error('Có lỗi xảy ra');
+      message.error(t.common.error);
     }
   };
 
@@ -107,7 +110,7 @@ export function useTrainingPage() {
       await api.put(`/trainings/${participantModal.id}/participants/${participantId}`, { result });
       fetchData();
     } catch {
-      message.error('Có lỗi xảy ra');
+      message.error(t.common.error);
     }
   };
 
@@ -117,7 +120,7 @@ export function useTrainingPage() {
       await api.delete(`/trainings/${participantModal.id}/participants/${participantId}`);
       fetchData();
     } catch {
-      message.error('Không thể xóa học viên');
+      message.error(T.removeParticipantError);
     }
   };
 

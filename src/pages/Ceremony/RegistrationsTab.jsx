@@ -10,12 +10,13 @@ import dayjs from 'dayjs';
 import api from '../../api/axios';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { printReceipt, printSoList } from '../../utils/printDocs';
-import { KIND_TONE, lunarLabel, displayName, QUICK_OFFERINGS, emptyEntry, daysUntil } from './ceremonyShared';
+import { KIND_TONE, lunarLabel, displayName, QUICK_OFFERINGS, emptyEntry, daysUntil, fetchFollowersCached, slotLabel, entryHasData } from './ceremonyShared';
+import { guardedClose } from '../../utils/formGuard';
 import { vnd, compactVnd, softOf } from '../Finance/financeShared';
 
 const METHODS = ['tiền_mặt', 'chuyển_khoản', 'khác'];
 
-function RegistrationModal({ C, t, lang, open, record, ceremony, funds, followers, tablets, onClose, onSaved }) {
+function RegistrationModal({ C, t, lang, open, record, ceremony, funds, followers, tablets, canRemove, onClose, onSaved }) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const kind = Form.useWatch('kind', form);
@@ -36,10 +37,26 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
     }
   }, [open, record]);
 
-  const onKindChange = (k) => {
+  const applyKind = (k) => {
     const entries = (form.getFieldValue('entries') || []).map(e => ({ ...emptyEntry(k), fullName: e.fullName }));
-    form.setFieldsValue({ entries: entries.length ? entries : [emptyEntry(k)] });
+    form.setFieldsValue({ kind: k, entries: entries.length ? entries : [emptyEntry(k)] });
   };
+  const onKindChange = (k) => {
+    const prev = kind;
+    const hasData = (form.getFieldValue('entries') || []).some(entryHasData);
+    if (!hasData) { applyKind(k); return; }
+    form.setFieldsValue({ kind: prev });
+    Modal.confirm({
+      title: C.switchKindTitle,
+      content: C.switchKindBody,
+      okText: C.switchKindOk,
+      cancelText: t.common.cancel,
+      onOk: () => applyKind(k),
+    });
+  };
+  // Non-admin/trụ trì may not lower an offering that already has a receipt (server enforces too)
+  const prevOffering = Number(record?.offeringAmount) || 0;
+  const lockLower = !!record?.donation && !canRemove;
 
   const onPickFollower = (id) => {
     const f = followers.find(x => x.id === id);
@@ -75,7 +92,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
 
   return (
     <Modal
-      open={open} onCancel={onClose} onOk={() => form.submit()} confirmLoading={saving} width={760} destroyOnClose
+      open={open} onCancel={() => guardedClose(form, onClose, t)} maskClosable={false} onOk={() => form.submit()} confirmLoading={saving} width={760} destroyOnClose
       title={<span>{record ? C.editRegistration : C.addRegistration}<span className="cer-modal-sub"> · {ceremony?.name}</span></span>}
       okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
     >
@@ -122,7 +139,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
                             <Select
                               allowClear showSearch placeholder={C.fields.linkTablet} onChange={(id) => onPickTablet(index, id)}
                               filterOption={(input, opt) => String(opt?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                              options={tablets.map(tb => ({ value: tb.id, label: `${tb.code} · ${tb.spiritName} · ${tb.area} H${tb.rowNo}-S${tb.slotNo}` }))}
+                              options={tablets.map(tb => ({ value: tb.id, label: `${tb.code} · ${tb.spiritName} · ${slotLabel(tb, C)}` }))}
                             />
                           </Form.Item>
                         )}
@@ -143,9 +160,14 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
         </Form.List>
 
         <div className="cer-section">{C.offeringSection}</div>
-        <Form.Item name="offeringAmount" label={C.fields.offeringAmount} extra={C.fields.offeringHint} style={{ marginBottom: 8 }}>
+        <Form.Item
+          name="offeringAmount" label={C.fields.offeringAmount}
+          extra={lockLower ? C.lowerLockedHint.replace('{amount}', vnd(prevOffering)) : C.fields.offeringHint}
+          style={{ marginBottom: 8 }}
+          rules={lockLower ? [{ validator: (_, v) => (Number(v || 0) < prevOffering ? Promise.reject(new Error(C.lowerLocked)) : Promise.resolve()) }] : []}
+        >
           <InputNumber
-            min={0} step={50000} style={{ width: '100%' }} addonAfter="₫"
+            min={lockLower ? prevOffering : 0} step={50000} style={{ width: '100%' }} addonAfter="₫"
             formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '')}
             parser={(v) => (v ? v.replace(/\./g, '') : '')}
           />
@@ -171,7 +193,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
   );
 }
 
-export default function RegistrationsTab({ C, t, lang, ceremonies, funds, selectedId, setSelectedId, canWrite, createSignal, onChanged }) {
+export default function RegistrationsTab({ C, t, lang, ceremonies, funds, selectedId, setSelectedId, canWrite, canRemove, isAdmin, createSignal, onChanged }) {
   const ceremony = ceremonies.find(c => c.id === selectedId) || null;
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -200,10 +222,14 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
 
   useEffect(() => { const id = setTimeout(load, search ? 300 : 0); return () => clearTimeout(id); }, [load]);
   useEffect(() => {
-    api.get('/buddhist-followers', { params: { page: 1, limit: 1000 } }).then(r => setFollowers(r.data.data || [])).catch(() => {});
+    fetchFollowersCached().then(setFollowers);
     api.get('/memorial-tablets', { params: { status: 'đang_thờ' } }).then(r => setTablets(r.data || [])).catch(() => {});
   }, []);
-  useEffect(() => { if (createSignal !== firstSignal.current && ceremony) setModal({ open: true, record: null }); }, [createSignal]);
+  useEffect(() => {
+    if (createSignal === firstSignal.current || !ceremony) return;
+    if (!ceremony.registrationOpen && !isAdmin) { message.warning(C.closedForRegistration); return; }
+    setModal({ open: true, record: null });
+  }, [createSignal]);
 
   const remove = async (r) => {
     try {
@@ -282,7 +308,7 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
         <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
           {r.donation && <Tooltip title={C.printReceipt}><Button type="text" icon={<PrinterOutlined />} onClick={() => printRegReceipt(r)} /></Tooltip>}
           {canWrite && <Tooltip title={t.common.edit}><Button type="text" icon={<EditOutlined />} onClick={() => setModal({ open: true, record: r })} /></Tooltip>}
-          {canWrite && (
+          {canWrite && (!r.donation || canRemove) && (
             <Popconfirm title={C.confirmDeleteReg} description={r.donation ? C.deleteRegNote : undefined} onConfirm={() => remove(r)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
               <Tooltip title={t.common.delete}><Button type="text" danger icon={<DeleteOutlined />} /></Tooltip>
             </Popconfirm>
@@ -332,13 +358,13 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
                   <strong>{r.kind === 'cầu_siêu' ? `${C.spiritPrefix} ${e.fullName}` : e.fullName}</strong>
                   {r.kind === 'cầu_siêu' ? (
                     <span>
-                      {e.deathYear && ` · ${C.diedYear} ${e.deathYear}`}
-                      {e.deathLunarDay && e.deathLunarMonth && ` · ${e.deathLunarDay}/${e.deathLunarMonth} ${C.lunarShort}`}
-                      {e.ageAtDeath && ` · ${C.age} ${e.ageAtDeath}`}
-                      {e.tablet && <span className="cer-tablet-ref"> · {e.tablet.code} ({e.tablet.area} H{e.tablet.rowNo}-S{e.tablet.slotNo})</span>}
+                      {e.deathYear != null && ` · ${C.diedYear} ${e.deathYear}`}
+                      {e.deathLunarDay != null && e.deathLunarMonth != null && ` · ${e.deathLunarDay}/${e.deathLunarMonth} ${C.lunarShort}`}
+                      {e.ageAtDeath != null && ` · ${C.age} ${e.ageAtDeath}`}
+                      {e.tablet && <span className="cer-tablet-ref"> · {e.tablet.code} ({slotLabel(e.tablet, C)})</span>}
                     </span>
                   ) : (
-                    <span>{e.birthYear && ` · ${C.bornYear} ${e.birthYear}`}{e.address && ` · ${e.address}`}</span>
+                    <span>{e.birthYear != null && ` · ${C.bornYear} ${e.birthYear}`}{e.address ? ` · ${e.address}` : ''}</span>
                   )}
                 </li>
               ))}
@@ -351,7 +377,7 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
 
       <RegistrationModal
         C={C} t={t} lang={lang} open={modal.open} record={modal.record} ceremony={ceremony}
-        funds={funds} followers={followers} tablets={tablets}
+        funds={funds} followers={followers} tablets={tablets} canRemove={canRemove}
         onClose={() => setModal({ open: false, record: null })}
         onSaved={() => { setModal({ open: false, record: null }); load(); onChanged(); }}
       />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Avatar, Tooltip } from 'antd';
+import { Avatar, Tooltip, Result, Button } from 'antd';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   TeamOutlined, HeartOutlined, BookOutlined, CheckSquareOutlined,
@@ -14,6 +14,7 @@ import { useDashboard } from './useDashboard';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
 import { useCountUp } from '../../components/CountUp/CountUp';
+import { useAuth } from '../../contexts/AuthContext';
 import './Dashboard.css';
 
 const ACCENT = {
@@ -170,7 +171,9 @@ function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
 }
 
 export default function Dashboard() {
-  const { stats, dutyToday, upcomingEvents, loading, displayName } = useDashboard();
+  const { stats, dutyToday, upcomingEvents, loading, error, reload, displayName } = useDashboard();
+  const { user } = useAuth();
+  const role = user?.role;
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const d = t.dashboard;
@@ -178,6 +181,16 @@ export default function Dashboard() {
   const DUTY_LIMIT = 5;
 
   if (loading) return <PageSpinner />;
+  if (error) {
+    return (
+      <Result
+        status="warning"
+        title={d.loadError}
+        subTitle={d.loadErrorHint}
+        extra={<Button type="primary" onClick={reload}>{t.common.retry}</Button>}
+      />
+    );
+  }
 
   const now = new Date();
   const hour = now.getHours();
@@ -194,14 +207,16 @@ export default function Dashboard() {
   const trainings = stats?.trainings ?? 0;
   const pending = stats?.pendingWork ?? 0;
 
+  // Only offer shortcuts the backend lets this role create; ?create=1 opens the form directly.
+  const MGR = ['admin', 'truotri', 'thuki', 'truongban'];
   const quickActions = [
-    { label: d.addPersonnel, icon: <UsergroupAddOutlined />, path: '/app/personnel',         tone: 'amber' },
-    { label: d.createDuty,   icon: <ScheduleOutlined />,     path: '/app/duty-schedule',     tone: 'sky' },
-    { label: d.assignWork,   icon: <SolutionOutlined />,     path: '/app/work-assignment',   tone: 'sage' },
-    { label: d.addFollower,  icon: <HeartOutlined />,        path: '/app/buddhist-followers', tone: 'rose' },
-    { label: d.createCourse, icon: <BookOutlined />,         path: '/app/training',          tone: 'teal' },
+    { label: d.addPersonnel, icon: <UsergroupAddOutlined />, path: '/app/personnel',         tone: 'amber',    roles: ['admin', 'truotri', 'thuki'] },
+    { label: d.createDuty,   icon: <ScheduleOutlined />,     path: '/app/duty-schedule',     tone: 'sky',      roles: MGR },
+    { label: d.assignWork,   icon: <SolutionOutlined />,     path: '/app/work-assignment',   tone: 'sage',     roles: MGR },
+    { label: d.addFollower,  icon: <HeartOutlined />,        path: '/app/buddhist-followers', tone: 'rose',    roles: MGR },
+    { label: d.createCourse, icon: <BookOutlined />,         path: '/app/training',          tone: 'teal',     roles: ['admin', 'truotri', 'thuki'] },
     { label: d.postNews,     icon: <FileTextOutlined />,     path: '/app/news',              tone: 'lavender' },
-  ];
+  ].filter(a => !a.roles || a.roles.includes(role));
 
   const breakdown = [
     { label: d.tangNi,         value: p.tangNi ?? 0,         color: ACCENT.amber.c },
@@ -258,7 +273,7 @@ export default function Dashboard() {
                 key={a.path}
                 type="button"
                 className="db-action"
-                onClick={() => navigate(a.path)}
+                onClick={() => navigate(`${a.path}?create=1`)}
                 style={{ '--act-accent': ACCENT[a.tone].c, '--act-soft': ACCENT[a.tone].s }}
               >
                 <span className="db-action__icon">{a.icon}</span>

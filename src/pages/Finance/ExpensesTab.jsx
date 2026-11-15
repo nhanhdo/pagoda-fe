@@ -12,6 +12,7 @@ import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { printExpenseVoucher } from '../../utils/printDocs';
+import { guardedClose } from '../../utils/formGuard';
 import { vnd, compactVnd, STATUS_TONE, CATEGORY_COLOR, softOf, personName, presetRanges, ymd, QUICK_AMOUNTS } from './financeShared';
 
 const { RangePicker } = DatePicker;
@@ -31,6 +32,9 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
   const [editing, setEditing] = useState(null);       // null | 'new' | expense
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(null);
+  const [rejectSaving, setRejectSaving] = useState(false);
+  const watchFundId = Form.useWatch('fundId', form);
+  const watchAmount = Form.useWatch('amount', form);
   const [focusId, setFocusId] = useState(focusExpenseId ? Number(focusExpenseId) : null);
   const firstSignal = useRef(createSignal);
 
@@ -75,7 +79,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       form.setFieldsValue({ ...record, amount: Number(record.amount), expenseDate: dayjs(record.expenseDate) });
     } else {
       const general = funds.find(f => f.code === 'QUY_CHUNG') || funds[0];
-      form.setFieldsValue({ fundId: general?.id, expenseDate: dayjs(), category: 'khác', paymentMethod: 'tiền_mặt' });
+      form.setFieldsValue({ fundId: general?.id, expenseDate: dayjs(), paymentMethod: 'tiền_mặt' });
     }
   };
   useEffect(() => { if (createSignal !== firstSignal.current) openForm(); }, [createSignal]);
@@ -112,6 +116,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
   };
 
   const reject = async ({ reason }) => {
+    setRejectSaving(true);
     try {
       await api.patch(`/expenses/${rejecting.id}/reject`, { reason });
       message.success(F.rejected);
@@ -120,6 +125,8 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       onChanged();
     } catch (e) {
       message.error(e.response?.data?.message || t.common.error);
+    } finally {
+      setRejectSaving(false);
     }
   };
 
@@ -214,7 +221,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
             {r.status === 'đã_duyệt' && (
               <Tooltip title={F.print}><Button type="text" icon={<PrinterOutlined />} onClick={() => printExpenseVoucher(r, { category: F.categories[r.category] })} /></Tooltip>
             )}
-            {(admin || (mine && pending)) && (
+            {(pending || r.status === 'từ_chối') && (admin || (mine && pending)) && (
               <Popconfirm title={F.deleteConfirm} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }} onConfirm={() => remove(r)}>
                 <Tooltip title={t.common.delete}><Button type="text" danger icon={<DeleteOutlined />} /></Tooltip>
               </Popconfirm>
@@ -266,7 +273,8 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       <Modal
         open={!!editing}
         title={editing && editing !== 'new' ? `${F.editExpense} · ${editing.code}` : F.addExpense}
-        onCancel={() => setEditing(null)}
+        onCancel={() => guardedClose(form, () => setEditing(null), t)}
+        maskClosable={false}
         onOk={() => form.submit()}
         okText={editing && editing !== 'new' ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
@@ -292,6 +300,15 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
               formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '')}
               parser={(v) => (v ? v.replace(/\./g, '') : '')} />
           </Form.Item>
+          {(() => {
+            const fund = funds.find(f => f.id === watchFundId);
+            const bal = fund?.balance !== undefined ? Number(fund.balance) : null;
+            return bal !== null && Number(watchAmount || 0) > bal ? (
+              <div className="fin-note fin-note--warn" style={{ color: '#b4532a', background: '#fdf0e8', marginBottom: 8 }}>
+                <InfoCircleOutlined /> {F.overBalanceWarn.replace('{fund}', fund.name).replace('{balance}', vnd(bal))}
+              </div>
+            ) : null;
+          })()}
           <div className="dn-quick">
             <span className="dn-quick__label">{F.quickAmount}:</span>
             {QUICK_AMOUNTS.map(a => (
@@ -302,8 +319,8 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
             <Form.Item name="expenseDate" label={F.fieldDate} rules={[{ required: true, message: F.dateRequired }]}>
               <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="category" label={F.fieldCategory}>
-              <Select options={Object.entries(F.categories).map(([value, label]) => ({ value, label }))} />
+            <Form.Item name="category" label={F.fieldCategory} rules={[{ required: true, message: t.common.validation.select.replace('{field}', F.fieldCategory) }]}>
+              <Select placeholder={F.fieldCategory} options={Object.entries(F.categories).map(([value, label]) => ({ value, label }))} />
             </Form.Item>
           </div>
           <Form.Item name="payee" label={F.fieldPayee}><Input /></Form.Item>
@@ -323,6 +340,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
         onOk={() => rejectForm.submit()}
         okText={F.reject}
         okButtonProps={{ danger: true }}
+        confirmLoading={rejectSaving}
         cancelText={t.common.cancel}
         destroyOnClose
       >

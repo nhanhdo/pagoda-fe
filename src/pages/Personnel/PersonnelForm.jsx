@@ -1,222 +1,274 @@
-import React, { useEffect, useState } from 'react';
-import { Form, Input, Select, DatePicker, Button, Row, Col, Upload, message, Divider, Tabs } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Modal, Form, Input, Select, DatePicker, Button, Row, Col, Upload, Radio, message,
+} from 'antd';
+import {
+  UserOutlined, PhoneOutlined, ApartmentOutlined, ReadOutlined, CameraOutlined, FileTextOutlined, ScissorOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { POSITIONS, positionLabel, imgSrc, initialOf } from './personnelShared';
+import AvatarCropModal from '../../components/AvatarCrop/AvatarCropModal';
+import './peopleShared.css';
 
-const { Option } = Select;
-const { TabPane } = Tabs;
+// The original may be large (phone photos); what gets uploaded is the 512×512 crop.
+const MAX_PHOTO = 20 * 1024 * 1024;
+const DATE_FIELDS = ['dateOfBirth', 'ordinationDate', 'joinDate'];
 
-const positions = [
-  'trụ_trì', 'phó_trụ_trì', 'tri_khách', 'thủ_quỹ', 'thư_ký',
-  'ban_hộ_tự', 'trưởng_ban', 'phó_ban', 'thành_viên', 'tình_nguyện_viên',
-];
+/* Keeps "Enter" working as submit inside modal forms (antd modals render the OK button outside the <form>). */
+export const HiddenSubmit = () => (
+  <button type="submit" tabIndex={-1} aria-hidden="true"
+    style={{ position: 'absolute', width: 0, height: 0, padding: 0, border: 0, opacity: 0, pointerEvents: 'none' }} />
+);
 
-export default function PersonnelForm({ record, onSuccess, onCancel }) {
+function Section({ icon, title, children }) {
+  return (
+    <div className="pp-form-section">
+      <div className="pp-form-section__title">{icon}{title}</div>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Add / edit personnel in a modal. Shared by the list and the detail page.
+ * Props: open, record (null = create), onClose(), onSaved(savedRecord?)
+ */
+export default function PersonnelFormModal({ open, record, onClose, onSaved }) {
   const { t } = useLanguage();
+  const P = t.personnel;
+  const F = P.form;
+  const R = makeRules(t);
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState([]);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [cropSrc, setCropSrc] = useState(null);     // object URL of the original file (kept for re-adjusting)
+  const [cropState, setCropState] = useState(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const fullName = Form.useWatch('fullName', form);
 
   useEffect(() => {
-    api.get('/departments').then(({ data }) => setDepartments(data));
-  }, []);
+    if (!open) return;
+    api.get('/departments').then(({ data }) => setDepartments(data || [])).catch(() => setDepartments([]));
+  }, [open]);
 
   useEffect(() => {
+    if (!open) return;
+    setPhotoFile(null);
+    setPhotoUrl(record?.photo ? imgSrc(record.photo) : null);
+    setCropSrc(null);
+    setCropState(null);
+    setCropOpen(false);
     if (record) {
-      form.setFieldsValue({
-        ...record,
-        dateOfBirth: record.dateOfBirth ? dayjs(record.dateOfBirth) : null,
-        ordinationDate: record.ordinationDate ? dayjs(record.ordinationDate) : null,
-        joinDate: record.joinDate ? dayjs(record.joinDate) : null,
-      });
+      const v = { ...record };
+      DATE_FIELDS.forEach(k => { v[k] = record[k] ? dayjs(record[k]) : null; });
+      delete v.photo;
+      form.setFieldsValue(v);
     } else {
       form.resetFields();
     }
-  }, [record, form]);
+  }, [open, record, form]);
+
+  // Release blob previews
+  useEffect(() => () => { if (photoUrl?.startsWith('blob:')) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
+  useEffect(() => () => { if (cropSrc) URL.revokeObjectURL(cropSrc); }, [cropSrc]);
+
+  const beforeUpload = (file) => {
+    if (!file.type?.startsWith('image/')) { message.error(F.photoInvalid); return Upload.LIST_IGNORE; }
+    if (file.size > MAX_PHOTO) { message.error(F.photoTooLarge); return Upload.LIST_IGNORE; }
+    // Open the cropper; the photo only changes once the user confirms a crop
+    setCropSrc(URL.createObjectURL(file));
+    setCropState(null);
+    setCropOpen(true);
+    return false;
+  };
 
   const onFinish = async (values) => {
-    setLoading(true);
+    setSaving(true);
     try {
-      const formData = new FormData();
+      const fd = new FormData();
       Object.entries(values).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) {
-          if (k === 'photo' && v.fileList) {
-            if (v.fileList[0]?.originFileObj) formData.append('photo', v.fileList[0].originFileObj);
-          } else if (dayjs.isDayjs(v)) {
-            formData.append(k, v.format('YYYY-MM-DD'));
-          } else {
-            formData.append(k, v);
-          }
-        }
+        if (v === undefined || v === null) return;
+        fd.append(k, dayjs.isDayjs(v) ? v.format('YYYY-MM-DD') : v);
       });
-
-      if (record) {
-        await api.put(`/personnel/${record.id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        message.success(t.personnel.updateSuccess);
-      } else {
-        await api.post('/personnel', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        message.success(t.personnel.addSuccess);
-      }
-      onSuccess();
+      if (photoFile) fd.append('photo', photoFile);
+      const cfg = { headers: { 'Content-Type': 'multipart/form-data' } };
+      const { data } = record
+        ? await api.put(`/personnel/${record.id}`, fd, cfg)
+        : await api.post('/personnel', fd, cfg);
+      message.success(record ? P.updateSuccess : P.addSuccess);
+      onSaved?.(data);
     } catch (error) {
       message.error(error.response?.data?.message || t.common.error);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
+  const close = () => guardedClose(form, onClose, t);
+  const deptOptions = useMemo(() => departments.map(d => ({ value: d.id, label: d.name })), [departments]);
+
   return (
-    <Form form={form} layout="vertical" onFinish={onFinish}>
-      <Tabs defaultActiveKey="1" size="small">
-        <TabPane tab={t.personnel.tabPersonalInfo} key="1">
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="fullName" label={t.common.name} rules={[{ required: true, message: t.personnel.form.fullNameRequired }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="dharmName" label={t.personnel.form.dharmaName}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="gender" label={t.personnel.form.gender} rules={[{ required: true }]}>
-                <Select>
-                  <Option value="nam">{t.personnel.form.genderMale}</Option>
-                  <Option value="nữ">{t.personnel.form.genderFemale}</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="dateOfBirth" label={t.personnel.form.dateOfBirth}>
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="idCard" label={t.personnel.form.idCard}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label={t.personnel.colPhone}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="email" label={t.common.email}>
-                <Input type="email" />
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item name="address" label={t.personnel.form.address}>
-                <Input.TextArea rows={2} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="emergencyContact" label={t.personnel.form.emergencyContact}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="emergencyPhone" label={t.personnel.form.emergencyPhone}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item name="photo" label={t.personnel.colPhoto}>
-                <Upload maxCount={1} beforeUpload={() => false} accept="image/*" listType="picture">
-                  <Button icon={<UploadOutlined />}>{t.personnel.form.uploadPhoto}</Button>
-                </Upload>
-              </Form.Item>
-            </Col>
-          </Row>
-        </TabPane>
+    <Modal
+      title={record ? P.editTitle : P.addTitle}
+      open={open}
+      onCancel={close}
+      onOk={() => form.submit()}
+      okText={record ? t.common.update : t.common.add}
+      cancelText={t.common.cancel}
+      confirmLoading={saving}
+      maskClosable={false}
+      width={760}
+      destroyOnClose
+      styles={{ body: { maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: 4 } }}
+    >
+      <Form form={form} layout="vertical" onFinish={onFinish} className="pp-form" requiredMark={false}
+        initialValues={{ status: 'đang_hoạt_động' }}>
+        <HiddenSubmit />
 
-        <TabPane tab={t.personnel.tabStudyInfo} key="2">
+        {/* ── Basic ── */}
+        <Section icon={<UserOutlined />} title={F.sectionBasic}>
+          <div className="pp-photo">
+            <div className="pp-photo__preview">
+              {photoUrl ? <img src={photoUrl} alt="" /> : initialOf(fullName || '')}
+            </div>
+            <div className="pp-photo__actions">
+              <Upload accept="image/*" showUploadList={false} beforeUpload={beforeUpload} maxCount={1}>
+                <Button icon={<CameraOutlined />} size="small">{photoUrl ? F.changePhoto : F.uploadPhoto}</Button>
+              </Upload>
+              {photoFile && cropSrc && (
+                <Button type="link" size="small" icon={<ScissorOutlined />} className="pp-photo__adjust" onClick={() => setCropOpen(true)}>
+                  {t.common.cropAdjust}
+                </Button>
+              )}
+              <span className="pp-form-hint">{F.photoHint}</span>
+            </div>
+          </div>
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="type" label={t.personnel.form.type} rules={[{ required: true }]}>
-                <Select>
-                  <Option value="tang_ni">{t.personnel.types.tang_ni}</Option>
-                  <Option value="cu_si">{t.personnel.types.cu_si}</Option>
-                  <Option value="phat_tu">{t.personnel.types.phat_tu}</Option>
-                  <Option value="tinh_nguyen_vien">{t.personnel.types.tinh_nguyen_vien}</Option>
-                  <Option value="nhan_vien">{t.personnel.types.nhan_vien}</Option>
-                </Select>
+            <Col xs={24} sm={12}>
+              <Form.Item name="fullName" label={t.common.name} rules={[{ required: true, whitespace: true, message: F.fullNameRequired }]}>
+                <Input autoFocus />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="position" label={t.personnel.colPosition}>
-                <Select allowClear>
-                  {positions.map(p => <Option key={p} value={p}>{p.replace(/_/g, ' ')}</Option>)}
-                </Select>
+            <Col xs={24} sm={12}>
+              <Form.Item name="dharmName" label={F.dharmaName}><Input /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="gender" label={F.gender} rules={[R.select(F.gender.toLowerCase())]}>
+                <Radio.Group optionType="button" buttonStyle="solid">
+                  <Radio.Button value="nam">{F.genderMale}</Radio.Button>
+                  <Radio.Button value="nữ">{F.genderFemale}</Radio.Button>
+                </Radio.Group>
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="departmentId" label={t.personnel.form.department}>
-                <Select allowClear>
-                  {departments.map(d => <Option key={d.id} value={d.id}>{d.name}</Option>)}
-                </Select>
+            <Col xs={24} sm={12}>
+              <Form.Item name="dateOfBirth" label={F.dateOfBirth} rules={[R.notFuture]}>
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" disabledDate={(d) => d && d.isAfter(dayjs(), 'day')} />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="ordinationDate" label={t.personnel.form.ordinationDate}>
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            <Col xs={24} sm={12}>
+              <Form.Item name="type" label={F.type} rules={[R.select(F.type.toLowerCase())]}>
+                <Select options={Object.entries(P.types).map(([k, v]) => ({ value: k, label: v }))} />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="preceptorName" label={t.personnel.form.preceptor}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="precept" label={t.personnel.form.precept}>
-                <Input placeholder={t.personnel.form.preceptPlaceholder} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="buddhismEducation" label={t.personnel.form.buddhismEducation}>
-                <Input placeholder={t.personnel.form.buddhismEducationPlaceholder} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="secularEducation" label={t.personnel.form.secularEducation}>
-                <Input placeholder={t.personnel.form.secularEducationPlaceholder} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="joinDate" label={t.personnel.form.joinDate}>
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="status" label={t.common.status}>
-                <Select>
-                  <Option value="đang_hoạt_động">{t.personnel.statuses['đang_hoạt_động']}</Option>
-                  <Option value="tạm_nghỉ">{t.personnel.statuses['tạm_nghỉ']}</Option>
-                  <Option value="đã_rời">{t.personnel.statuses['đã_rời']}</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item name="notes" label={t.common.notes}>
-                <Input.TextArea rows={3} />
+                <Select options={Object.entries(P.statuses).map(([k, v]) => ({ value: k, label: v }))} />
               </Form.Item>
             </Col>
           </Row>
-        </TabPane>
-      </Tabs>
+        </Section>
 
-      <div style={{ textAlign: 'right', marginTop: 16 }}>
-        <Button onClick={onCancel} style={{ marginRight: 8 }}>{t.common.cancel}</Button>
-        <Button type="primary" htmlType="submit" loading={loading}
-          style={{ backgroundColor: '#b06f2c', borderColor: '#b06f2c' }}>
-          {record ? t.common.update : t.personnel.form.addNew}
-        </Button>
-      </div>
-    </Form>
+        {/* ── Contact ── */}
+        <Section icon={<PhoneOutlined />} title={F.sectionContact}>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="phone" label={P.colPhone} rules={[R.phone]}><Input inputMode="tel" /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="email" label={t.common.email} rules={[R.email]}><Input inputMode="email" /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="idCard" label={F.idCard} rules={[R.cccd]}><Input inputMode="numeric" maxLength={12} /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="address" label={F.address}><Input /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="emergencyContact" label={F.emergencyContact}><Input /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="emergencyPhone" label={F.emergencyPhone} rules={[R.phone]}><Input inputMode="tel" /></Form.Item>
+            </Col>
+          </Row>
+        </Section>
+
+        {/* ── Work ── */}
+        <Section icon={<ApartmentOutlined />} title={F.sectionWork}>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="departmentId" label={F.department}>
+                <Select allowClear showSearch optionFilterProp="label" options={deptOptions} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="position" label={P.colPosition}>
+                <Select allowClear options={POSITIONS.map(p => ({ value: p, label: positionLabel(t, p) }))} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="joinDate" label={F.joinDate} rules={[R.notFuture]}>
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Section>
+
+        {/* ── Practice ── */}
+        <Section icon={<ReadOutlined />} title={P.tabStudyInfo}>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="ordinationDate" label={F.ordinationDate} rules={[R.notFuture]}>
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="preceptorName" label={F.preceptor}><Input /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="precept" label={F.precept}><Input placeholder={F.preceptPlaceholder} /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="buddhismEducation" label={F.buddhismEducation}><Input placeholder={F.buddhismEducationPlaceholder} /></Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="secularEducation" label={F.secularEducation}><Input placeholder={F.secularEducationPlaceholder} /></Form.Item>
+            </Col>
+          </Row>
+        </Section>
+
+        {/* ── Notes ── */}
+        <Section icon={<FileTextOutlined />} title={t.common.notes}>
+          <Form.Item name="notes" style={{ marginBottom: 0 }}><Input.TextArea rows={3} /></Form.Item>
+        </Section>
+      </Form>
+      <AvatarCropModal
+        open={cropOpen}
+        src={cropSrc}
+        initial={cropState}
+        onCancel={() => setCropOpen(false)}
+        onDone={(file, url, state) => {
+          setPhotoFile(file);
+          setPhotoUrl(url);
+          setCropState(state);
+          setCropOpen(false);
+          form.setFields([{ name: 'fullName', touched: true }]); // count as an unsaved change
+        }}
+      />
+    </Modal>
   );
 }

@@ -55,14 +55,35 @@ const BASE_CSS = `
   .foot { margin-top: 10px; text-align: center; font-size: 10.5pt; color: #8a6a4a; }
 `;
 
+// iOS Safari / most mobile browsers ignore print() inside a hidden iframe – use a real tab there.
+const isMobilePrint = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod|Android|Mobile/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
 function printHtml(title, body, extraCss = '') {
+  const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><style>${BASE_CSS}${extraCss}</style></head><body>${body}</body></html>`;
+  if (isMobilePrint()) {
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      const go = () => { try { win.focus(); win.print(); } catch { /* user can print from the tab */ } };
+      if (win.document.readyState === 'complete') setTimeout(go, 300);
+      else win.addEventListener('load', () => setTimeout(go, 300));
+      return;
+    }
+    // Popup blocked – fall back to the iframe below.
+  }
   const frame = document.createElement('iframe');
   frame.setAttribute('aria-hidden', 'true');
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
   document.body.appendChild(frame);
   const doc = frame.contentDocument;
   doc.open();
-  doc.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${BASE_CSS}${extraCss}</style></head><body>${body}</body></html>`);
+  doc.write(html);
   doc.close();
   const cleanup = () => setTimeout(() => frame.remove(), 500);
   frame.contentWindow.onafterprint = cleanup;
@@ -185,28 +206,36 @@ const lunarText = (day, month) => {
 export function printSoList(ceremony, registrations, kind) {
   const isSieu = kind === 'cầu_siêu';
   const title = isSieu ? 'SỚ CẦU SIÊU' : 'SỚ CẦU AN';
+  const has = (v) => v !== null && v !== undefined && v !== '';
   const lineFor = (e) => {
     if (isSieu) {
       const parts = [`Hương linh <b>${esc(e.fullName)}</b>`];
-      if (e.deathYear) parts.push(`mất năm ${esc(e.deathYear)}`);
-      if (e.deathLunarDay && e.deathLunarMonth) parts.push(`ngày ${esc(e.deathLunarDay)} tháng ${esc(e.deathLunarMonth)} ÂL`);
-      if (e.ageAtDeath) parts.push(`hưởng thọ ${esc(e.ageAtDeath)} tuổi`);
+      if (has(e.deathYear)) parts.push(`mất năm ${esc(e.deathYear)}`);
+      if (has(e.deathLunarDay) && has(e.deathLunarMonth)) parts.push(`ngày ${esc(e.deathLunarDay)} tháng ${esc(e.deathLunarMonth)} ÂL`);
+      if (has(e.ageAtDeath)) parts.push(`hưởng thọ ${esc(e.ageAtDeath)} tuổi`);
       return parts.join(', ');
     }
     const parts = [`<b>${esc(e.fullName)}</b>`];
-    if (e.birthYear) parts.push(`sinh năm ${esc(e.birthYear)}`);
+    if (has(e.birthYear)) parts.push(`sinh năm ${esc(e.birthYear)}`);
     if (e.address) parts.push(esc(e.address));
     return parts.join(', ');
   };
   const total = registrations.reduce((s, r) => s + (r.entries?.length || 0), 0);
   const blocks = registrations.map((r, i) => `
-    <section class="reg">
+    <tr><td><section class="reg">
       <div class="reg-head"><span class="idx">${i + 1}.</span> Gia chủ: <b>${esc(r.registrantName)}</b>${r.registrantAddress ? ` — ${esc(r.registrantAddress)}` : ''}<span class="code">${esc(r.code || '')}</span></div>
       <ol>${(r.entries || []).map(e => `<li>${lineFor(e)}</li>`).join('')}</ol>
-    </section>`).join('');
+    </section></td></tr>`).join('');
   const css = `
-    @page { size: A4 portrait; margin: 16mm 18mm; }
+    @page { size: A4 portrait; margin: 16mm 18mm 18mm;
+      @bottom-center { content: "Trang " counter(page) " / " counter(pages); font-size: 9pt; color: #8a6a4a; } }
     body { font-size: 13pt; line-height: 1.6; }
+    table.regs { width: 100%; border-collapse: collapse; }
+    table.regs td { padding: 0; vertical-align: top; }
+    table.regs tr { break-inside: avoid; page-break-inside: avoid; }
+    table.regs thead { display: table-header-group; }
+    .run { font-size: 9.5pt; color: #8a6a4a; text-align: left; font-weight: 400; padding: 0 0 6px; border-bottom: 1px solid #e6d6bb; }
+    .run b { color: #7a4a1e; letter-spacing: .06em; }
     .so { max-width: 175mm; margin: 0 auto; }
     .top { text-align: center; border-bottom: 2px solid #c9a46a; padding-bottom: 10px; margin-bottom: 14px; }
     .top .org { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
@@ -232,7 +261,7 @@ export function printSoList(ceremony, registrations, kind) {
       <div class="when">${esc(when)}${ceremony.location ? ` · ${esc(ceremony.location)}` : ''}</div>
     </div>
     <div class="meta"><span>${registrations.length} gia chủ</span><span>${total} ${isSieu ? 'hương linh' : 'người được cầu an'}</span></div>
-    ${blocks || '<p><i>Chưa có đăng ký.</i></p>'}
+    ${blocks ? `<table class="regs"><thead><tr><th class="run"><b>${title}</b> · ${esc(ceremony.name)}</th></tr></thead><tbody>${blocks}</tbody></table>` : '<p><i>Chưa có đăng ký.</i></p>'}
     <div class="namo">NAM MÔ A DI ĐÀ PHẬT</div>
   </div>`;
   printHtml(`${title} – ${ceremony.name}`, body, css);

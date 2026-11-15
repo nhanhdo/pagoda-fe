@@ -18,6 +18,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { exportToExcel } from '../../utils/exportData';
 import api from '../../api/axios';
 import { printReceipt, printThankYou } from '../../utils/printDocs';
+import { guardedClose, rules } from '../../utils/formGuard';
 import './DonationPage.css';
 
 const { RangePicker } = DatePicker;
@@ -56,7 +57,7 @@ export default function DonationPage() {
     search, setSearch,
     dateRange, setDateRange,
     funds, fundFilter, setFundFilter,
-    modalOpen, setModalOpen,
+    modalOpen, setModalOpen, saving,
     editRecord, setEditRecord,
     followers, summary,
     handleSubmit, handleDelete,
@@ -83,22 +84,23 @@ export default function DonationPage() {
         ? `${start.format('DD-MM-YYYY')}_${end.format('DD-MM-YYYY')}`
         : dayjs().format('YYYY-MM-DD');
 
+      const X = D.exportCols || {};
       exportToExcel(rows, [
-        { header: 'Ngày cúng dường', render: (row) => row.donationDate ? dayjs(row.donationDate).format('DD/MM/YYYY') : '' },
-        { header: 'Phật tử / Người cúng', render: (row) => row.buddhistFollower
+        { header: X.date || 'Ngày cúng dường', render: (row) => row.donationDate ? dayjs(row.donationDate).format('DD/MM/YYYY') : '' },
+        { header: X.donor || 'Phật tử / Người cúng', render: (row) => row.buddhistFollower
             ? (row.buddhistFollower.dharmName ? `${row.buddhistFollower.fullName} (${row.buddhistFollower.dharmName})` : row.buddhistFollower.fullName)
-            : (row.donorName || 'Ẩn danh') },
-        { header: 'Mã PT',          render: (row) => row.buddhistFollower?.code || '' },
-        { header: 'Số tiền (VNĐ)',  render: (row) => Number(row.amount) || 0 },
-        { header: 'Quỹ',            render: (row) => row.fund?.name || '' },
-        { header: 'Số phiếu thu',   render: (row) => row.receiptNo || '' },
-        { header: 'Mục đích',       render: (row) => row.purpose || '' },
-        { header: 'Hình thức',      render: (row) => ({ 'tiền_mặt': 'Tiền mặt', 'chuyển_khoản': 'Chuyển khoản', 'khác': 'Khác' }[row.paymentMethod] || '') },
-        { header: 'Người nhận',     render: (row) => row.receivedBy || '' },
-        { header: 'Ghi chú',        render: (row) => row.notes || '' },
+            : (row.donorName || D.anonymous) },
+        { header: X.code || 'Mã PT',          render: (row) => row.buddhistFollower?.code || '' },
+        { header: X.amount || 'Số tiền (VNĐ)',  render: (row) => Number(row.amount) || 0 },
+        { header: X.fund || 'Quỹ',            render: (row) => row.fund?.name || '' },
+        { header: X.receiptNo || 'Số phiếu thu',   render: (row) => row.receiptNo || '' },
+        { header: X.purpose || 'Mục đích',       render: (row) => row.purpose || '' },
+        { header: X.method || 'Hình thức',      render: (row) => D.methods[row.paymentMethod] || '' },
+        { header: X.receiver || 'Người nhận',     render: (row) => row.receivedBy || '' },
+        { header: X.notes || 'Ghi chú',        render: (row) => row.notes || '' },
       ], `danh-sach-cung-duong_${dateLabel}`);
     } catch {
-      antMessage.error('Không thể xuất Excel');
+      antMessage.error(D.exportError || t.common.error);
     } finally {
       setExporting(false);
     }
@@ -400,7 +402,9 @@ export default function DonationPage() {
       <Modal
         title={editRecord ? D.editTitle : D.addTitle}
         open={modalOpen}
-        onCancel={() => { setModalOpen(false); setEditRecord(null); }}
+        onCancel={() => guardedClose(form, () => { setModalOpen(false); setEditRecord(null); }, t)}
+        maskClosable={false}
+        confirmLoading={saving}
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
@@ -435,9 +439,9 @@ export default function DonationPage() {
               label: <span className="dn-fund-opt"><i style={{ background: x.color || '#c47f36' }} />{x.name}</span>,
             }))} />
           </Form.Item>
-          <Form.Item name="amount" label={D.form.amount} rules={[{ required: true, message: D.form.amountRequired }]} style={{ marginBottom: 8 }}>
+          <Form.Item name="amount" label={D.form.amount} rules={[{ required: true, message: D.form.amountRequired }, rules(t).min(1)]} style={{ marginBottom: 8 }}>
             <InputNumber
-              min={0}
+              min={1}
               step={50000}
               size="large"
               style={{ width: '100%' }}

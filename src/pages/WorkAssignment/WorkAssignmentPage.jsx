@@ -1,175 +1,167 @@
-import React, { useState, useRef } from 'react';
+import { useCreateParam } from '../../utils/useCreateParam';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
+import CountUp from '../../components/CountUp/CountUp';
 import {
-  Card, Table, Button, Select, Space, Tag, Modal, Form, Input,
-  DatePicker, Popconfirm, Badge, Row, Col, Tooltip, message,
+  Table, Button, Select, Modal, Form, Input, DatePicker, Popconfirm, Row, Col, Tooltip,
+  Segmented, Dropdown, Avatar,
 } from 'antd';
 import {
-  PlusOutlined, DeleteOutlined, EditOutlined,
-  TableOutlined, ProjectOutlined, UserOutlined,
-  ClockCircleOutlined,
+  PlusOutlined, DeleteOutlined, EditOutlined, TableOutlined, ProjectOutlined, UserOutlined,
+  ClockCircleOutlined, SearchOutlined, CarryOutOutlined, SyncOutlined, CheckCircleOutlined,
+  WarningOutlined, SwapOutlined, CheckOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import api from '../../api/axios';
-import { useWorkAssignmentPage, priorityColors, statusColors } from './useWorkAssignmentPage';
+import {
+  useWorkAssignmentPage, WORK_STATUSES, PRIORITIES, STATUS_TONE, PRIORITY_TONE, isOverdue,
+} from './useWorkAssignmentPage';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { HiddenSubmit } from '../Personnel/PersonnelForm';
+import { personName, personOptionLabel, initialOf, TONES } from '../Personnel/personnelShared';
+import '../Personnel/peopleShared.css';
 import './WorkAssignmentPage.css';
 
-const { Option } = Select;
+const PRIORITY_RANK = Object.fromEntries(PRIORITIES.map((p, i) => [p, i]));
 
-const PRIORITY_COLORS = {
-  'thấp':      '#8c8c8c',
-  'trung_bình':'#1890ff',
-  'cao':       '#fa8c16',
-  'khẩn_cấp': '#ff4d4f',
-};
+function Pill({ tone, dot, children }) {
+  return (
+    <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>
+      {dot && <span className="tbl-pill__dot" />}{children}
+    </span>
+  );
+}
+
+/* Status menu: touch + keyboard alternative to drag & drop */
+function StatusMenu({ record, W, onMove, children }) {
+  const items = WORK_STATUSES.map(s => ({
+    key: s,
+    disabled: s === record.status,
+    label: (
+      <span className="wa-status-opt">
+        <span className="wa-status-opt__dot" style={{ background: STATUS_TONE[s].c }} />
+        {W.statuses[s]}
+        {s === record.status && <CheckOutlined style={{ marginLeft: 'auto', color: STATUS_TONE[s].c }} />}
+      </span>
+    ),
+  }));
+  return (
+    <Dropdown trigger={['click']} menu={{ items, onClick: ({ key, domEvent }) => { domEvent.stopPropagation(); onMove(record, key); } }}>
+      {children}
+    </Dropdown>
+  );
+}
 
 /* ── Kanban card ──────────────────────────────────────── */
-function KanbanCard({ record, canManage, onEdit, onDelete, onDragStart, onDragEnd }) {
-  const { t } = useLanguage();
-  const isOverdue = record.endDate && dayjs(record.endDate).isBefore(dayjs(), 'day')
-    && record.status !== 'hoàn_thành';
-  const assignee = record.personnel ? (record.personnel.dharmName || record.personnel.fullName) : null;
-
+function KanbanCard({ record, W, t, canManage, onEdit, onDelete, onMove, onDragStart, onDragEnd }) {
+  const overdue = isOverdue(record);
+  const pr = PRIORITY_TONE[record.priority];
   return (
     <div
-      className="kanban-card"
-      draggable
+      className={`kanban-card${overdue ? ' is-overdue' : ''}`}
+      draggable={canManage}
       onDragStart={(e) => onDragStart(e, record)}
       onDragEnd={onDragEnd}
+      tabIndex={canManage ? 0 : -1}
+      role={canManage ? 'button' : undefined}
+      aria-label={record.title}
+      onKeyDown={(e) => { if (canManage && e.key === 'Enter' && e.target === e.currentTarget) onEdit(record); }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.4, flex: 1 }}>{record.title}</div>
+      <div className="kanban-card__top">
+        <div className="kanban-card__title">{record.title}</div>
         {canManage && (
           <div className="kanban-card__actions">
             <Tooltip title={t.common.edit}>
-              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}
-                style={{ color: '#b06f2c', padding: '0 4px' }} />
+              <Button type="text" size="small" aria-label={t.common.edit} icon={<EditOutlined />} onClick={() => onEdit(record)} />
             </Tooltip>
-            <Popconfirm title={t.workAssignment.confirmDelete} onConfirm={() => onDelete(record.id)}
+            <Popconfirm title={W.confirmDelete} onConfirm={() => onDelete(record.id)}
               okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} style={{ padding: '0 4px' }} />
+              <Button type="text" size="small" danger aria-label={t.common.delete} icon={<DeleteOutlined />} />
             </Popconfirm>
           </div>
         )}
       </div>
 
-      {record.description && (
-        <div style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.5 }}
-          className="kanban-card__desc">
-          {record.description}
-        </div>
-      )}
+      {record.description && <div className="kanban-card__desc">{record.description}</div>}
 
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-        {record.priority && (
-          <span style={{ display: 'flex', alignItems: 'center', fontSize: 11, color: PRIORITY_COLORS[record.priority] }}>
-            <span className="priority-dot" style={{ background: PRIORITY_COLORS[record.priority] }} />
-            {t.workAssignment.priorities[record.priority] || record.priority}
-          </span>
-        )}
-        {assignee && (
-          <span style={{ display: 'flex', alignItems: 'center', fontSize: 11, color: '#595959', gap: 3 }}>
-            <UserOutlined style={{ fontSize: 10 }} />
-            {assignee}
-          </span>
+      <div className="kanban-card__meta">
+        {pr && <Pill tone={pr}>{W.priorities[record.priority] || record.priority}</Pill>}
+        {record.personnel && (
+          <span className="kanban-card__who"><UserOutlined /> {personName(record.personnel)}</span>
         )}
         {record.endDate && (
-          <span style={{
-            display: 'flex', alignItems: 'center', fontSize: 11, gap: 3,
-            color: isOverdue ? '#ff4d4f' : '#8c8c8c',
-            fontWeight: isOverdue ? 600 : 400,
-          }}>
-            <ClockCircleOutlined style={{ fontSize: 10 }} />
-            {dayjs(record.endDate).format('DD/MM')}
-            {isOverdue && ` · ${t.layout.overdue}`}
+          <span className={`kanban-card__due${overdue ? ' is-overdue' : ''}`}>
+            <ClockCircleOutlined /> {dayjs(record.endDate).format('DD/MM')}{overdue && ` · ${W.overdue}`}
           </span>
         )}
       </div>
+
+      {canManage && (
+        <StatusMenu record={record} W={W} onMove={onMove}>
+          <button type="button" className="kanban-card__move" onClick={(e) => e.stopPropagation()}>
+            <SwapOutlined /> {W.moveTo}
+          </button>
+        </StatusMenu>
+      )}
     </div>
   );
 }
 
 /* ── Kanban board ─────────────────────────────────────── */
-function KanbanBoard({ data, canManage, onEdit, onDelete, onMoveCard }) {
-  const { t } = useLanguage();
+function KanbanBoard({ data, W, t, canManage, onEdit, onDelete, onMove }) {
   const [overCol, setOverCol] = useState(null);
   const dragCard = useRef(null);
-
-  const KANBAN_COLS = [
-    { key: 'chưa_bắt_đầu',   label: t.workAssignment.statuses['chưa_bắt_đầu'],   color: '#8c8c8c' },
-    { key: 'đang_thực_hiện',  label: t.workAssignment.statuses['đang_thực_hiện'],  color: '#1890ff' },
-    { key: 'hoàn_thành',      label: t.workAssignment.statuses['hoàn_thành'],      color: '#52c41a' },
-    { key: 'tạm_dừng',        label: t.workAssignment.statuses['tạm_dừng'],        color: '#fa8c16' },
-  ];
 
   const handleDragStart = (e, record) => {
     dragCard.current = record;
     e.currentTarget.classList.add('kanban-card--dragging');
     e.dataTransfer.effectAllowed = 'move';
   };
-
   const handleDragEnd = (e) => {
     e.currentTarget.classList.remove('kanban-card--dragging');
     dragCard.current = null;
     setOverCol(null);
   };
-
-  const handleDragOver = (e, colKey) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setOverCol(colKey);
-  };
-
   const handleDrop = (e, colKey) => {
     e.preventDefault();
     setOverCol(null);
-    if (dragCard.current && dragCard.current.status !== colKey) {
-      onMoveCard(dragCard.current, colKey);
-    }
+    if (dragCard.current && dragCard.current.status !== colKey) onMove(dragCard.current, colKey);
   };
 
   return (
     <div className="kanban-board">
-      {KANBAN_COLS.map(col => {
-        const cards = data.filter(d => d.status === col.key);
+      {WORK_STATUSES.map(key => {
+        const tone = STATUS_TONE[key];
+        const cards = data.filter(d => d.status === key);
         return (
           <div
-            key={col.key}
-            className={`kanban-col${overCol === col.key ? ' kanban-col--over' : ''}`}
-            onDragOver={(e) => handleDragOver(e, col.key)}
-            onDragLeave={() => setOverCol(null)}
-            onDrop={(e) => handleDrop(e, col.key)}
+            key={key}
+            className={`kanban-col${overCol === key ? ' kanban-col--over' : ''}`}
+            style={{ '--tone': tone.c, '--tone-soft': tone.s }}
+            onDragOver={(e) => { if (!canManage) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOverCol(key); }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOverCol(null); }}
+            onDrop={(e) => handleDrop(e, key)}
           >
-            <div className="kanban-col__header" style={{ borderBottomColor: col.color }}>
-              <span style={{ color: col.color }}>{col.label}</span>
-              <span style={{
-                background: col.color, color: '#fff',
-                borderRadius: 20, fontSize: 11, padding: '1px 8px', fontWeight: 700,
-              }}>{cards.length}</span>
+            <div className="kanban-col__header">
+              <span className="kanban-col__label"><span className="tbl-pill__dot" style={{ background: tone.c }} />{W.statuses[key]}</span>
+              <span className="kanban-col__count">{cards.length}</span>
             </div>
-
             {cards.map(record => (
               <KanbanCard
                 key={record.id}
                 record={record}
-                canManage={canManage()}
+                W={W}
+                t={t}
+                canManage={canManage}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onMove={onMove}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               />
             ))}
-
-            {cards.length === 0 && (
-              <div style={{
-                textAlign: 'center', padding: '24px 0',
-                color: '#bfbfbf', fontSize: 12, borderRadius: 8,
-                border: '1px dashed #e8e8e8',
-              }}>
-                {t.workAssignment.emptyColumn}
-              </div>
-            )}
+            {cards.length === 0 && <div className="kanban-col__empty">{W.emptyColumn}</div>}
           </div>
         );
       })}
@@ -177,199 +169,328 @@ function KanbanBoard({ data, canManage, onEdit, onDelete, onMoveCard }) {
   );
 }
 
-/* ── Main page ────────────────────────────────────────── */
-export default function WorkAssignmentPage() {
-  const { t } = useLanguage();
-  const {
-    data, loading, filterStatus, setFilterStatus,
-    modalOpen, setModalOpen, editRecord, setEditRecord,
-    personnel, fetchData, handleSubmit, handleDelete, canManage,
-  } = useWorkAssignmentPage();
+/* ── Form modal ───────────────────────────────────────── */
+function WorkFormModal({ open, record, personnel, saving, W, t, onClose, onSubmit }) {
   const [form] = Form.useForm();
-  const [viewMode, setViewMode] = useState('table');
+  const R = makeRules(t);
+  // Keep the current assignee selectable even if they are no longer active
+  const people = record?.personnel && !personnel.some(p => p.id === record.personnel.id)
+    ? [record.personnel, ...personnel] : personnel;
 
-  const openModal = (record = null) => {
-    setEditRecord(record);
+  useEffect(() => {
+    if (!open) return;
     if (record) {
       form.setFieldsValue({
         ...record,
+        personnelId: record.personnelId ?? record.personnel?.id,
         startDate: record.startDate ? dayjs(record.startDate) : null,
         endDate: record.endDate ? dayjs(record.endDate) : null,
       });
     } else {
       form.resetFields();
     }
-    setModalOpen(true);
-  };
+  }, [open, record, form]);
 
-  const handleMoveCard = async (record, newStatus) => {
-    try {
-      await api.put(`/work-assignments/${record.id}`, { ...record, status: newStatus, personnelId: record.personnel?.id ?? record.personnelId });
-      fetchData();
-    } catch {
-      message.error(t.workAssignment.cannotUpdateStatus);
-    }
-  };
+  return (
+    <Modal
+      title={record ? W.editTitle : W.addTitle}
+      open={open}
+      onCancel={() => guardedClose(form, onClose, t)}
+      onOk={() => form.submit()}
+      okText={record ? t.common.update : t.common.add}
+      cancelText={t.common.cancel}
+      confirmLoading={saving}
+      maskClosable={false}
+      width={620}
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical" onFinish={onSubmit} className="pp-form" requiredMark={false}
+        initialValues={{ priority: 'trung_bình', status: 'chưa_bắt_đầu' }}>
+        <HiddenSubmit />
+        <Form.Item name="title" label={W.fieldTitle} rules={[{ ...R.required(W.fieldTitle.toLowerCase()), whitespace: true }]}>
+          <Input autoFocus maxLength={200} />
+        </Form.Item>
+        <Form.Item name="description" label={t.common.description}><Input.TextArea rows={2} /></Form.Item>
+        <Form.Item name="personnelId" label={W.colAssignee} rules={[R.select(W.colAssignee.toLowerCase())]}>
+          <Select showSearch optionFilterProp="label" placeholder={W.assigneePlaceholder}
+            options={people.map(p => ({ value: p.id, label: personOptionLabel(p) }))} />
+        </Form.Item>
+        <Form.Item name="priority" label={W.fieldPriority}>
+          <Segmented block className="pp-seg" options={PRIORITIES.map(p => ({ value: p, label: W.priorities[p] }))} />
+        </Form.Item>
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item name="startDate" label={W.fieldStartDate}>
+              <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item name="endDate" label={W.colDeadline} dependencies={['startDate']}
+              rules={[({ getFieldValue }) => R.notBefore(getFieldValue, 'startDate')]}>
+              <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Form.Item name="status" label={t.common.status}>
+          <Select options={WORK_STATUSES.map(s => ({ value: s, label: W.statuses[s] }))} />
+        </Form.Item>
+        <Form.Item name="notes" label={t.common.notes} style={{ marginBottom: 0 }}><Input.TextArea rows={2} /></Form.Item>
+      </Form>
+    </Modal>
+  );
+}
+
+/* ── Main page ────────────────────────────────────────── */
+export default function WorkAssignmentPage() {
+  const { t, lang } = useLanguage();
+  const W = t.workAssignment;
+  const {
+    data, loading, saving,
+    modalOpen, setModalOpen, editRecord, setEditRecord,
+    personnel, handleSubmit, handleDelete, moveStatus, canManage,
+  } = useWorkAssignmentPage();
+  const manage = canManage();
+  useCreateParam(() => openModal(), manage);
+  const [viewMode, setViewMode] = useState('table');
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterAssignee, setFilterAssignee] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
+  const booted = useRef(false);
+  const sawLoading = useRef(false);
+  if (loading) sawLoading.current = true;
+  else if (sawLoading.current) booted.current = true;
+
+  const openModal = (record = null) => { setEditRecord(record); setModalOpen(true); };
+
+  const assigneeOptions = useMemo(() => {
+    const map = new Map();
+    data.forEach(d => { if (d.personnel) map.set(d.personnel.id, personName(d.personnel)); });
+    return [...map].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, lang));
+  }, [data, lang]);
+
+  // Board ignores the status filter (columns are the statuses)
+  const base = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return data.filter(d => {
+      if (filterAssignee && (d.personnel?.id ?? d.personnelId) !== filterAssignee) return false;
+      if (filterPriority && d.priority !== filterPriority) return false;
+      if (!q) return true;
+      return [d.title, d.description, d.personnel?.fullName, d.personnel?.dharmName].some(v => v?.toLowerCase().includes(q));
+    });
+  }, [data, search, filterAssignee, filterPriority]);
+
+  const rows = useMemo(() => {
+    if (filterStatus === 'all') return base;
+    if (filterStatus === 'overdue') return base.filter(isOverdue);
+    return base.filter(d => d.status === filterStatus);
+  }, [base, filterStatus]);
+
+  const stats = useMemo(() => ({
+    open: data.filter(d => d.status === 'chưa_bắt_đầu').length,
+    doing: data.filter(d => d.status === 'đang_thực_hiện').length,
+    done: data.filter(d => d.status === 'hoàn_thành').length,
+    overdue: data.filter(isOverdue).length,
+  }), [data]);
 
   const columns = [
     {
-      title: t.workAssignment.colTask, dataIndex: 'title', width: 300,
+      title: W.colTask, dataIndex: 'title', width: 300,
+      sorter: (a, b) => String(a.title).localeCompare(String(b.title), lang),
       render: (v, r) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{v}</div>
-          {r.description && <div style={{ fontSize: 12, color: '#888' }}>{r.description}</div>}
+        <div style={{ minWidth: 0 }}>
+          <div className="wa-task__title">{v}</div>
+          {r.description && <div className="wa-task__desc">{r.description}</div>}
         </div>
       ),
     },
     {
-      title: t.workAssignment.colAssignee, width: 160,
-      render: (_, r) => { const p = r.personnel; return p ? (p.dharmName || p.fullName) : '—'; },
-    },
-    {
-      title: t.workAssignment.fieldPriority, dataIndex: 'priority', width: 110,
-      render: (v) => <Tag color={priorityColors[v]}>{t.workAssignment.priorities[v] || v}</Tag>,
-    },
-    {
-      title: t.workAssignment.colDeadline, width: 120,
+      title: W.colAssignee, key: 'assignee', width: 200,
+      sorter: (a, b) => personName(a.personnel).localeCompare(personName(b.personnel), lang),
       render: (_, r) => {
-        const overdue = r.endDate && dayjs(r.endDate).isBefore(dayjs(), 'day') && r.status !== 'hoàn_thành';
-        return r.endDate
-          ? <span style={{ color: overdue ? '#ff4d4f' : undefined }}>{dayjs(r.endDate).format('DD/MM/YYYY')}</span>
-          : '—';
+        const p = r.personnel;
+        if (!p) return <span className="tbl-muted">—</span>;
+        return (
+          <div className="person-cell">
+            <Avatar size={30} className="person-cell__avatar" style={{ background: TONES.amber.s, color: TONES.amber.c, fontWeight: 700 }}>{initialOf(p.fullName)}</Avatar>
+            <div className="person-cell__text"><div className="person-cell__name">{personName(p)}</div></div>
+          </div>
+        );
       },
     },
     {
-      title: t.common.status, dataIndex: 'status', width: 150,
-      render: (v) => <Badge status={statusColors[v] || 'default'} text={t.workAssignment.statuses[v] || v?.replace(/_/g, ' ')} />,
+      title: W.fieldPriority, dataIndex: 'priority', width: 130,
+      sorter: (a, b) => (PRIORITY_RANK[a.priority] ?? -1) - (PRIORITY_RANK[b.priority] ?? -1),
+      render: (v) => (PRIORITY_TONE[v] ? <Pill tone={PRIORITY_TONE[v]}>{W.priorities[v] || v}</Pill> : <span className="tbl-muted">—</span>),
     },
     {
-      title: t.common.actions, width: 100,
-      render: (_, r) => canManage() && (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
-          <Popconfirm title={t.workAssignment.confirmDelete} onConfirm={() => handleDelete(r.id)}
-            okText={t.common.delete} cancelText={t.common.cancel}>
-            <Button type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
+      title: W.colDeadline, dataIndex: 'endDate', width: 140,
+      sorter: (a, b) => String(a.endDate || '9999').localeCompare(String(b.endDate || '9999')),
+      render: (v, r) => {
+        if (!v) return <span className="tbl-muted">—</span>;
+        const overdue = isOverdue(r);
+        return (
+          <div>
+            <div className="tbl-mono" style={{ color: overdue ? TONES.rose.c : '#3e2c1f', fontWeight: 600 }}>{dayjs(v).format('DD/MM/YYYY')}</div>
+            {overdue && <div style={{ fontSize: 12, color: TONES.rose.c }}><WarningOutlined /> {W.overdue}</div>}
+          </div>
+        );
+      },
     },
+    {
+      title: t.common.status, dataIndex: 'status', width: 170,
+      sorter: (a, b) => WORK_STATUSES.indexOf(a.status) - WORK_STATUSES.indexOf(b.status),
+      render: (v, r) => {
+        const pill = <Pill dot tone={STATUS_TONE[v] || STATUS_TONE['chưa_bắt_đầu']}>{W.statuses[v] || v}</Pill>;
+        return manage ? (
+          <StatusMenu record={r} W={W} onMove={moveStatus}>
+            <button type="button" className="wa-status-btn" aria-label={`${t.common.status}: ${W.statuses[v] || v}`}>{pill}</button>
+          </StatusMenu>
+        ) : pill;
+      },
+    },
+    ...(manage ? [{
+      title: '', key: 'actions', width: 96, align: 'right',
+      render: (_, r) => (
+        <div className="personnel-action-group">
+          <Tooltip title={t.common.edit}>
+            <Button type="text" aria-label={t.common.edit} icon={<EditOutlined />} onClick={() => openModal(r)} />
+          </Tooltip>
+          <Popconfirm title={W.confirmDelete} onConfirm={() => handleDelete(r.id)}
+            okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
+            <Tooltip title={t.common.delete}>
+              <Button type="text" danger aria-label={t.common.delete} icon={<DeleteOutlined />} />
+            </Tooltip>
+          </Popconfirm>
+        </div>
+      ),
+    }] : []),
   ];
 
-  if (loading && !data.length) return <PageSpinner />;
+  if (!booted.current && !data.length) return <PageSpinner />;
+
+  const statTiles = [
+    { key: 'open', filter: 'chưa_bắt_đầu', label: W.statuses['chưa_bắt_đầu'], value: stats.open, icon: <CarryOutOutlined />, tone: TONES.amber },
+    { key: 'doing', filter: 'đang_thực_hiện', label: W.statuses['đang_thực_hiện'], value: stats.doing, icon: <SyncOutlined />, tone: TONES.sky },
+    { key: 'done', filter: 'hoàn_thành', label: W.statuses['hoàn_thành'], value: stats.done, icon: <CheckCircleOutlined />, tone: TONES.sage },
+    { key: 'overdue', filter: 'overdue', label: W.overdue, value: stats.overdue, icon: <WarningOutlined />, tone: TONES.rose },
+  ];
+  const isFiltered = Boolean(search.trim() || filterAssignee || filterPriority || filterStatus !== 'all');
 
   return (
-    <Card bodyStyle={{ paddingTop: 16 }}>
-      <div className="page-toolbar section-anim section-d0">
-        <Space wrap>
-          {/* View toggle */}
-          <div className="view-toggle">
-            <Tooltip title={t.workAssignment.tooltipTable}><Button
-              type={viewMode === 'table' ? 'primary' : 'default'}
-              icon={<TableOutlined />}
-              onClick={() => setViewMode('table')}
-              style={viewMode === 'table' ? { background: '#c47f36', borderColor: '#c47f36', color: '#fff' } : {}}
-            /></Tooltip>
-            <Tooltip title={t.workAssignment.tooltipKanban}><Button
-              type={viewMode === 'kanban' ? 'primary' : 'default'}
-              icon={<ProjectOutlined />}
-              onClick={() => setViewMode('kanban')}
-              style={viewMode === 'kanban' ? { background: '#c47f36', borderColor: '#c47f36', color: '#fff' } : {}}
-            /></Tooltip>
+    <div className="pp-page">
+      {/* ── Header ── */}
+      <section className="pp-hero section-anim section-d0">
+        <div className="pp-hero__main">
+          <div className="pp-hero__icon"><CarryOutOutlined /></div>
+          <div>
+            <h1 className="pp-hero__title">{W.title}</h1>
+            <p className="pp-hero__sub">{W.subtitle}</p>
           </div>
-
-          {/* Status filter — only in table mode */}
-          {viewMode === 'table' && (
-            <Select value={filterStatus} onChange={setFilterStatus} style={{ width: 180 }} placeholder={t.workAssignment.allStatuses}>
-              <Option value="">{t.common.all}</Option>
-              <Option value="chưa_bắt_đầu">{t.workAssignment.statuses['chưa_bắt_đầu']}</Option>
-              <Option value="đang_thực_hiện">{t.workAssignment.statuses['đang_thực_hiện']}</Option>
-              <Option value="hoàn_thành">{t.workAssignment.statuses['hoàn_thành']}</Option>
-              <Option value="tạm_dừng">{t.workAssignment.statuses['tạm_dừng']}</Option>
-              <Option value="hủy">{t.workAssignment.statuses['hủy']}</Option>
-            </Select>
-          )}
-        </Space>
-
-        {canManage() && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
-            {t.workAssignment.addNew}
-          </Button>
+        </div>
+        {manage && (
+          <div className="pp-hero__actions">
+            <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => openModal()}>{W.addNew}</Button>
+          </div>
         )}
+      </section>
+
+      {/* ── Stats ── */}
+      <div className="pp-stats section-anim section-d1">
+        {statTiles.map(s => (
+          <button
+            type="button"
+            key={s.key}
+            className={`pp-stat wa-stat${filterStatus === s.filter ? ' is-active' : ''}`}
+            aria-pressed={filterStatus === s.filter}
+            style={{ '--st': s.tone.c, '--st-soft': s.tone.s }}
+            onClick={() => {
+              setFilterStatus(cur => (cur === s.filter ? 'all' : s.filter));
+              setViewMode('table');
+            }}
+          >
+            <span className="pp-stat__icon">{s.icon}</span>
+            <span className="pp-stat__body">
+              <span className="pp-stat__value"><CountUp value={s.value} /></span>
+              <span className="pp-stat__label">{s.label}</span>
+            </span>
+          </button>
+        ))}
       </div>
 
-      <div className="section-anim section-d1">
-      {viewMode === 'table' ? (
-        <Table dataSource={data} columns={columns} rowKey="id" loading={loading}
-          size="small" className="personnel-table" scroll={{ x: 'max-content' }} />
-      ) : (
-        <KanbanBoard
-          data={data}
-          canManage={canManage}
-          onEdit={openModal}
-          onDelete={handleDelete}
-          onMoveCard={handleMoveCard}
-        />
-      )}
-      </div>
+      <section className="pp-card section-anim section-d2">
+        {/* ── Toolbar ── */}
+        <div className="pp-toolbar">
+          <Segmented
+            className="pp-seg"
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              { value: 'table', icon: <TableOutlined />, label: W.tooltipTable },
+              { value: 'kanban', icon: <ProjectOutlined />, label: W.tooltipKanban },
+            ]}
+          />
+          <Input
+            className="pp-search"
+            placeholder={W.searchPlaceholder}
+            prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+          />
+          <Select className="pp-select" value={filterAssignee} onChange={setFilterAssignee} showSearch optionFilterProp="label"
+            options={[{ value: '', label: W.allAssignees }, ...assigneeOptions]} />
+          <Select className="pp-select" value={filterPriority} onChange={setFilterPriority}
+            options={[{ value: '', label: W.allPriorities }, ...PRIORITIES.map(p => ({ value: p, label: W.priorities[p] }))]} />
+          {viewMode === 'table' && (
+            <Select className="pp-select" value={filterStatus} onChange={setFilterStatus}
+              options={[
+                { value: 'all', label: W.allStatuses },
+                ...WORK_STATUSES.map(s => ({ value: s, label: W.statuses[s] })),
+                { value: 'overdue', label: W.overdue },
+              ]} />
+          )}
+        </div>
 
-      <Modal
-        title={editRecord ? t.workAssignment.editTitle : t.workAssignment.addTitle}
+        {viewMode === 'table' ? (
+          <Table
+            dataSource={rows}
+            columns={columns}
+            rowKey="id"
+            loading={loading}
+            size="middle"
+            className="personnel-table"
+            scroll={{ x: 'max-content' }}
+            pagination={rows.length > 10 ? { pageSize: 10, showSizeChanger: false } : false}
+            locale={{
+              emptyText: isFiltered
+                ? <LotusEmpty description={W.emptyFiltered} hint={W.emptyFilteredHint} />
+                : <LotusEmpty description={W.emptyTitle} hint={manage ? W.emptyHint : ''} />,
+            }}
+          />
+        ) : (
+          <KanbanBoard
+            data={base}
+            W={W}
+            t={t}
+            canManage={manage}
+            onEdit={openModal}
+            onDelete={handleDelete}
+            onMove={moveStatus}
+          />
+        )}
+      </section>
+
+      <WorkFormModal
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={() => form.submit()}
-        okText={editRecord ? t.common.update : t.common.add}
-        cancelText={t.common.cancel}
-        okButtonProps={{ style: { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } }}
-        width={600}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="title" label={t.workAssignment.fieldTitle} rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="description" label={t.common.description}><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="personnelId" label={t.workAssignment.colAssignee} rules={[{ required: true }]}>
-            <Select showSearch optionFilterProp="children">
-              {personnel.map(p => (
-                <Option key={p.id} value={p.id}>{p.dharmName ? `${p.dharmName} (${p.fullName})` : p.fullName}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="priority" label={t.workAssignment.fieldPriority} initialValue="trung_bình">
-                <Select>
-                  <Option value="thấp">{t.workAssignment.priorities['thấp']}</Option>
-                  <Option value="trung_bình">{t.workAssignment.priorities['trung_bình']}</Option>
-                  <Option value="cao">{t.workAssignment.priorities['cao']}</Option>
-                  <Option value="khẩn_cấp">{t.workAssignment.priorities['khẩn_cấp']}</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="status" label={t.common.status} initialValue="chưa_bắt_đầu">
-                <Select>
-                  <Option value="chưa_bắt_đầu">{t.workAssignment.statuses['chưa_bắt_đầu']}</Option>
-                  <Option value="đang_thực_hiện">{t.workAssignment.statuses['đang_thực_hiện']}</Option>
-                  <Option value="hoàn_thành">{t.workAssignment.statuses['hoàn_thành']}</Option>
-                  <Option value="tạm_dừng">{t.workAssignment.statuses['tạm_dừng']}</Option>
-                  <Option value="hủy">{t.workAssignment.statuses['hủy']}</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="startDate" label={t.workAssignment.fieldStartDate}>
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="endDate" label={t.workAssignment.colDeadline}>
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="notes" label={t.common.notes}><Input.TextArea rows={2} /></Form.Item>
-        </Form>
-      </Modal>
-    </Card>
+        record={editRecord}
+        personnel={personnel}
+        saving={saving}
+        W={W}
+        t={t}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
+      />
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export const BASE_URL =
   (import.meta as any).env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -17,6 +18,9 @@ export function useNewsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<any>(null);
   const { isAdmin, hasRole } = useAuth() as any;
+  const { t } = useLanguage() as any;
+  const tRef = useRef(t);
+  tRef.current = t;
   const canEdit = isAdmin() || hasRole('truotri') || hasRole('thuki');
   const canPost = true; // all authenticated users can submit posts
   const canApprove = isAdmin() || hasRole('truotri') || hasRole('thuki');
@@ -31,7 +35,7 @@ export function useNewsPage() {
       ])) as any[];
       setPosts({ event: ev.data.data, news: nw.data.data, article: ar.data.data });
     } catch {
-      message.error('Không thể tải dữ liệu');
+      message.error(tRef.current.news.loadError);
     } finally {
       setLoading(false);
     }
@@ -72,11 +76,11 @@ export function useNewsPage() {
     fetchPending();
   }, [fetchAll, fetchPending]);
 
-  // Live refresh of the approval queue (every 3s while the tab is visible)
+  // Live refresh of the approval queue (every 10s while the tab is visible)
   useEffect(() => {
     if (!canApprove) return undefined;
     const tick = () => { if (!document.hidden) fetchPending(); };
-    const id = setInterval(tick, 3000);
+    const id = setInterval(tick, 10000);
     document.addEventListener('visibilitychange', tick);
     return () => {
       clearInterval(id);
@@ -97,31 +101,31 @@ export function useNewsPage() {
   const handleDelete = async (id: any) => {
     try {
       await api.delete(`/posts/${id}`);
-      message.success('Đã xóa');
+      message.success(t.common.deleteSuccess);
       fetchAll();
     } catch {
-      message.error('Không thể xóa');
+      message.error(t.news.deleteError);
     }
   };
 
   const handleApprove = async (id: any) => {
     try {
       await api.patch(`/posts/${id}/approve`);
-      message.success('Đã duyệt bài viết');
+      message.success(t.news.approved);
       fetchAll();
       fetchPending();
     } catch {
-      message.error('Không thể duyệt bài');
+      message.error(t.news.approveError);
     }
   };
 
   const handleReject = async (id: any) => {
     try {
       await api.patch(`/posts/${id}/reject`);
-      message.success('Đã từ chối bài viết');
+      message.success(t.news.rejected);
       fetchPending();
     } catch {
-      message.error('Không thể từ chối');
+      message.error(t.news.rejectError);
     }
   };
 

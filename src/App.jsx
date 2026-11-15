@@ -24,6 +24,8 @@ import UserManagementPage from './pages/Users/UserManagementPage';
 import BackupPage from './pages/Backup/BackupPage';
 import FinancePage from './pages/Finance/FinancePage';
 import CeremonyPage from './pages/Ceremony/CeremonyPage';
+import LibraryPage from './pages/Library/LibraryPage';
+import FigureDetailPage from './pages/Library/FigureDetailPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -40,7 +42,7 @@ const AdminRoute = ({ children }) => {
 const DonationRoute = ({ children }) => {
   const { user, isAdmin, hasRole } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (!isAdmin() && !hasRole('thuki')) return <Navigate to="/app/dashboard" replace />;
+  if (!isAdmin() && !hasRole('truotri') && !hasRole('thuki')) return <Navigate to="/app/dashboard" replace />;
   return children;
 };
 
@@ -84,6 +86,8 @@ const AppRoutes = () => {
         <Route path="training"           element={<TrainingPage />} />
         <Route path="buddhist-followers" element={<BuddhistFollowerPage />} />
         <Route path="ceremonies"         element={<CeremonyPage />} />
+        <Route path="library"            element={<LibraryPage />} />
+        <Route path="library/:id"        element={<FigureDetailPage />} />
         <Route path="donations"          element={<DonationRoute><DonationPage /></DonationRoute>} />
         <Route path="finance"            element={<FinanceRoute><FinancePage /></FinanceRoute>} />
         <Route path="reward-discipline"  element={<RewardDisciplinePage />} />

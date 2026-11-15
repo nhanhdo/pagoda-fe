@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Tabs, message } from 'antd';
+import { Button, Tabs, Tooltip, message } from 'antd';
 import { FireOutlined, PlusOutlined, CalendarOutlined, SolutionOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
@@ -20,6 +20,7 @@ export default function CeremonyPage() {
   const { isAdmin, hasRole } = useAuth();
   const canWrite = isAdmin() || hasRole('truotri') || hasRole('thuki') || hasRole('truongban');
   const canRemove = isAdmin() || hasRole('truotri');
+  const admin = isAdmin();
   const location = useLocation();
   const navigate = useNavigate();
   const qTab = new URLSearchParams(location.search).get('tab');
@@ -82,11 +83,17 @@ export default function CeremonyPage() {
             <p className="cer-hero__sub">{C.subtitle}</p>
           </div>
         </div>
-        {canWrite && (tab !== 'registrations' || ceremonies.length > 0) && (
-          <Button type="primary" icon={<PlusOutlined />} className="cer-btn" onClick={() => setCreateSignal(s => s + 1)}>
-            {heroAction}
-          </Button>
-        )}
+        {canWrite && (tab !== 'registrations' || ceremonies.length > 0) && (() => {
+          const selected = ceremonies.find(c => c.id === selectedId);
+          const locked = tab === 'registrations' && selected && !selected.registrationOpen && !admin;
+          return (
+            <Tooltip title={locked ? C.closedForRegistration : ''}>
+              <Button type="primary" icon={<PlusOutlined />} className="cer-btn" disabled={locked} onClick={() => setCreateSignal(s => s + 1)}>
+                {heroAction}
+              </Button>
+            </Tooltip>
+          );
+        })()}
       </section>
 
       <div className="cer-tabs section-anim section-d1">
@@ -105,7 +112,7 @@ export default function CeremonyPage() {
           <RegistrationsTab
             C={C} t={t} lang={lang} ceremonies={ceremonies} funds={funds}
             selectedId={selectedId} setSelectedId={setSelectedId}
-            canWrite={canWrite} createSignal={createSignal} onChanged={loadCeremonies}
+            canWrite={canWrite} canRemove={canRemove} isAdmin={admin} createSignal={createSignal} onChanged={loadCeremonies}
           />
         )}
         {tab === 'tablets' && (

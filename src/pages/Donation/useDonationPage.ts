@@ -12,6 +12,7 @@ export function useDonationPage() {
   const [search, setSearch]       = useState('');
   const [dateRange, setDateRange] = useState<[any, any] | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving]       = useState(false);
   const [editRecord, setEditRecord] = useState<any>(null);
   const [followers, setFollowers] = useState<any[]>([]);
   const [funds, setFunds] = useState<any[]>([]);
@@ -63,6 +64,8 @@ export function useDonationPage() {
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
   const handleSubmit = async (values: any) => {
+    if (saving) return;
+    setSaving(true);
     try {
       const payload = {
         ...values,
@@ -81,6 +84,8 @@ export function useDonationPage() {
       fetchSummary();
     } catch (err: any) {
       message.error(err.response?.data?.message || 'Có lỗi xảy ra');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -100,7 +105,7 @@ export function useDonationPage() {
     search, setSearch,
     dateRange, setDateRange,
     funds, fundFilter, setFundFilter,
-    modalOpen, setModalOpen,
+    modalOpen, setModalOpen, saving,
     editRecord, setEditRecord,
     followers,
     summary,

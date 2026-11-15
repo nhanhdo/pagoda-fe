@@ -1,0 +1,56 @@
+.acrop { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 4px; }
+
+.acrop__stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background:
+    repeating-conic-gradient(#f3ece2 0% 25%, #fbf7f1 0% 50%) 0 0 / 18px 18px;
+  cursor: grab;
+  touch-action: none;           /* let pointer events drive dragging on touch screens */
+  user-select: none;
+  outline: none;
+}
+.acrop__stage.is-dragging, .acrop__stage:active { cursor: grabbing; }
+.acrop__stage:focus-visible { box-shadow: 0 0 0 3px rgba(224,164,84,.45); }
+
+.acrop__img {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+
+/* Dim everything outside the circle; thin ring marks the final avatar */
+.acrop__mask {
+  position: absolute; inset: 0; pointer-events: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 999px rgba(43, 30, 20, .52);
+  outline: 2px solid rgba(255,255,255,.9);
+  outline-offset: -2px;
+}
+
+.acrop__badge {
+  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.88); color: #8a5a28; font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.acrop__stage:active .acrop__badge { opacity: 0; }
+
+.acrop__zoom { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 300px; }
+.acrop__zoom .ant-slider { flex: 1; margin: 0 4px; }
+.acrop__zbtn {
+  appearance: none; border: 0; background: #fbf1e4; color: #a8641f;
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px;
+  transition: background .15s;
+}
+.acrop__zbtn:hover:not(:disabled) { background: #f6e2c6; }
+.acrop__zbtn:disabled { opacity: .45; cursor: default; }
+.acrop__zbtn:focus-visible { outline: 2px solid #e0a454; outline-offset: 2px; }
+
+.acrop__hint { font-size: 12px; color: #7a6a5c; text-align: center; max-width: 300px; line-height: 1.5; }

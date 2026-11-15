@@ -13,8 +13,8 @@ export const SHIFT_TONE = {
   'tối':     { c: '#7a5fc0', s: '#f1edfb', dot: '#8b6fc9' },
   'cả_ngày': { c: '#3f8461', s: '#e8f4ed', dot: '#4f9a72' },
 };
-const SHIFT_ORDER = ['sáng', 'chiều', 'tối', 'cả_ngày'];
-const STATUS_TONE = {
+export const SHIFT_ORDER = ['sáng', 'chiều', 'tối', 'cả_ngày'];
+export const STATUS_TONE = {
   'chờ':        { c: '#3f7fb5', s: '#e9f1fb' },
   'hoàn_thành': { c: '#3f8461', s: '#e8f4ed' },
   'vắng':       { c: '#c4545d', s: '#fdeeee' },

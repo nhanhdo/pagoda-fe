@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
-  Tabs, Tag, Button, Modal, Form, Input, Select, DatePicker,
+  Tabs, Tag, Button, Modal, Form, Input, Select, DatePicker, TimePicker,
   message, Popconfirm, Space, Spin, Upload, Switch, Typography, Avatar, Dropdown,
   Calendar, Badge, Tooltip, Segmented, Image,
 } from 'antd';
@@ -23,6 +23,12 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { solarToLunar, getBuddhistHolidays, getSolarTerm, getHoangDaoHours, getTruc } from '../../utils/lunarCalendar';
 import './NewsPage.css';
 import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
+import { guardedClose, rules } from '../../utils/formGuard';
+
+const MAX_IMAGE_MB = 10;
+// Short month for the date tile: "T11" in Vietnamese (dayjs 'MMM' gives "thg 11"), "Nov" in English
+const shortMonth = (d, lang) => (lang === 'en' ? dayjs(d).locale('en').format('MMM') : `T${dayjs(d).month() + 1}`);
+const AVATAR_TONE = { background: '#fbf1e4', color: '#a2652a' };
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -36,18 +42,99 @@ const TYPE_CFG = {
   article: { color: '#c47f36', bg: '#fbf1e4', icon: <ReadOutlined /> },
 };
 
-/* ─── Comment Section ────────────────────────────────────── */
-const COMMENT_LIMIT = 3;
+/* ─── Comment Section (Facebook style: one level of replies) ─ */
+const COMMENT_LIMIT = 3;   // top-level comments shown before "view more"
+const REPLY_PREVIEW = 2;   // replies shown per thread before "view more replies"
 const FEED_PAGE = 10;
+
+const commentName = (c, t) => c?.commentAuthor?.dharmName || c?.commentAuthor?.fullName || c?.commentUser?.username || t.news.anonymous;
+// Vietnamese names: initial of the given name (last word); usernames: first letter
+const initialOf = (name = '') => ((name.trim().split(/\s+/).pop() || '?').charAt(0) || '?').toUpperCase();
+
+function CommentItem({ c, isReply, mention, fresh, canDel, onReply, onDelete }) {
+  const { t } = useLanguage();
+  const name = commentName(c, t);
+  return (
+    <div className={`cmt${isReply ? ' cmt--reply' : ''}${fresh ? ' is-fresh' : ''}`}>
+      <Avatar size={isReply ? 26 : 32} className="cmt__avatar" style={AVATAR_TONE}>{initialOf(name)}</Avatar>
+      <div className="cmt__body">
+        <div className="cmt__bubble">
+          <div className="cmt__name">{name}</div>
+          <div className="cmt__text">
+            {mention && <span className="cmt__mention">{mention}</span>}
+            {c.content}
+          </div>
+        </div>
+        <div className="cmt__meta">
+          <Tooltip title={dayjs(c.createdAt).format('HH:mm · DD/MM/YYYY')}>
+            <span className="cmt__time">{dayjs(c.createdAt).fromNow()}</span>
+          </Tooltip>
+          <button type="button" className="cmt__act" onClick={() => onReply(c)}>{t.news.reply}</button>
+          {canDel && (
+            <Popconfirm title={t.news.deleteCommentConfirm} onConfirm={() => onDelete(c.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
+              <button type="button" className="cmt__act cmt__act--danger">{t.common.delete}</button>
+            </Popconfirm>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommentComposer({ value, onChange, onSend, sending, placeholder, small, autoFocus, onCancel, hint }) {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const me = user?.personnel?.dharmName || user?.personnel?.fullName || user?.username || 'U';
+  return (
+    <div className={`cmt-compose${small ? ' cmt-compose--reply' : ''}`}>
+      <Avatar size={small ? 26 : 32} className="cmt__avatar" style={AVATAR_TONE}>{initialOf(me)}</Avatar>
+      <div className="cmt-compose__main">
+        {hint && (
+          <div className="cmt-compose__hint">
+            {hint}
+            {onCancel && <> · <button type="button" className="cmt__act" onClick={onCancel}>{t.common.cancel}</button></>}
+          </div>
+        )}
+        <div className="cmt-compose__field">
+          <Input.TextArea
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={placeholder}
+            aria-label={placeholder}
+            autoFocus={autoFocus}
+            autoSize={{ minRows: 1, maxRows: 5 }}
+            onPressEnter={e => { if (!e.shiftKey) { e.preventDefault(); onSend(); } }}
+            onKeyDown={e => { if (e.key === 'Escape' && onCancel) { e.preventDefault(); onCancel(); } }}
+            variant="borderless"
+          />
+          <Button
+            type="text"
+            shape="circle"
+            className="cmt-compose__send"
+            icon={<SendOutlined />}
+            loading={sending}
+            disabled={!value.trim()}
+            onClick={onSend}
+            aria-label={t.news.sendComment}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CommentSection({ postId, onCountChange }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [showAllComments, setShowAllComments] = useState(false);
+  const [expanded, setExpanded] = useState(() => new Set());   // threads with all replies shown
   const [comments, setComments] = useState([]);
   const [loadingCmt, setLoadingCmt] = useState(false);
   const [inputVal, setInputVal] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);                 // comment being answered
+  const [replyVal, setReplyVal] = useState('');
+  const [replySending, setReplySending] = useState(false);
   const [freshIds, setFreshIds] = useState([]);
   const onCountRef = React.useRef(onCountChange);
   onCountRef.current = onCountChange;
@@ -60,7 +147,7 @@ function CommentSection({ postId, onCountChange }) {
     });
   };
 
-  // Initial load + live refresh every 3s while this thread is open
+  // Initial load + live refresh every 10s while this thread is open and the tab is visible
   useEffect(() => {
     let cancelled = false;
     let inFlight = false;
@@ -93,7 +180,7 @@ function CommentSection({ postId, onCountChange }) {
 
     setLoadingCmt(true);
     load(true);
-    const id = setInterval(load, 3000);
+    const id = setInterval(load, 10000);
     const onVisible = () => { if (!document.hidden) load(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -103,101 +190,170 @@ function CommentSection({ postId, onCountChange }) {
     };
   }, [postId, user?.id]);
 
+  const send = async (content, replyToId) => {
+    const r = await api.post(`/posts/${postId}/comments`, { content: content.trim(), replyToId });
+    updateComments(prev => (prev.some(c => c.id === r.data.id) ? prev : [...prev, r.data]));
+    return r.data;
+  };
+
   const handleSend = async () => {
     if (!inputVal.trim()) return;
     setSubmitting(true);
     try {
-      const r = await api.post(`/posts/${postId}/comments`, { content: inputVal.trim() });
-      updateComments(prev => (prev.some(c => c.id === r.data.id) ? prev : [...prev, r.data]));
+      await send(inputVal);
       setInputVal('');
     } catch {
-      message.error('Không thể gửi bình luận');
+      message.error(t.news.commentSendError);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (commentId) => {
+  const startReply = (c) => {
+    setReplyTo(c);
+    setReplyVal('');
+    // Make sure the reply box (end of thread) and the new reply stay visible
+    const rootId = c.parentId || c.id;
+    setExpanded(s => new Set(s).add(rootId));
+  };
+  const cancelReply = () => { setReplyTo(null); setReplyVal(''); };
+
+  const handleSendReply = async () => {
+    if (!replyVal.trim() || !replyTo) return;
+    setReplySending(true);
     try {
-      await api.delete(`/posts/${postId}/comments/${commentId}`);
-      updateComments(prev => prev.filter(c => c.id !== commentId));
-    } catch {
-      message.error('Không thể xóa bình luận');
+      await send(replyVal, replyTo.id);
+      cancelReply();
+    } catch (err) {
+      message.error(err?.response?.data?.message || t.news.commentSendError);
+    } finally {
+      setReplySending(false);
     }
   };
+
+  const handleDelete = async (commentId) => {
+    try {
+      const r = await api.delete(`/posts/${postId}/comments/${commentId}`);
+      const removed = new Set(r.data?.removedIds || [commentId]);
+      // Also drop local replies of a deleted top-level comment
+      updateComments(prev => prev.filter(c => !removed.has(c.id) && !removed.has(c.parentId)));
+      if (replyTo && (removed.has(replyTo.id) || removed.has(replyTo.parentId))) cancelReply();
+    } catch {
+      message.error(t.news.commentDeleteError);
+    }
+  };
+
+  // Build threads: top-level comments (oldest → newest), each with its replies
+  const byId = new Map(comments.map(c => [c.id, c]));
+  const repliesOf = new Map();
+  const roots = [];
+  comments.forEach(c => {
+    if (c.parentId && byId.has(c.parentId)) {
+      if (!repliesOf.has(c.parentId)) repliesOf.set(c.parentId, []);
+      repliesOf.get(c.parentId).push(c);
+    } else {
+      roots.push(c);
+    }
+  });
+  const hiddenRoots = showAllComments ? 0 : Math.max(0, roots.length - COMMENT_LIMIT);
+  const visibleRoots = roots.slice(hiddenRoots);
+  const canDelete = (c) => user?.id === c.userId || ['admin', 'truotri'].includes(user?.role);
 
   return (
     <div className="comment-section">
       {loadingCmt ? (
-        <div style={{ padding: '8px 0', color: '#bbb', fontSize: 12 }}>Đang tải...</div>
+        <div className="cmt-empty">{t.news.commentsLoading}</div>
       ) : (
-        <div>
-          {comments.length === 0 && (
-            <div style={{ color: '#bbb', fontSize: 12, padding: '8px 0', fontStyle: 'italic' }}>Chưa có bình luận nào.</div>
+        <div className="cmt-list">
+          {comments.length === 0 && <div className="cmt-empty">{t.news.noComments}</div>}
+          {roots.length > COMMENT_LIMIT && (
+            <button type="button" className="cmt-more" onClick={() => setShowAllComments(v => !v)}>
+              {showAllComments ? t.common.showLess : t.news.moreComments.replace('{n}', hiddenRoots)}
+            </button>
           )}
-          {comments.length > COMMENT_LIMIT && (
-            <div className="list-toggle-row" style={{ marginBottom: 4 }}>
-              <button type="button" className="list-toggle" onClick={() => setShowAllComments(v => !v)}>
-                {showAllComments ? t.common.showLess : t.common.showAllComments.replace('{n}', comments.length)}
-                <span className={`list-toggle__chev${showAllComments ? ' is-up' : ''}`}>›</span>
-              </button>
-            </div>
-          )}
-          {(showAllComments ? comments : comments.slice(-COMMENT_LIMIT)).map(c => {
-            const name = c.commentAuthor?.dharmName || c.commentAuthor?.fullName || c.commentUser?.username || 'Ẩn danh';
-            const initial = name.charAt(name.length - 1).toUpperCase();
-            const canDel = user?.id === c.userId || ['admin', 'truotri'].includes(user?.role);
+          {visibleRoots.map(root => {
+            const replies = repliesOf.get(root.id) || [];
+            const isOpen = expanded.has(root.id);
+            const hiddenReplies = isOpen ? 0 : Math.max(0, replies.length - REPLY_PREVIEW);
+            const replyingHere = replyTo && (replyTo.parentId || replyTo.id) === root.id;
             return (
-              <div key={c.id} className={`comment-item${freshIds.includes(c.id) ? ' is-fresh' : ''}`}>
-                <Avatar size={30} style={{ background: '#b06f2c', fontSize: 12, flexShrink: 0, fontWeight: 700 }}>{initial}</Avatar>
-                <div style={{ flex: 1, background: '#fdf8f2', borderRadius: 8, padding: '6px 10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, fontSize: 12, color: '#5a3a22' }}>{name}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 11, color: '#bbb' }}>{dayjs(c.createdAt).fromNow()}</span>
-                      {canDel && (
-                        <Popconfirm title="Xóa bình luận này?" onConfirm={() => handleDelete(c.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
-                          <Button type="text" size="small" danger icon={<DeleteOutlined style={{ fontSize: 11 }} />} style={{ padding: '0 4px', height: 20 }} />
-                        </Popconfirm>
-                      )}
-                    </div>
+              <div key={root.id} className="cmt-thread">
+                <CommentItem
+                  c={root}
+                  fresh={freshIds.includes(root.id)}
+                  canDel={canDelete(root)}
+                  onReply={startReply}
+                  onDelete={handleDelete}
+                />
+                {(replies.length > 0 || replyingHere) && (
+                  <div className="cmt-replies">
+                    {hiddenReplies > 0 && (
+                      <button type="button" className="cmt-more cmt-more--reply" onClick={() => setExpanded(s => new Set(s).add(root.id))}>
+                        <span className="cmt-more__elbow" aria-hidden />
+                        {t.news.viewMoreReplies.replace('{n}', hiddenReplies)}
+                      </button>
+                    )}
+                    {isOpen && replies.length > REPLY_PREVIEW && (
+                      <button
+                        type="button"
+                        className="cmt-more cmt-more--reply"
+                        onClick={() => setExpanded(s => { const n = new Set(s); n.delete(root.id); return n; })}
+                      >
+                        <span className="cmt-more__elbow" aria-hidden />
+                        {t.news.hideReplies}
+                      </button>
+                    )}
+                    {replies.slice(hiddenReplies).map(rep => {
+                      // Tag the person only when answering another reply (as Facebook does)
+                      const target = rep.replyToId && rep.replyToId !== root.id ? byId.get(rep.replyToId) : null;
+                      return (
+                        <CommentItem
+                          key={rep.id}
+                          c={rep}
+                          isReply
+                          mention={target ? commentName(target, t) : null}
+                          fresh={freshIds.includes(rep.id)}
+                          canDel={canDelete(rep)}
+                          onReply={startReply}
+                          onDelete={handleDelete}
+                        />
+                      );
+                    })}
+                    {replyingHere && (
+                      <CommentComposer
+                        key={replyTo.id}
+                        small
+                        autoFocus
+                        value={replyVal}
+                        onChange={setReplyVal}
+                        onSend={handleSendReply}
+                        sending={replySending}
+                        onCancel={cancelReply}
+                        hint={t.news.replyingTo.replace('{name}', commentName(replyTo, t))}
+                        placeholder={t.news.replyPlaceholder.replace('{name}', commentName(replyTo, t))}
+                      />
+                    )}
                   </div>
-                  <div style={{ fontSize: 13, color: '#333', marginTop: 2, lineHeight: 1.5 }}>{c.content}</div>
-                </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
-      {/* Input */}
-      <div className="comment-input-row">
-        <Avatar size={30} style={{ background: '#b06f2c', fontSize: 12, flexShrink: 0, fontWeight: 700 }}>
-          {(user?.personnel?.dharmName || user?.personnel?.fullName || user?.username || 'U').slice(-1).toUpperCase()}
-        </Avatar>
-        <Input.TextArea
-          value={inputVal}
-          onChange={e => setInputVal(e.target.value)}
-          placeholder="Viết bình luận..."
-          autoSize={{ minRows: 1, maxRows: 4 }}
-          onPressEnter={e => { if (!e.shiftKey) { e.preventDefault(); handleSend(); } }}
-          style={{ borderRadius: 20, resize: 'none', fontSize: 13 }}
-        />
-        <Button
-          type="primary"
-          icon={<SendOutlined />}
-          loading={submitting}
-          disabled={!inputVal.trim()}
-          onClick={handleSend}
-          style={{ background: '#b06f2c', borderColor: '#b06f2c', borderRadius: 20, flexShrink: 0 }}
-        />
-      </div>
+      <CommentComposer
+        value={inputVal}
+        onChange={setInputVal}
+        onSend={handleSend}
+        sending={submitting}
+        placeholder={t.news.commentPlaceholder}
+      />
     </div>
   );
 }
 
 /* ─── Single Post Card (Facebook style) ─────────────────── */
 function PostCard({ post, canEdit, onEdit, onDelete, focused }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [showComments, setShowComments] = useState(!!focused);
   const cardRef = React.useRef(null);
   useEffect(() => {
@@ -210,18 +366,29 @@ function PostCard({ post, canEdit, onEdit, onDelete, focused }) {
   const cfg = TYPE_CFG[post.type] || TYPE_CFG.article;
   const typeLabel = { event: t.news.typeEvent, news: t.news.typeNews, article: t.news.typeArticle }[post.type] || t.news.typeArticle;
   const authorName = post.author?.dharmName || post.author?.fullName || post.userAuthor?.username || t.news.guestAuthor;
-  const initial = authorName.charAt(authorName.length - 1).toUpperCase();
+  const initial = initialOf(authorName);
   const timeAgo = dayjs(post.createdAt).fromNow();
 
-  const menuItems = [
-    { key: 'edit',   label: <span><EditOutlined style={{ marginRight: 6 }} />{t.common.edit}</span>,   onClick: () => onEdit(post) },
-    { key: 'delete', label: (
-        <Popconfirm title={t.common.confirmDelete} onConfirm={() => onDelete(post.id)} okText={t.common.delete} cancelText={t.common.cancel}>
-          <span style={{ color: '#f44336' }}><DeleteOutlined style={{ marginRight: 6 }} />{t.common.delete}</span>
-        </Popconfirm>
-      ),
+  // A Popconfirm inside a dropdown item closes with the menu, so confirm with a modal instead.
+  const menu = {
+    items: [
+      { key: 'edit', icon: <EditOutlined />, label: t.common.edit },
+      { key: 'delete', icon: <DeleteOutlined />, label: t.common.delete, danger: true },
+    ],
+    onClick: ({ key }) => {
+      if (key === 'edit') onEdit(post);
+      if (key === 'delete') {
+        Modal.confirm({
+          title: t.news.deletePostConfirm,
+          content: post.title,
+          okText: t.common.delete,
+          cancelText: t.common.cancel,
+          okButtonProps: { danger: true },
+          onOk: () => onDelete(post.id),
+        });
+      }
     },
-  ];
+  };
 
   return (
     <article ref={cardRef} id={`post-${post.id}`} className={`post-card${focused ? ' is-focused' : ''}`}>
@@ -246,8 +413,8 @@ function PostCard({ post, canEdit, onEdit, onDelete, focused }) {
               {cfg.icon}{typeLabel}
             </span>
             {canEdit && (
-              <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-                <Button type="text" className="post-card__more" icon={<EllipsisOutlined style={{ fontSize: 18 }} />} />
+              <Dropdown menu={menu} trigger={['click']} placement="bottomRight">
+                <Button type="text" className="post-card__more" aria-label={t.news.postActions} icon={<EllipsisOutlined style={{ fontSize: 18 }} />} />
               </Dropdown>
             )}
           </div>
@@ -259,7 +426,7 @@ function PostCard({ post, canEdit, onEdit, onDelete, focused }) {
           <div className="post-card__event">
             {post.eventDate && (
               <div className="post-card__date-tile">
-                <span>{dayjs(post.eventDate).format('MMM')}</span>
+                <span>{shortMonth(post.eventDate, lang)}</span>
                 <strong>{dayjs(post.eventDate).format('DD')}</strong>
               </div>
             )}
@@ -335,7 +502,7 @@ function PendingPostCard({ post, onApprove, onReject, focused, focusKey, fresh }
       <div className="post-card__body">
         <header className="post-card__head">
           <Avatar size={40} style={{ background: '#fdf0d8', color: '#c98a1e', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
-            {authorName.charAt(authorName.length - 1).toUpperCase()}
+            {initialOf(authorName)}
           </Avatar>
           <div className="post-card__meta">
             <div className="post-card__author">{authorName}</div>
@@ -388,7 +555,12 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
   useEffect(() => {
     if (open) {
       if (editRecord) {
-        form.setFieldsValue({ ...editRecord, eventDate: editRecord.eventDate ? dayjs(editRecord.eventDate) : undefined });
+        const tm = editRecord.eventTime && /^\d{1,2}:\d{2}/.test(editRecord.eventTime) ? dayjs(`2000-01-01T${editRecord.eventTime.padStart(5, '0').slice(0, 5)}`) : undefined;
+        form.setFieldsValue({
+          ...editRecord,
+          eventDate: editRecord.eventDate ? dayjs(editRecord.eventDate) : undefined,
+          eventTime: tm && tm.isValid() ? tm : undefined,
+        });
       } else {
         form.resetFields();
         form.setFieldsValue({
@@ -407,7 +579,7 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
       const fd = new FormData();
       Object.entries(values).forEach(([k, v]) => {
         if (v !== undefined && v !== null)
-          fd.append(k, k === 'eventDate' ? v.format('YYYY-MM-DD') : v);
+          fd.append(k, k === 'eventDate' ? v.format('YYYY-MM-DD') : k === 'eventTime' ? v.format('HH:mm') : v);
       });
       if (fileList[0]?.originFileObj) fd.append('coverImage', fileList[0].originFileObj);
 
@@ -430,16 +602,16 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
 
   return (
     <Modal
-      title={<span style={{ fontWeight: 700, fontSize: 16 }}>{editRecord ? t.news.title : t.news.addNew}</span>}
-      open={open} onCancel={onClose} onOk={() => form.submit()}
+      title={<span style={{ fontWeight: 700, fontSize: 16 }}>{editRecord ? t.news.editPost : t.news.addNew}</span>}
+      open={open} onCancel={() => guardedClose(form, onClose, t)} onOk={() => form.submit()}
       okText={editRecord ? t.common.update : t.news.addNew}
       cancelText={t.common.cancel}
-      okButtonProps={{ loading: submitting, style: { background: '#b06f2c', borderColor: '#b06f2c' } }}
+      confirmLoading={submitting} maskClosable={false}
       width={680} destroyOnClose
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-          <Form.Item name="type" label={t.news.formTypeLabel} rules={[{ required: true }]} style={{ flex: 1, marginBottom: 12 }}>
+          <Form.Item name="type" label={t.news.formTypeLabel} rules={[rules(t).select(t.news.formTypeLabel.toLowerCase())]} style={{ flex: 1, marginBottom: 12 }}>
             <Select size="large">
               <Select.Option value="event">📅  {t.news.typeEvent}</Select.Option>
               <Select.Option value="news">⚡  {t.news.typeNews}</Select.Option>
@@ -468,11 +640,11 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
 
         {currentType === 'event' && (
           <div style={{ display: 'flex', gap: 12 }}>
-            <Form.Item name="eventDate" label={t.news.formDateLabel} style={{ flex: 1 }}>
+            <Form.Item name="eventDate" label={t.news.formDateLabel} style={{ flex: 1 }} rules={[{ required: true, message: t.news.eventDateRequired }]}>
               <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
             </Form.Item>
-            <Form.Item name="eventTime" label={t.news.formTimeLabel} style={{ width: 110 }}>
-              <Input placeholder="08:00" />
+            <Form.Item name="eventTime" label={t.news.formTimeLabel} style={{ width: 120 }}>
+              <TimePicker format="HH:mm" minuteStep={5} needConfirm={false} placeholder="08:00" style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="eventLocation" label={t.news.formLocationLabel} style={{ flex: 2 }}>
               <Input />
@@ -484,8 +656,13 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
           <Upload
             listType="picture-card" maxCount={1}
             fileList={fileList}
+            accept="image/*"
             onChange={({ fileList: fl }) => setFileList(fl)}
-            beforeUpload={() => false}
+            beforeUpload={(file) => {
+              if (!file.type?.startsWith('image/')) { message.error(t.news.imageInvalidType); return Upload.LIST_IGNORE; }
+              if (file.size > MAX_IMAGE_MB * 1024 * 1024) { message.error(t.news.imageTooLarge.replace('{n}', MAX_IMAGE_MB)); return Upload.LIST_IGNORE; }
+              return false; // sent together with the form, not uploaded immediately
+            }}
           >
             {fileList.length === 0 && <div><UploadOutlined /><div style={{ marginTop: 6, fontSize: 12 }}>{t.news.formAddImage}</div></div>}
           </Upload>
@@ -493,6 +670,8 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
             <img src={imgSrc(editRecord.coverImage)} alt="" style={{ width: 100, borderRadius: 8, marginTop: 4 }} />
           )}
         </Form.Item>
+        {/* Enter in a single-line field submits; the OK button lives in the footer */}
+        <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
       </Form>
     </Modal>
   );
@@ -561,6 +740,8 @@ function PendingList({ posts, onApprove, onReject, emptyText, focusPostId, focus
 
 /* ─── Van Nien Calendar ──────────────────────────────────── */
 function EventCalendarView({ events, canEdit, onDblClickDate }) {
+  const { t } = useLanguage();
+  const CL = t.news.cal;
   const [calYear, setCalYear] = React.useState(dayjs().year());
   const [selectedDate, setSelectedDate] = React.useState(dayjs());
 
@@ -601,7 +782,7 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
       <div
         style={{ minHeight: 0, paddingTop: 1, position: 'relative', height: '100%' }}
         onDoubleClick={canEdit ? (e) => { e.stopPropagation(); onDblClickDate(date); } : undefined}
-        title={canEdit ? 'Double-click để thêm sự kiện' : undefined}
+        title={canEdit ? CL.dblClickHint : undefined}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0 }}>
           <span style={{ fontSize: 10, color: lunarColor, fontWeight: isRam || isMung1 ? 700 : 400, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', minWidth: 0 }}>
@@ -619,7 +800,7 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
             {e.title}
           </div>
         ))}
-        {evs.length > 1 && <div style={{ fontSize: 9, color: '#aaa' }}>+{evs.length - 1}</div>}
+        {evs.length > 1 && <div style={{ fontSize: 9, color: '#7a6a5c' }}>+{evs.length - 1}</div>}
         {canEdit && (
           <div className="cal-add-hint">+</div>
         )}
@@ -645,30 +826,30 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
             {sel.format('DD')}
           </div>
           <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>
-            Tháng {sel.format('MM')} năm {sel.format('YYYY')}
+            {CL.monthYear.replace('{m}', sel.format('MM')).replace('{y}', sel.format('YYYY'))}
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.25)', marginTop: 12, paddingTop: 10 }}>
-            <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Âm lịch</div>
+            <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>{CL.lunar}</div>
             <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1 }}>
               {selLunar.day < 10 ? `0${selLunar.day}` : selLunar.day}
               <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.8 }}> / {selLunar.month}{selLunar.leap ? ' ★' : ''}</span>
             </div>
-            <div style={{ fontSize: 12, opacity: 0.8, marginTop: 3 }}>Năm {selLunar.yearName}</div>
+            <div style={{ fontSize: 12, opacity: 0.8, marginTop: 3 }}>{CL.year} {selLunar.yearName}</div>
           </div>
         </div>
 
         {/* Can-Chi details */}
         <div style={{ background: '#fffdf9', border: '1px solid #f0e8df', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {[
-            { label: 'Tháng', value: selLunar.monthCanChi },
-            { label: 'Ngày',  value: selLunar.dayCanChi },
-            { label: 'Tiết',  value: selTiKhi },
-            { label: 'Trực',  value: selTruc.name, color: selTruc.hoangDao ? '#e67e22' : '#888',
-              badge: selTruc.hoangDao ? { text: 'Hoàng đạo', bg: '#fff7e6', color: '#d46b08' } : { text: 'Hắc đạo', bg: '#f5f5f5', color: '#888' }
+            { label: CL.month, value: selLunar.monthCanChi },
+            { label: CL.day,   value: selLunar.dayCanChi },
+            { label: CL.term,  value: selTiKhi },
+            { label: CL.truc,  value: selTruc.name, color: selTruc.hoangDao ? '#c2620a' : '#7a6a5c',
+              badge: selTruc.hoangDao ? { text: CL.hoangDao, bg: '#fff7e6', color: '#d46b08' } : { text: CL.hacDao, bg: '#f5f5f5', color: '#7a6a5c' }
             },
           ].map(r => (
             <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 12, color: '#aaa' }}>{r.label}</span>
+              <span style={{ fontSize: 12, color: '#7a6a5c' }}>{r.label}</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: r.color || '#5a3a22' }}>{r.value}</span>
             </div>
           ))}
@@ -676,21 +857,21 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
 
         {/* Giờ Hoàng Đạo */}
         <div style={{ background: '#fffaf4', border: '1px solid #f5e6cc', borderRadius: 12, padding: '10px 14px' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#e67e22', marginBottom: 8 }}>☀ Giờ Hoàng Đạo</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#e67e22', marginBottom: 8 }}>☀ {CL.hoangDaoHours}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
             {selHDHours.map(h => (
               <div key={h.chi} style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 6, padding: '2px 8px', fontSize: 11, color: '#d46b08', fontWeight: 600, textAlign: 'center' }}>
                 <div>{h.chi}</div>
-                <div style={{ fontSize: 10, color: '#aaa', fontWeight: 400 }}>{h.time}</div>
+                <div style={{ fontSize: 10, color: '#7a6a5c', fontWeight: 400 }}>{h.time}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Holidays / Events for selected day */}
-        {(selHoliday || selEvents.length > 0) && (
+        {(selHoliday || selEvents.length > 0 || canEdit) && (
           <div style={{ background: '#fff', border: '1px solid #f0e8df', borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#b06f2c', marginBottom: 2 }}>📅 Ngày này có</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#b06f2c', marginBottom: 2 }}>📅 {CL.thisDay}</div>
             {selHoliday?.names.map((n, i) => (
               <div key={i} style={{ fontSize: 12, color: selHoliday.major ? '#cf1322' : '#389e0d', fontWeight: 600 }}>
                 {selHoliday.major ? '★' : '▲'} {n}
@@ -703,24 +884,30 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
                 </div>
               </Tooltip>
             ))}
+            {!selHoliday && selEvents.length === 0 && <div style={{ fontSize: 12, color: '#7a6a5c' }}>{CL.nothingThisDay}</div>}
+            {canEdit && (
+              <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={() => onDblClickDate(sel)} style={{ marginTop: 4 }}>
+                {CL.addEventFor.replace('{d}', sel.format('DD/MM'))}
+              </Button>
+            )}
           </div>
         )}
 
         {/* Legend */}
         <div style={{ background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#bbb', marginBottom: 2, letterSpacing: 0.5 }}>CHÚ THÍCH</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#7a6a5c', marginBottom: 2, letterSpacing: 0.5, textTransform: 'uppercase' }}>{CL.legend}</div>
           {[
-            { dot: '#e67e22', label: 'Ngày hoàng đạo' },
-            { dot: '#bbb',    label: 'Ngày hắc đạo' },
-            { dot: '#c0392b', label: 'Rằm / Mùng 1' },
+            { dot: '#e67e22', label: CL.goodDay },
+            { dot: '#bbb',    label: CL.badDay },
+            { dot: '#c0392b', label: t.news.calendarLunar },
           ].map(l => (
             <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
               {DOT(l.dot)}<span style={{ color: '#555' }}>{l.label}</span>
             </div>
           ))}
-          <div style={{ fontSize: 12, color: '#cf1322' }}>★ Đại lễ Phật giáo</div>
-          <div style={{ fontSize: 12, color: '#389e0d' }}>▲ Ngày lễ thường</div>
-          <div style={{ fontSize: 12, color: '#1890ff' }}><CalendarOutlined /> Sự kiện chùa</div>
+          <div style={{ fontSize: 12, color: '#cf1322' }}>★ {t.news.calendarMajorHoliday}</div>
+          <div style={{ fontSize: 12, color: '#389e0d' }}>▲ {t.news.calendarHoliday}</div>
+          <div style={{ fontSize: 12, color: '#1677ff' }}><CalendarOutlined /> {t.news.calendarTempleEvent}</div>
         </div>
       </div>
 
@@ -743,7 +930,7 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
 
 /* ─── Main Page ───────────────────────────────────────────── */
 export default function NewsPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [calPrefillDate, setCalPrefillDate] = useState(null);
   const [calModalOpen, setCalModalOpen] = useState(false);
   const {
@@ -769,6 +956,10 @@ export default function NewsPage() {
     return () => clearTimeout(id);
   }, [location.key]);
   const focusPostId = params.get('post');
+  // ?create=1 (dashboard quick action) opens the composer straight away
+  useEffect(() => {
+    if (params.get('create') === '1' && canPost) openCreate();
+  }, [location.key]);
   const focusTab = params.get('tab');
   useEffect(() => {
     if (focusTab === 'pending' && canApprove) {
@@ -876,7 +1067,7 @@ export default function NewsPage() {
           </div>
           <div>
             <div style={{ color: '#5a3a22', fontWeight: 800, fontSize: 20, letterSpacing: 0.3 }}>{t.news.title}</div>
-            <div style={{ color: '#8c7a6b', fontSize: 13, marginTop: 3 }}>
+            <div style={{ color: '#7a6a5c', fontSize: 13, marginTop: 3 }}>
               {t.news.bannerSubtitle}
             </div>
           </div>
@@ -894,7 +1085,7 @@ export default function NewsPage() {
       </div>
 
       {/* ── 2 cột: Feed + Sidebar ── */}
-      <div className="news-layout section-anim section-d1">
+      <div className={`news-layout section-anim section-d1${showSidebar ? ' has-rail' : activeTab !== 'calendar' ? ' is-centered' : ''}`}>
 
         {/* ── CỘT TRÁI: Feed ── */}
         <div className="news-feed-col">
@@ -909,7 +1100,7 @@ export default function NewsPage() {
               <div className="news-toolbar__filters">
                 <Input
                   className="news-search"
-                  prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
+                  prefix={<SearchOutlined style={{ color: '#7a6a5c' }} />}
                   placeholder={t.news.searchPlaceholder}
                   value={searchText}
                   onChange={e => setSearchText(e.target.value)}
@@ -949,7 +1140,7 @@ export default function NewsPage() {
                     <div key={ev.id} className="news-widget-item">
                       <div className="news-widget-date">
                         <strong>{dayjs(ev.eventDate).format('DD')}</strong>
-                        <span>{dayjs(ev.eventDate).format('MMM')}</span>
+                        <span>{shortMonth(ev.eventDate, lang)}</span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="news-widget-item__title">{ev.title}</div>

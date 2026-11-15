@@ -12,6 +12,9 @@ import {
 import api from '../../api/axios';
 import { useDepartmentPage, getDeptTheme } from './useDepartmentPage';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { HiddenSubmit } from '../Personnel/PersonnelForm';
+import { positionLabel } from '../Personnel/personnelShared';
 import './DepartmentPage.css';
 
 const ICONS = {
@@ -122,6 +125,7 @@ export default function DepartmentPage() {
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
+  const R = makeRules(t);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -156,15 +160,15 @@ export default function DepartmentPage() {
     try {
       if (editRecord) {
         await api.put(`/departments/${editRecord.id}`, payload);
-        message.success('Cập nhật thành công');
+        message.success(t.department.updateSuccess);
       } else {
         await api.post('/departments', payload);
-        message.success('Thêm ban thành công');
+        message.success(t.department.addSuccess);
       }
       setModalOpen(false);
       fetchData();
     } catch (error) {
-      message.error(error.response?.data?.message || 'Có lỗi xảy ra');
+      message.error(error.response?.data?.message || t.common.error);
     } finally {
       setSaving(false);
     }
@@ -255,6 +259,7 @@ export default function DepartmentPage() {
               {drawerDept.description && <p className="dept-drawer__desc">{drawerDept.description}</p>}
               {canEdit && (
                 <Button size="small" icon={<EditOutlined />} onClick={() => { const d = drawerDept; setDrawerDept(null); openModal(d); }} style={{ marginTop: 12 }}>
+          <HiddenSubmit />
                   {t.common.edit}
                 </Button>
               )}
@@ -286,7 +291,7 @@ export default function DepartmentPage() {
                       </div>
                       {m.position && (
                         <span className="dept-member__role" style={{ background: drawerTheme.soft, color: drawerTheme.accent }}>
-                          {m.position.replace(/_/g, ' ')}
+                          {positionLabel(t, m.position)}
                         </span>
                       )}
                     </li>
@@ -302,7 +307,8 @@ export default function DepartmentPage() {
       <Modal
         title={editRecord ? t.department.editTitle : t.department.addTitle}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => guardedClose(form, () => setModalOpen(false), t)}
+        maskClosable={false}
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
@@ -310,10 +316,11 @@ export default function DepartmentPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false} style={{ marginTop: 12 }}>
-          <Form.Item name="name" label={t.department.colName} rules={[{ required: true, message: t.department.colName }]}>
-            <Input placeholder="VD: Ban Hộ Tự" />
+          <HiddenSubmit />
+          <Form.Item name="name" label={t.department.colName} rules={[{ ...R.required(t.department.colName.toLowerCase()), whitespace: true }]}>
+            <Input placeholder={t.department.namePlaceholder} autoFocus />
           </Form.Item>
-          <Form.Item name="code" label={t.department.colCode} rules={[{ required: true, message: 'Nhập mã ban' }]}>
+          <Form.Item name="code" label={t.department.colCode} rules={[{ ...R.required(t.department.colCode.toLowerCase()), whitespace: true }, { pattern: /^\s*[A-Za-z0-9_-]+\s*$/, message: t.department.codeFormat }]}>
             <Input placeholder={t.department.codePlaceholder} style={{ textTransform: 'uppercase', fontFamily: 'monospace' }} />
           </Form.Item>
           <Form.Item name="description" label={t.common.description}>

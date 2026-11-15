@@ -284,7 +284,7 @@ export default function Login() {
   useEffect(() => {
     if (sessionStorage.getItem('logoutReason') === 'idle') {
       sessionStorage.removeItem('logoutReason');
-      message.warning('Phiên làm việc đã hết hạn do không hoạt động. Vui lòng đăng nhập lại.', 6);
+      message.warning(t.login.idleLoggedOut, 6);
     }
   }, []);
 
@@ -362,7 +362,7 @@ export default function Login() {
                   style={{ marginBottom: 16 }}
                   rules={[{ required: true, message: t.login.usernameRequired }]}
                 >
-                  <Input className="lg-input" prefix={<UserOutlined />} placeholder="Nhập tên đăng nhập" autoComplete="username" />
+                  <Input className="lg-input" prefix={<UserOutlined />} placeholder={t.login.usernamePlaceholder} autoComplete="username" />
                 </Form.Item>
 
                 <Form.Item
@@ -371,11 +371,11 @@ export default function Login() {
                   style={{ marginBottom: 26 }}
                   rules={[{ required: true, message: t.login.passwordRequired }]}
                 >
-                  <Input.Password className="lg-input" prefix={<LockOutlined />} placeholder="Nhập mật khẩu" autoComplete="current-password" />
+                  <Input.Password className="lg-input" prefix={<LockOutlined />} placeholder={t.login.passwordPlaceholder} autoComplete="current-password" />
                 </Form.Item>
 
                 <Button type="primary" htmlType="submit" block loading={loading} className="lg-btn">
-                  {t.login.submitButton}
+                  {t.login.signIn || t.login.submitButton}
                 </Button>
               </Form>
 

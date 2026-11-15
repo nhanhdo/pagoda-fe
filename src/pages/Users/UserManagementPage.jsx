@@ -18,6 +18,7 @@ import api from '../../api/axios';
 import { useUserManagementPage, ROLE_CONFIG, ROLE_ORDER } from './useUserManagementPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { guardedClose } from '../../utils/formGuard';
 import './UserManagementPage.css';
 
 dayjs.extend(relativeTime);
@@ -49,6 +50,7 @@ function ResetPasswordModal({ open, user, onClose }) {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async ({ newPassword }) => {
+    if (loading) return;
     setLoading(true);
     try {
       await api.put(`/users/${user.id}/reset-password`, { newPassword });
@@ -74,11 +76,12 @@ function ResetPasswordModal({ open, user, onClose }) {
         </div>
       }
       open={open}
-      onCancel={() => { form.resetFields(); onClose(); }}
+      onCancel={() => guardedClose(form, () => { form.resetFields(); onClose(); }, t)}
+      maskClosable={false}
       onOk={() => form.submit()}
       okText={U.resetPassword}
       cancelText={t.common.cancel}
-      okButtonProps={{ loading }}
+      confirmLoading={loading}
       destroyOnClose
       width={440}
     >
@@ -144,6 +147,7 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
   const handleSubmit = async (values) => {
     const payload = { ...values };
     if (isSelf) { delete payload.isActive; delete payload.role; }
+    if (loading) return;
     setLoading(true);
     try {
       if (editRecord) {
@@ -171,11 +175,12 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
         </div>
       }
       open={open}
-      onCancel={onClose}
+      onCancel={() => guardedClose(form, onClose, t)}
+      maskClosable={false}
       onOk={() => form.submit()}
       okText={editRecord ? t.common.update : U.addNew}
       cancelText={t.common.cancel}
-      okButtonProps={{ loading }}
+      confirmLoading={loading}
       width={520}
       destroyOnClose
     >
@@ -276,7 +281,7 @@ export default function UserManagementPage() {
     { label: U.totalAccounts,  value: users.length, icon: <UserOutlined />, tone: { c: '#c47f36', s: '#fbf1e4' },
       hint: U.unlinkedCount.replace('{n}', users.filter(u => !u.personnelId).length) },
     { label: U.activeAccounts, value: users.filter(u => u.isActive).length, icon: <CheckCircleOutlined />, tone: { c: '#4f9a72', s: '#e8f4ed' },
-      hint: U.recentLogin.replace('{n}', users.filter(u => u.lastLogin && dayjs(u.lastLogin).isAfter(monthAgo)).length) },
+      hint: `${U.onlineCount.replace('{n}', users.filter(u => u.online).length)} · ${U.recentLogin.replace('{n}', users.filter(u => u.lastLogin && dayjs(u.lastLogin).isAfter(monthAgo)).length)}` },
     { label: U.lockedAccounts, value: users.filter(u => !u.isActive).length, icon: <StopOutlined />, tone: { c: '#8c7a6b', s: '#f2ede6' } },
     { label: U.adminAccounts,  value: users.filter(u => u.role === 'admin').length, icon: <CrownOutlined />, tone: { c: '#d9646c', s: '#fdeeee' } },
   ];
@@ -292,9 +297,13 @@ export default function UserManagementPage() {
         const isMe = r.id === me?.id;
         return (
           <div className="person-cell">
-            <Avatar size={40} className="person-cell__avatar" style={{ background: tone.s, color: tone.c }}>
-              {r.username.charAt(0).toUpperCase()}
-            </Avatar>
+            <Tooltip title={r.online ? U.onlineNow : null}>
+              <span className={`um-presence${r.online ? ' is-online' : ''}`} aria-label={r.online ? U.onlineNow : undefined}>
+                <Avatar size={40} className="person-cell__avatar" style={{ background: tone.s, color: tone.c }}>
+                  {r.username.charAt(0).toUpperCase()}
+                </Avatar>
+              </span>
+            </Tooltip>
             <div className="person-cell__text">
               <div className="person-cell__name">
                 <span className="um-username">@{r.username}</span>
@@ -494,7 +503,7 @@ export default function UserManagementPage() {
         users={users}
         currentUserId={me?.id}
         onClose={() => setModalOpen(false)}
-        onSaved={fetchUsers}
+        onSaved={() => fetchUsers()}
       />
 
       <ResetPasswordModal

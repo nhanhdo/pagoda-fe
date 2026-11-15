@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -47,8 +47,11 @@ export function useDashboard() {
   const [dutyToday, setDutyToday]   = useState([] as DutyRecord[]);
   const [upcomingEvents, setUpcomingEvents] = useState([] as any[]);
   const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(false);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(false);
     Promise.all([
       api.get('/dashboard/stats'),
       api.get('/dashboard/duty-today'),
@@ -57,13 +60,16 @@ export function useDashboard() {
       setStats(statsRes.data);
       setDutyToday(dutyRes.data);
       setUpcomingEvents(eventsRes.data);
-    }).finally(() => setLoading(false));
+    }).catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { reload(); }, [reload]);
 
   const displayName =
     (user as any)?.personnel?.dharmName ||
     (user as any)?.personnel?.fullName ||
     (user as any)?.username;
 
-  return { stats, dutyToday, upcomingEvents, loading, displayName };
+  return { stats, dutyToday, upcomingEvents, loading, error, reload, displayName };
 }

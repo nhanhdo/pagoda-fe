@@ -21,17 +21,25 @@ export function useUserManagementPage(t: any) {
   const [editRecord, setEditRecord] = useState<any>(null);
   const U = t?.users || {};
 
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
+  const fetchUsers = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const resp: any = await api.get('/users');
       setUsers(resp.data);
     } catch {
-      message.error(U.loadError || 'Không thể tải danh sách tài khoản');
+      if (!silent) message.error(U.loadError || 'Không thể tải danh sách tài khoản');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
+
+  // Keep the online indicators fresh (quietly, only while the tab is visible)
+  useEffect(() => {
+    const tick = () => { if (!document.hidden) fetchUsers(true); };
+    const id = setInterval(tick, 30000);
+    document.addEventListener('visibilitychange', tick);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', tick); };
+  }, [fetchUsers]);
 
   useEffect(() => {
     fetchUsers();

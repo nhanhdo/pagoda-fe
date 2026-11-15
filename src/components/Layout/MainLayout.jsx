@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Layout, Dropdown, Space, Typography, Modal, Form, Input,
   Descriptions, Tag, message, Select, Grid, Drawer,
-  Badge, Popover, Button, Empty,
+  Badge, Popover, Button, Empty, Tooltip, Skeleton,
 } from 'antd';
 import {
   AppstoreFilled, TeamOutlined, CalendarFilled, CheckSquareFilled,
@@ -13,9 +13,11 @@ import {
   BellOutlined, SafetyCertificateFilled, DollarCircleOutlined, DownOutlined, CheckOutlined, CloudServerOutlined, AccountBookOutlined, FireOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import DharmaWheel from '../DharmaWheel/DharmaWheel';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getBuddhistHolidays } from '../../utils/lunarCalendar';
+import { guardedClose, rules } from '../../utils/formGuard';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -190,48 +192,77 @@ function NotificationBell() {
       const items = [];
       const today = new Date();
       const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const todayStr = ymd(today);
-
-      // 1. Overdue work assignments
+      const who = (p, u) => p?.dharmName || p?.fullName || u?.username || '—';
+      let summary = null;
       try {
-        const res = await api.get('/work-assignments');
-        const tasks = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
-        const overdue = tasks.filter(t =>
-          t.endDate && t.endDate < todayStr &&
-          t.status !== 'hoàn_thành' && t.status !== 'hủy'
-        );
-        overdue.forEach(task => items.push({
+        const res = await api.get('/notifications/summary');
+        summary = res.data || {};
+      } catch { /* keep the previous list on network errors */ }
+
+      if (summary) {
+        // 1. Overdue work assignments
+        (summary.overdueTasks || []).forEach(task => items.push({
           id: `task-${task.id}`,
           type: 'overdue_task',
           icon: '⚠️',
           title: task.title,
-          subtitle: `${t.layout.inCharge}: ${task.personnel?.dharmName || task.personnel?.fullName || '—'}`,
+          subtitle: `${t.layout.inCharge}: ${who(task.personnel)}`,
           time: t.layout.overdue,
+          link: '/app/work-assignment',
         }));
-      } catch { /* silent */ }
 
-      // 2. Today's duties
-      try {
-        const res = await api.get(`/duty-schedules?startDate=${todayStr}&endDate=${todayStr}`);
-        const duties = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
-        duties.forEach(d => {
-          const timeLabel = d.startTime && d.endTime
-            ? `${d.startTime} – ${d.endTime}`
-            : d.startTime
-              ? `${d.startTime}`
-              : t.layout.today;
+        // 2. Today's duties
+        (summary.todayDuties || []).forEach(d => items.push({
+          id: `duty-${d.id}`,
+          type: 'today_duty',
+          icon: '📅',
+          title: t.dutySchedule?.dutyTypes?.[d.dutyType] || d.dutyType?.replace(/_/g, ' ') || t.layout.dutyFallback,
+          subtitle: `${t.layout.shiftPrefix} ${t.dutySchedule?.shifts?.[d.shift] || d.shift || '—'} · ${who(d.personnel)}`,
+          time: d.startTime && d.endTime ? `${d.startTime} – ${d.endTime}` : d.startTime || t.layout.today,
+          link: '/app/duty-schedule',
+        }));
+
+        // 4a. Expense vouchers waiting for admin approval
+        (summary.pendingExpenses || []).forEach(e => items.push({
+          id: `pending-expense-${e.id}`,
+          type: 'pending_expense',
+          icon: '🧾',
+          title: `${e.code} · ${Math.round(Number(e.amount) || 0).toLocaleString('vi-VN')} ₫`,
+          subtitle: [e.fund?.name, e.payee || e.description, e.creator && who(e.creator.personnel, e.creator)].filter(Boolean).join(' · '),
+          time: e.createdAt ? relTime(e.createdAt, t) : '',
+          link: `/app/finance?tab=expenses&expense=${e.id}`,
+        }));
+
+        // 4. Posts waiting for approval
+        (summary.pendingPosts || []).forEach(post => items.push({
+          id: `pending-post-${post.id}`,
+          type: 'pending_post',
+          icon: '📝',
+          title: post.title,
+          subtitle: `${t.layout.postedBy}: ${who(post.author, post.userAuthor)}`,
+          time: post.createdAt ? relTime(post.createdAt, t) : t.layout.pendingReview,
+          link: `/app/news?tab=pending&post=${post.id}`,
+        }));
+
+        // 5. New comments from others on posts I wrote or joined
+        (summary.comments || []).forEach(c => {
+          const text = String(c.content || '').replace(/\s+/g, ' ');
           items.push({
-            id: `duty-${d.id}`,
-            type: 'today_duty',
-            icon: '📅',
-            title: d.dutyType?.replace(/_/g, ' ') || t.layout.dutyFallback,
-            subtitle: `${t.layout.shiftPrefix} ${d.shift || '—'} · ${d.personnel?.dharmName || d.personnel?.fullName || '—'}`,
-            time: timeLabel,
+            id: `comment-${c.id}`,
+            type: 'new_comment',
+            icon: '💬',
+            title: `${who(c.commentAuthor, c.commentUser)} ${c.replyToMe ? t.layout.repliedToYou : c.onMyPost ? t.layout.commentedOnYourPost : t.layout.alsoCommented}`,
+            subtitle: `“${text.length > 80 ? `${text.slice(0, 80)}…` : text}” · ${c.post?.title || ''}`,
+            time: relTime(c.createdAt, t),
+            link: `/app/news?post=${c.postId}`,
           });
         });
-      } catch { /* silent */ }
+      } else {
+        // Request failed: keep whatever was shown before (minus holidays, re-added below)
+        notifsRef.current.filter(n => n.type !== 'holiday').forEach(n => items.push(n));
+      }
 
-      // 3. Buddhist holidays in next 7 days (may cross into next year)
+      // 3. Buddhist holidays in the next 7 days (client-side, may cross into next year)
       try {
         const holidayMaps = {};
         for (let i = 0; i <= 7; i++) {
@@ -252,58 +283,6 @@ function NotificationBell() {
             }));
           }
         }
-      } catch { /* silent */ }
-
-      // 4a. Expense vouchers waiting for admin approval
-      if (isAdmin()) {
-        try {
-          const res = await api.get('/expenses', { params: { status: 'chờ_duyệt', limit: 30 } });
-          (res.data?.data || []).forEach(e => items.push({
-            id: `pending-expense-${e.id}`,
-            type: 'pending_expense',
-            icon: '🧾',
-            title: `${e.code} · ${Math.round(Number(e.amount) || 0).toLocaleString('vi-VN')} ₫`,
-            subtitle: [e.fund?.name, e.payee || e.description, e.creator?.personnel?.dharmName || e.creator?.personnel?.fullName || e.creator?.username].filter(Boolean).join(' · '),
-            time: e.createdAt ? relTime(e.createdAt, t) : '',
-            link: `/app/finance?tab=expenses&expense=${e.id}`,
-          }));
-        } catch { /* silent */ }
-      }
-
-      // 4. Pending posts for approval (admin / truotri / thuki only)
-      if (canApprove) {
-        try {
-          const res = await api.get('/posts/pending?limit=50');
-          const pending = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
-          pending.forEach(post => items.push({
-            id: `pending-post-${post._id || post.id}`,
-            type: 'pending_post',
-            icon: '📝',
-            title: post.title,
-            subtitle: `${t.layout.postedBy}: ${post.author?.dharmName || post.author?.fullName || post.userAuthor?.username || '—'}`,
-            time: post.createdAt ? relTime(post.createdAt, t) : t.layout.pendingReview,
-            link: `/app/news?tab=pending&post=${post._id || post.id}`,
-          }));
-        } catch { /* silent */ }
-      }
-
-      // 5. New comments from others on posts I wrote or joined
-      try {
-        const res = await api.get('/posts/comments/recent', { params: { limit: 20, days: 7 } });
-        const list = Array.isArray(res.data) ? res.data : [];
-        list.forEach(c => {
-          const who = c.commentAuthor?.dharmName || c.commentAuthor?.fullName || c.commentUser?.username || '—';
-          const text = String(c.content || '').replace(/\s+/g, ' ');
-          items.push({
-            id: `comment-${c.id}`,
-            type: 'new_comment',
-            icon: '💬',
-            title: `${who} ${c.onMyPost ? t.layout.commentedOnYourPost : t.layout.alsoCommented}`,
-            subtitle: `“${text.length > 60 ? `${text.slice(0, 60)}…` : text}” · ${c.post?.title || ''}`,
-            time: relTime(c.createdAt, t),
-            link: `/app/news?post=${c.postId}`,
-          });
-        });
       } catch { /* silent */ }
 
       inFlight = false;
@@ -328,7 +307,8 @@ function NotificationBell() {
 
     loadRef.current = load;
     load();
-    const id = setInterval(load, 3000);
+    // Every 20s while the window is visible and focused; refresh immediately on focus/open.
+    const id = setInterval(() => { if (!document.hidden && document.hasFocus()) load(); }, 20000);
     const onVisible = () => { if (!document.hidden) load(); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
@@ -381,7 +361,7 @@ function NotificationBell() {
         <button
           type="button"
           className={`hdr-icon-btn${open ? ' is-open' : ''}${ringing ? ' is-ringing' : ''}`}
-          aria-label="notifications"
+          aria-label={t.layout.notifications}
           onAnimationEnd={() => setRinging(false)}
         >
           <BellOutlined />
@@ -409,10 +389,11 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
         }
         const sel = selectedKey === item.key;
         const hov = hovered === item.key;
-        return (
+        const node = (
           <div
             key={item.key}
             role="menuitem"
+            aria-label={item.label}
             tabIndex={0}
             aria-current={sel ? 'page' : undefined}
             onClick={() => onSelect(item.key)}
@@ -477,6 +458,9 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
             )}
           </div>
         );
+        return collapsed
+          ? <Tooltip key={item.key} title={item.label} placement="right">{node}</Tooltip>
+          : node;
       })}
     </nav>
   );
@@ -527,6 +511,7 @@ export default function MainLayout() {
     '/app/training':           { label: t.layout.pageTitle.training,          icon: <BookFilled /> },
     '/app/buddhist-followers': { label: t.layout.pageTitle.buddhistFollowers, icon: <HeartFilled /> },
     '/app/ceremonies':         { label: t.layout.pageTitle.ceremonies,        icon: <FireOutlined /> },
+    '/app/library':            { label: t.layout.pageTitle.library,           icon: <DharmaWheel size="1em" /> },
     '/app/donations':          { label: t.layout.pageTitle.donations,          icon: <DollarCircleOutlined /> },
     '/app/finance':            { label: t.layout.pageTitle.finance,            icon: <AccountBookOutlined /> },
     '/app/reward-discipline':  { label: t.layout.pageTitle.rewardDiscipline,  icon: <TrophyFilled /> },
@@ -539,12 +524,14 @@ export default function MainLayout() {
     if (isMobile || isTablet) setCollapsed(true);
   }, [isMobile, isTablet]);
 
+  // Sub-pages (e.g. /app/library/5, /app/personnel/4) belong to their section's menu item and title
+  const sectionPath = location.pathname.split('/').slice(0, 3).join('/');
   useEffect(() => {
-    const name = PAGE_TITLES[location.pathname]?.label || t.layout.defaultPageTitle;
+    const name = PAGE_TITLES[sectionPath]?.label || t.layout.defaultPageTitle;
     document.title = `${name} — ${t.app.siteName}`;
-  }, [location.pathname, t]);
+  }, [sectionPath, t]);
 
-  const currentPage = PAGE_TITLES[location.pathname];
+  const currentPage = PAGE_TITLES[sectionPath];
 
   const showFullLabel = isMobile || !collapsed;
 
@@ -557,7 +544,8 @@ export default function MainLayout() {
     { key: '/app/training',           icon: <BookFilled />,           label: t.nav.training },
     { key: '/app/buddhist-followers', icon: <HeartFilled />,          label: t.nav.buddhistFollowers },
     { key: '/app/ceremonies',         icon: <FireOutlined />,         label: t.nav.ceremonies },
-    ...(['admin', 'thuki'].includes(user?.role) ? [
+    { key: '/app/library',            icon: <span className="anticon"><DharmaWheel size="1em" /></span>, label: t.nav.library },
+    ...(['admin', 'truotri', 'thuki'].includes(user?.role) ? [
       { key: '/app/donations', icon: <DollarCircleOutlined />, label: t.nav.donations },
     ] : []),
     ...(['admin', 'truotri', 'thuki'].includes(user?.role) ? [
@@ -582,11 +570,12 @@ export default function MainLayout() {
   const handleUserMenu = async ({ key }) => {
     if (key === 'logout') { logout(); return; }
     if (key === 'profile') {
+      setProfileData(null);
+      setProfileOpen(true);
       try {
         const res = await api.get('/auth/me');
         setProfileData(res.data);
       } catch { setProfileData(user); }
-      setProfileOpen(true);
     }
     if (key === 'change-password') {
       changePassForm.resetFields();
@@ -620,6 +609,10 @@ export default function MainLayout() {
   const sidebarContent = (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={t.layout.goHome}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLogoClick(); } }}
         style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid #f0e6d8', cursor: 'pointer', gap: 10 }}
         onClick={handleLogoClick}
       >
@@ -650,7 +643,7 @@ export default function MainLayout() {
 
       <SidebarMenu
         items={menuItems}
-        selectedKey={location.pathname}
+        selectedKey={sectionPath}
         onSelect={goTo}
         collapsed={collapsed && !isMobile}
       />
@@ -747,8 +740,17 @@ export default function MainLayout() {
             }} />
           </div>
 
-          <div onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 18, cursor: 'pointer', color: '#5a3a22', padding: '0 8px' }}>
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          <div className="hdr-left">
+            <button
+              type="button"
+              className="hdr-toggle"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? t.layout.expandMenu : t.layout.collapseMenu}
+              aria-expanded={!collapsed}
+            >
+              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            </button>
+            {currentPage && <span className="hdr-page-compact">{currentPage.label}</span>}
           </div>
 
           {currentPage && !isPhone && (
@@ -854,45 +856,46 @@ export default function MainLayout() {
 
       <Modal open={profileOpen} onCancel={() => setProfileOpen(false)} footer={null}
         title={<span style={{ color: '#5a3a22', fontWeight: 700 }}>{t.auth.profile}</span>} width={480}>
+        {!profileData && <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 12 }} />}
         {profileData && (
           <Descriptions column={1} bordered size="small" style={{ marginTop: 8 }}>
             <Descriptions.Item label={t.auth.username}><strong>{profileData.username}</strong></Descriptions.Item>
             <Descriptions.Item label={t.users.colRole}>
-              <Tag color={profileData.role === 'admin' ? 'red' : profileData.role === 'truotri' ? 'purple' : 'blue'}>
+              <span className="tbl-pill" style={{ color: '#a2652a', background: '#fbf1e4' }}>
                 {t.roles[profileData.role] || profileData.role}
-              </Tag>
+              </span>
             </Descriptions.Item>
             {profileData.personnel && <>
               <Descriptions.Item label={t.common.dharmName}>{profileData.personnel.dharmName || '—'}</Descriptions.Item>
               <Descriptions.Item label={t.common.name}>{profileData.personnel.fullName || '—'}</Descriptions.Item>
               <Descriptions.Item label={t.common.email}>{profileData.personnel.email || '—'}</Descriptions.Item>
               <Descriptions.Item label={t.personnel.colPhone}>{profileData.personnel.phone || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.colPosition}>{profileData.personnel.position || '—'}</Descriptions.Item>
+              <Descriptions.Item label={t.personnel.colPosition}>{profileData.personnel.position ? (t.personnel.positions?.[profileData.personnel.position] || profileData.personnel.position.replace(/_/g, ' ')) : '—'}</Descriptions.Item>
             </>}
             <Descriptions.Item label={t.common.status}>
-              <Tag color={profileData.isActive ? 'green' : 'red'}>
-                {profileData.isActive ? t.users.active : t.users.locked}
-              </Tag>
+              <span className="tbl-pill" style={profileData.isActive ? { color: '#3f8461', background: '#e8f4ed' } : { color: '#c4545d', background: '#fdeeee' }}>
+                <span className="tbl-pill__dot" />{profileData.isActive ? t.users.active : t.users.locked}
+              </span>
             </Descriptions.Item>
           </Descriptions>
         )}
       </Modal>
 
-      <Modal open={changePassOpen} onCancel={() => setChangePassOpen(false)} onOk={() => changePassForm.submit()}
-        okText={t.common.confirm} cancelText={t.common.cancel}
-        okButtonProps={{ loading: changePassLoading, style: { background: '#c47f36', borderColor: '#c47f36' } }}
+      <Modal open={changePassOpen} onCancel={() => guardedClose(changePassForm, () => setChangePassOpen(false), t)} onOk={() => changePassForm.submit()}
+        okText={t.common.confirm} cancelText={t.common.cancel} maskClosable={false} destroyOnClose
+        confirmLoading={changePassLoading}
         title={<span style={{ color: '#5a3a22', fontWeight: 700 }}>{t.auth.changePassword}</span>} width={400}>
-        <Form form={changePassForm} layout="vertical" onFinish={handleChangePassword} style={{ marginTop: 16 }}>
-          <Form.Item name="oldPassword" label={t.auth.oldPassword} rules={[{ required: true, message: `${t.auth.oldPassword}` }]}>
-            <Input.Password />
+        <Form form={changePassForm} layout="vertical" onFinish={handleChangePassword} style={{ marginTop: 16 }} requiredMark={false}>
+          <Form.Item name="oldPassword" label={t.auth.oldPassword} rules={[rules(t).required(t.auth.oldPassword.toLowerCase())]}>
+            <Input.Password autoComplete="current-password" autoFocus />
           </Form.Item>
           <Form.Item name="newPassword" label={t.auth.newPassword}
-            rules={[{ required: true }, { min: 6, message: t.auth.passwordMinLength }]}>
-            <Input.Password />
+            rules={[rules(t).required(t.auth.newPassword.toLowerCase()), { min: 6, message: t.auth.passwordMinLength }]}>
+            <Input.Password autoComplete="new-password" />
           </Form.Item>
           <Form.Item name="confirmPassword" label={t.auth.confirmPassword} dependencies={['newPassword']}
             rules={[
-              { required: true },
+              rules(t).required(t.auth.confirmPassword.toLowerCase()),
               ({ getFieldValue }) => ({
                 validator(_, value) {
                   if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
@@ -900,8 +903,10 @@ export default function MainLayout() {
                 },
               }),
             ]}>
-            <Input.Password />
+            <Input.Password autoComplete="new-password" />
           </Form.Item>
+          {/* Lets Enter submit even though the OK button lives in the modal footer */}
+          <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
         </Form>
       </Modal>
     </Layout>

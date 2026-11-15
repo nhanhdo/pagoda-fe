@@ -8,7 +8,8 @@ import {
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
-import { STATUS_TONE, displayName } from './ceremonyShared';
+import { STATUS_TONE, displayName, fetchFollowersCached } from './ceremonyShared';
+import { guardedClose } from '../../utils/formGuard';
 
 function TabletModal({ C, t, open, record, preset, areas, followers, onClose, onSaved }) {
   const [form] = Form.useForm();
@@ -38,7 +39,7 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
 
   return (
     <Modal
-      open={open} onCancel={onClose} onOk={() => form.submit()} confirmLoading={saving} width={640} destroyOnClose
+      open={open} onCancel={() => guardedClose(form, onClose, t)} maskClosable={false} onOk={() => form.submit()} confirmLoading={saving} width={640} destroyOnClose
       title={record ? `${C.editTablet} · ${record.code}` : C.addTablet}
       okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
     >
@@ -107,12 +108,12 @@ function LayoutView({ C, layout, canWrite, onAdd, onOpen }) {
               <span>{a.tablets.length} {C.tabletUnit}</span>
             </header>
             <div className="cer-area__scroll">
-              <div className="cer-grid-slots" style={{ gridTemplateColumns: `36px repeat(${slots}, minmax(54px, 1fr))` }}>
-                <span />
+              <div className="cer-grid-slots" style={{ gridTemplateColumns: `58px repeat(${slots}, minmax(54px, 1fr))` }}>
+                <span className="cer-axis">{C.fields.slotNo}</span>
                 {Array.from({ length: slots }, (_, i) => <span key={`h${i}`} className="cer-axis">{i + 1}</span>)}
                 {Array.from({ length: rows }, (_, r) => (
                   <React.Fragment key={`r${r}`}>
-                    <span className="cer-axis">H{r + 1}</span>
+                    <span className="cer-axis" title={`${C.fields.rowNo} ${r + 1}`}>{C.fields.rowNo} {r + 1}</span>
                     {Array.from({ length: slots }, (_, s) => {
                       const tb = byPos.get(`${r + 1}-${s + 1}`);
                       if (tb) {
@@ -123,7 +124,7 @@ function LayoutView({ C, layout, canWrite, onAdd, onOpen }) {
                         );
                       }
                       return canWrite ? (
-                        <button type="button" key={`${r}-${s}`} className="cer-slot" onClick={() => onAdd({ area: a.area, rowNo: r + 1, slotNo: s + 1 })} aria-label={`${a.area} H${r + 1} S${s + 1}`}>
+                        <button type="button" key={`${r}-${s}`} className="cer-slot" onClick={() => onAdd({ area: a.area, rowNo: r + 1, slotNo: s + 1 })} aria-label={`${a.area} · ${C.fields.rowNo} ${r + 1} · ${C.fields.slotNo} ${s + 1}`}>
                           <PlusOutlined />
                         </button>
                       ) : <span key={`${r}-${s}`} className="cer-slot is-empty" />;
@@ -167,7 +168,7 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
   }, [search, status, C.loadError]);
 
   useEffect(() => { const id = setTimeout(load, search ? 300 : 0); return () => clearTimeout(id); }, [load]);
-  useEffect(() => { api.get('/buddhist-followers', { params: { page: 1, limit: 1000 } }).then(r => setFollowers(r.data.data || [])).catch(() => {}); }, []);
+  useEffect(() => { fetchFollowersCached().then(setFollowers); }, []);
   useEffect(() => { if (createSignal !== firstSignal.current) setModal({ open: true, record: null, preset: null }); }, [createSignal]);
 
   const areas = layout.areas.map(a => a.area);
@@ -205,7 +206,7 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
         </div>
       ),
     },
-    { title: C.cols.position, key: 'pos', width: 190, render: (_, r) => <span className="cer-pos"><strong>{r.area}</strong> · H{r.rowNo} · S{r.slotNo}</span> },
+    { title: C.cols.position, key: 'pos', width: 190, render: (_, r) => <span className="cer-pos"><strong>{r.area}</strong> · {C.fields.rowNo} {r.rowNo} · {C.fields.slotNo} {r.slotNo}</span> },
     { title: C.cols.deathLunar, key: 'dl', width: 120, render: (_, r) => (r.deathLunarDay && r.deathLunarMonth ? `${r.deathLunarDay}/${r.deathLunarMonth} ${C.lunarShort}` : <span className="tbl-muted">—</span>) },
     { title: C.cols.worshipper, key: 'w', width: 200, render: (_, r) => (r.worshipperName ? <span>{r.worshipperName}{r.worshipperPhone && <span className="tbl-muted"> · {r.worshipperPhone}</span>}</span> : <span className="tbl-muted">—</span>) },
     { title: C.cols.status, dataIndex: 'status', width: 140, render: (v) => <span className="tbl-pill" style={{ color: STATUS_TONE[v].c, background: STATUS_TONE[v].s }}><span className="tbl-pill__dot" />{C.statuses[v]}</span> },

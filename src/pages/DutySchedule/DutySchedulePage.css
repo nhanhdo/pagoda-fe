@@ -206,3 +206,8 @@
   .dc-event__dot, .dc-event__name, .dc-event__time { display: none; }
   .dc-more { padding: 0; text-align: center; font-size: 10px; }
 }
+
+/* ─── Table view (redesign) ─── */
+.duty-toolbar--calendar { margin-bottom: 14px; }
+.personnel-table .ant-table-tbody > tr.duty-row--today > td { background: #f6fbf8; }
+.personnel-table .ant-table-tbody > tr.duty-row--today > td:first-child { box-shadow: inset 3px 0 0 #4f9a72; }

@@ -1,46 +1,25 @@
+import { useCreateParam } from '../../utils/useCreateParam';
 import React, { useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
-  Table, Button, Input, Select, Space, Card, Modal,
-  Avatar, Popconfirm, Tooltip, Badge, Pagination,
+  Table, Button, Input, Select, Avatar, Popconfirm, Tooltip, Pagination, Segmented,
 } from 'antd';
 import {
   PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
-  EyeOutlined, FileExcelOutlined, TableOutlined, AppstoreOutlined,
+  EyeOutlined, FileExcelOutlined, TableOutlined, AppstoreOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import { exportToExcel } from '../../utils/exportData';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import PersonnelForm from './PersonnelForm';
+import PersonnelFormModal from './PersonnelForm';
+import { usePersonnelList } from './usePersonnelList';
 import {
-  usePersonnelList, typeColors, statusColors,
-} from './usePersonnelList';
-import { BASE_URL } from '../News/useNewsPage';
+  toneOf, statusToneOf, positionLabel, initialOf, imgSrc,
+} from './personnelShared';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './PersonnelList.css';
-
-const imgSrc = (p) => !p ? null : p.startsWith('http') ? p : `${BASE_URL}${p}`;
-
-const { Option } = Select;
-
-const TYPE_TONE = {
-  tang_ni:          { c: '#c47f36', s: '#fbf1e4' },
-  cu_si:            { c: '#4f9a72', s: '#e8f4ed' },
-  phat_tu:          { c: '#4d8fc7', s: '#e9f1fb' },
-  tinh_nguyen_vien: { c: '#8b6fc9', s: '#f1edfb' },
-  nhan_vien:        { c: '#d9646c', s: '#fdeeee' },
-};
-const toneOf = (type) => TYPE_TONE[type] || TYPE_TONE.tang_ni;
-const TYPE_ACCENT = Object.fromEntries(Object.entries(TYPE_TONE).map(([k, v]) => [k, v.c]));
-
-const STATUS_TONE = {
-  'đang_hoạt_động': { c: '#3f8461', s: '#e8f4ed' },
-  'tạm_nghỉ':       { c: '#b9841f', s: '#fdf3dc' },
-  'đã_rời':         { c: '#8c7a6b', s: '#f2ede6' },
-};
-
-const initialOf = (name = '') => name.trim().split(/\s+/).pop()?.[0]?.toUpperCase() || '?';
-const capitalize = (s = '') => s.charAt(0).toUpperCase() + s.slice(1);
+import './peopleShared.css';
 
 export default function PersonnelList() {
   const {
@@ -52,86 +31,95 @@ export default function PersonnelList() {
   } = usePersonnelList();
 
   const { canManage, isAdmin, hasRole } = useAuth();
+  useCreateParam(() => openEdit(null), canManage());
   const navigate = useNavigate();
   const { t: tt } = useLanguage();
+  const P = tt.personnel;
   const [viewMode, setViewMode] = useState('table');
+  const canRemove = isAdmin() || hasRole('truotri');
+  const isFiltered = Boolean(search.trim() || filterType || filterStatus);
+
+  const openDetail = (r) => navigate(`/app/personnel/${r.id}`);
+  const openEdit = (r) => { setEditRecord(r); setModalOpen(true); };
 
   const handleExport = () => {
     exportToExcel(data, [
-      { header: tt.personnel.colCode, key: 'code' },
+      { header: P.colCode, key: 'code' },
       { header: tt.common.name, key: 'fullName' },
-      { header: tt.personnel.dharmName, key: 'dharmName' },
-      { header: tt.common.type, render: (r) => tt.personnel.types[r.type] || r.type },
-      { header: tt.personnel.colPosition, key: 'position' },
-      { header: tt.personnel.colPhone, key: 'phone' },
+      { header: P.dharmName, key: 'dharmName' },
+      { header: tt.common.type, render: (r) => P.types[r.type] || r.type },
+      { header: P.colPosition, render: (r) => positionLabel(tt, r.position) },
+      { header: P.colPhone, key: 'phone' },
       { header: tt.common.email, key: 'email' },
-      { header: tt.common.status, render: (r) => tt.personnel.statuses[r.status] || r.status },
+      { header: tt.common.status, render: (r) => P.statuses[r.status] || r.status },
     ], 'nhan-su');
   };
 
   const ActionBtns = ({ r }) => (
-    <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
-      <Tooltip title={tt.personnel.viewDetail}>
-        <Button type="text" icon={<EyeOutlined />} onClick={() => navigate(`/app/personnel/${r.id}`)} />
+    <div className="personnel-action-group" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      <Tooltip title={P.viewDetail}>
+        <Button type="text" aria-label={P.viewDetail} icon={<EyeOutlined />} onClick={() => openDetail(r)} />
       </Tooltip>
       {canManage() && (
-        <Tooltip title={tt.personnel.editTooltip}>
-          <Button type="text" icon={<EditOutlined />} onClick={() => { setEditRecord(r); setModalOpen(true); }} />
+        <Tooltip title={P.editTooltip}>
+          <Button type="text" aria-label={P.editTooltip} icon={<EditOutlined />} onClick={() => openEdit(r)} />
         </Tooltip>
       )}
-      {(isAdmin() || hasRole('truotri')) && (
+      {canRemove && (
         <Popconfirm title={tt.common.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={tt.common.delete} cancelText={tt.common.cancel} okButtonProps={{ danger: true }}>
           <Tooltip title={tt.common.delete}>
-            <Button type="text" danger icon={<DeleteOutlined />} />
+            <Button type="text" danger aria-label={tt.common.delete} icon={<DeleteOutlined />} />
           </Tooltip>
         </Popconfirm>
       )}
     </div>
   );
 
+  const avatarOf = (r, size) => {
+    const tone = toneOf(r.type);
+    return r.photo
+      ? <Avatar src={imgSrc(r.photo)} size={size} className="person-cell__avatar" />
+      : <Avatar size={size} className="person-cell__avatar" style={{ background: tone.s, color: tone.c, fontWeight: 700 }}>{initialOf(r.fullName)}</Avatar>;
+  };
+
   const columns = [
     {
-      title: tt.personnel.colName,
+      title: P.colName,
       key: 'name',
       width: 280,
-      render: (_, r) => {
-        const tone = toneOf(r.type);
-        return (
-          <div className="person-cell">
-            {r.photo
-              ? <Avatar src={imgSrc(r.photo)} size={40} className="person-cell__avatar" />
-              : <Avatar size={40} className="person-cell__avatar" style={{ background: tone.s, color: tone.c }}>{initialOf(r.fullName)}</Avatar>}
-            <div className="person-cell__text">
-              <div className="person-cell__name">{r.fullName}</div>
-              <div className="person-cell__sub">
-                {r.dharmName && <span>{r.dharmName}</span>}
-                {r.dharmName && r.code && <span className="person-cell__sep">·</span>}
-                {r.code && <span className="tbl-mono">{r.code}</span>}
-              </div>
+      render: (_, r) => (
+        <div className="person-cell">
+          {avatarOf(r, 40)}
+          <div className="person-cell__text">
+            <div className="person-cell__name">{r.fullName}</div>
+            <div className="person-cell__sub">
+              {r.dharmName && <span>{r.dharmName}</span>}
+              {r.dharmName && r.code && <span className="person-cell__sep">·</span>}
+              {r.code && <span className="tbl-mono">{r.code}</span>}
             </div>
           </div>
-        );
-      },
+        </div>
+      ),
     },
     {
-      title: tt.personnel.colType,
+      title: P.colType,
       dataIndex: 'type',
       width: 150,
       render: (v) => {
         const tone = toneOf(v);
-        return <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>{tt.personnel.types[v] || v}</span>;
+        return <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>{P.types[v] || v}</span>;
       },
     },
     {
-      title: tt.personnel.colPosition,
+      title: P.colPosition,
       dataIndex: 'position',
       width: 160,
       render: (v) => v
-        ? <span style={{ color: '#5a4636' }}>{capitalize(v.replace(/_/g, ' '))}</span>
+        ? <span style={{ color: '#5a4636' }}>{positionLabel(tt, v)}</span>
         : <span className="tbl-muted">—</span>,
     },
     {
-      title: tt.personnel.colPhone,
+      title: P.colPhone,
       dataIndex: 'phone',
       width: 140,
       render: (v) => v
@@ -143,10 +131,10 @@ export default function PersonnelList() {
       dataIndex: 'status',
       width: 160,
       render: (v) => {
-        const tone = STATUS_TONE[v] || STATUS_TONE['đã_rời'];
+        const tone = statusToneOf(v);
         return (
           <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>
-            <span className="tbl-pill__dot" />{tt.personnel.statuses[v] || v}
+            <span className="tbl-pill__dot" />{P.statuses[v] || v}
           </span>
         );
       },
@@ -160,62 +148,64 @@ export default function PersonnelList() {
     },
   ];
 
-  if (loading && !data.length) return <PageSpinner />;
+  if (loading && !data.length && !isFiltered) return <PageSpinner />;
+
+  const emptyNode = isFiltered
+    ? <LotusEmpty description={P.emptyFiltered} hint={P.emptyFilteredHint} />
+    : <LotusEmpty description={P.emptyTitle} hint={canManage() ? P.emptyHint : ''} />;
 
   return (
-    <Card>
-      {/* ── Toolbar ── */}
-      <div className="personnel-list-toolbar section-anim section-d0">
-        <Space wrap>
+    <div className="pp-page">
+      {/* ── Header ── */}
+      <section className="pp-hero section-anim section-d0">
+        <div className="pp-hero__main">
+          <div className="pp-hero__icon"><TeamOutlined /></div>
+          <div>
+            <h1 className="pp-hero__title">{P.title}</h1>
+            <p className="pp-hero__sub">{P.subtitle}</p>
+          </div>
+        </div>
+        {canManage() && (
+          <div className="pp-hero__actions">
+            <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => openEdit(null)}>
+              {P.addNew}
+            </Button>
+          </div>
+        )}
+      </section>
+
+      <section className="pp-card section-anim section-d1">
+        {/* ── Toolbar ── */}
+        <div className="pp-toolbar">
           <Input
-            placeholder={tt.personnel.searchPlaceholder}
-            prefix={<SearchOutlined style={{ color: '#c09070' }} />}
+            className="pp-search"
+            placeholder={P.searchPlaceholder}
+            prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            style={{ width: 'min(240px, 100%)', borderColor: '#ddbfa0' }}
             allowClear
           />
-          <Select value={filterType} onChange={(v) => { setFilterType(v); setPage(1); }}
-            style={{ width: 'min(150px, 100%)' }}>
-            <Option value="">{tt.personnel.allTypes}</Option>
-            {Object.entries(tt.personnel.types).map(([k, v]) => <Option key={k} value={k}>{v}</Option>)}
-          </Select>
-          <Select value={filterStatus} onChange={(v) => { setFilterStatus(v); setPage(1); }}
-            style={{ width: 'min(160px, 100%)' }}>
-            <Option value="">{tt.personnel.allStatuses}</Option>
-            {Object.entries(tt.personnel.statuses).map(([k, v]) => <Option key={k} value={k}>{v}</Option>)}
-          </Select>
-        </Space>
-        <Space size={6}>
-          <div className="view-toggle">
-            <Button
-              type={viewMode === 'table' ? 'primary' : 'text'}
-              icon={<TableOutlined />}
-              onClick={() => setViewMode('table')}
-              style={viewMode === 'table' ? { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } : {}}
+          <Select className="pp-select" value={filterType} onChange={(v) => { setFilterType(v); setPage(1); }}
+            options={[{ value: '', label: P.allTypes }, ...Object.entries(P.types).map(([k, v]) => ({ value: k, label: v }))]} />
+          <Select className="pp-select" value={filterStatus} onChange={(v) => { setFilterStatus(v); setPage(1); }}
+            options={[{ value: '', label: P.allStatuses }, ...Object.entries(P.statuses).map(([k, v]) => ({ value: k, label: v }))]} />
+          <div className="pp-toolbar__end">
+            <Segmented
+              className="pp-seg"
+              value={viewMode}
+              onChange={setViewMode}
+              options={[
+                { value: 'table', icon: <TableOutlined />, title: P.tableView },
+                { value: 'card', icon: <AppstoreOutlined />, title: P.cardView },
+              ]}
             />
-            <Button
-              type={viewMode === 'card' ? 'primary' : 'text'}
-              icon={<AppstoreOutlined />}
-              onClick={() => setViewMode('card')}
-              style={viewMode === 'card' ? { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } : {}}
-            />
-          </div>
-          <Button icon={<FileExcelOutlined />} onClick={handleExport}
-            style={{ color: '#217346', borderColor: '#217346' }}>
-            Excel
-          </Button>
-          {canManage() && (
-            <Button type="primary" icon={<PlusOutlined />}
-              onClick={() => { setEditRecord(null); setModalOpen(true); }}>
-              {tt.personnel.addNew}
+            <Button className="pp-tool-btn" icon={<FileExcelOutlined />} onClick={handleExport} disabled={!data.length}>
+              {tt.common.exportExcel}
             </Button>
-          )}
-        </Space>
-      </div>
+          </div>
+        </div>
 
-      {/* ── Content ── */}
-      <div className="section-anim section-d1">
+        {/* ── Content ── */}
         {viewMode === 'table' ? (
           <Table
             dataSource={data}
@@ -223,95 +213,50 @@ export default function PersonnelList() {
             rowKey="id"
             loading={loading}
             pagination={{
-              current: page, total, pageSize: 10, onChange: setPage,
-              showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} ${tt.personnel.totalLabel}`,
+              current: page, total, pageSize: 10, onChange: setPage, showSizeChanger: false,
+              showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${P.totalLabel}`,
             }}
             size="middle"
             className="personnel-table"
             scroll={{ x: 'max-content' }}
-            onRow={(r) => ({
-              style: { cursor: 'pointer' },
-              onClick: () => navigate(`/app/personnel/${r.id}`),
-            })}
+            locale={{ emptyText: emptyNode }}
+            onRow={(r) => ({ style: { cursor: 'pointer' }, onClick: () => openDetail(r) })}
           />
-        ) : (
+        ) : !data.length ? emptyNode : (
           <div className="personnel-card-grid">
             {data.map((r) => {
-              const accent = TYPE_ACCENT[r.type] || '#b06f2c';
+              const tone = toneOf(r.type);
+              const st = statusToneOf(r.status);
               return (
-                <div key={r.id} className="personnel-card"
-                  onClick={() => navigate(`/app/personnel/${r.id}`)}>
-
-                  {/* accent top bar */}
-                  <div className="personnel-card__accent"
-                    style={{ background: `linear-gradient(90deg, ${accent}, ${accent}99)` }} />
-
-                  {/* code badge */}
-                  <span className="personnel-card__code">{r.code}</span>
+                <div
+                  key={r.id}
+                  className="personnel-card"
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`${P.viewDetail}: ${r.dharmName || r.fullName}`}
+                  onClick={() => openDetail(r)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(r); } }}
+                >
+                  <div className="personnel-card__accent" style={{ background: `linear-gradient(90deg, ${tone.c}, ${tone.s})` }} />
+                  {r.code && <span className="personnel-card__code tbl-mono">{r.code}</span>}
 
                   <div className="personnel-card__body">
-                    {/* avatar with ring */}
                     <div className="personnel-card__avatar">
-                      {r.photo
-                        ? <Avatar src={imgSrc(r.photo)} size={72} />
-                        : <Avatar size={72}
-                            style={{ background: accent, fontSize: 28, fontWeight: 800 }}>
-                            {r.fullName?.[0]}
-                          </Avatar>
-                      }
-                      <div className="personnel-card__avatar-ring"
-                        style={{ borderColor: accent }} />
+                      {avatarOf(r, 72)}
+                      <div className="personnel-card__avatar-ring" style={{ borderColor: tone.c }} />
                     </div>
-
-                    {/* type pill */}
-                    <span className="personnel-type-pill"
-                      style={{ background: `${accent}18`, color: accent, border: `1px solid ${accent}40` }}>
-                      {tt.personnel.types[r.type] || r.type}
-                    </span>
-
-                    <div className="personnel-card__name">
-                      {r.dharmName || r.fullName}
-                    </div>
-                    {r.dharmName && (
-                      <div className="personnel-card__subname">{r.fullName}</div>
-                    )}
-
-                    {r.position && (
-                      <div className="personnel-card__position">
-                        {r.position.replace(/_/g, ' ')}
-                      </div>
-                    )}
-
-                    <div className="personnel-card__status">
-                      <span className="personnel-card__status-dot"
-                        style={{ background: r.status === 'đang_hoạt_động' ? '#52c41a' : '#bbb' }} />
-                      {tt.personnel.statuses[r.status] || r.status}
+                    <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>{P.types[r.type] || r.type}</span>
+                    <div className="personnel-card__name">{r.dharmName || r.fullName}</div>
+                    {r.dharmName && <div className="personnel-card__subname">{r.fullName}</div>}
+                    {r.position && <div className="personnel-card__position">{positionLabel(tt, r.position)}</div>}
+                    <div className="personnel-card__status" style={{ color: st.c }}>
+                      <span className="personnel-card__status-dot" style={{ background: st.c }} />
+                      {P.statuses[r.status] || r.status}
                     </div>
                   </div>
 
-                  {/* action footer */}
-                  <div className="personnel-card__footer"
-                    onClick={(e) => e.stopPropagation()}>
-                    <Tooltip title={tt.personnel.viewDetail}>
-                      <Button size="small" className="personnel-action-btn view" type="text"
-                        icon={<EyeOutlined style={{ color: '#1890ff' }} />}
-                        onClick={() => navigate(`/app/personnel/${r.id}`)} />
-                    </Tooltip>
-                    {canManage() && (
-                      <Tooltip title={tt.personnel.editTooltip}>
-                        <Button size="small" className="personnel-action-btn edit" type="text"
-                          icon={<EditOutlined style={{ color: '#d48806' }} />}
-                          onClick={() => { setEditRecord(r); setModalOpen(true); }} />
-                      </Tooltip>
-                    )}
-                    {(isAdmin() || hasRole('truotri')) && (
-                      <Popconfirm title={tt.common.confirmDelete}
-                        onConfirm={() => handleDelete(r.id)}
-                        okText={tt.common.delete} cancelText={tt.common.cancel}>
-                        <Button size="small" className="personnel-action-btn del" type="text"
-                          icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
-                      </Popconfirm>
-                    )}
+                  <div className="personnel-card__footer">
+                    <ActionBtns r={r} />
                   </div>
                 </div>
               );
@@ -319,33 +264,25 @@ export default function PersonnelList() {
           </div>
         )}
         {viewMode === 'card' && total > 10 && (
-          <div className="personnel-table" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <Pagination
               current={page}
               total={total}
               pageSize={10}
               onChange={setPage}
               showSizeChanger={false}
-              showTotal={(n, range) => `${range[0]}-${range[1]} / ${n} ${tt.personnel.totalLabel}`}
+              showTotal={(n, range) => `${range[0]}-${range[1]} / ${n} ${P.totalLabel}`}
             />
           </div>
         )}
-      </div>
+      </section>
 
-      <Modal
-        title={editRecord ? tt.personnel.editTitle : tt.personnel.addTitle}
+      <PersonnelFormModal
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        footer={null}
-        width={720}
-        destroyOnClose
-      >
-        <PersonnelForm
-          record={editRecord}
-          onSuccess={() => { setModalOpen(false); fetchData(); }}
-          onCancel={() => setModalOpen(false)}
-        />
-      </Modal>
-    </Card>
+        record={editRecord}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => { setModalOpen(false); fetchData(); }}
+      />
+    </div>
   );
 }

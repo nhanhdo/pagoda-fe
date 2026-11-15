@@ -1,4 +1,24 @@
 import dayjs from 'dayjs';
+import api from '../../api/axios';
+
+/* Followers are needed by several tabs; fetch once and share for a few minutes. */
+let followersCache = null;
+let followersAt = 0;
+const FOLLOWERS_TTL = 5 * 60 * 1000;
+export function fetchFollowersCached() {
+  if (followersCache && Date.now() - followersAt < FOLLOWERS_TTL) return followersCache;
+  followersAt = Date.now();
+  followersCache = api.get('/buddhist-followers', { params: { page: 1, limit: 1000 } })
+    .then(r => r.data.data || [])
+    .catch(() => { followersCache = null; return []; });
+  return followersCache;
+}
+
+/** "Hàng 2 · Số 5" style tablet position. */
+export const slotLabel = (tb, C) => (tb ? `${tb.area} · ${C.fields.rowNo} ${tb.rowNo} · ${C.fields.slotNo} ${tb.slotNo}` : '');
+
+/** True when a registration entry has anything typed besides an empty template. */
+export const entryHasData = (e) => !!e && Object.entries(e).some(([k, v]) => k !== 'fullName' && v !== null && v !== undefined && v !== '');
 
 export const KIND_TONE = {
   'cầu_an':   { c: '#3f8461', s: '#e8f4ed' },

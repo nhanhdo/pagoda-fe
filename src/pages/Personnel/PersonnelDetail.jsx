@@ -1,321 +1,281 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Avatar, Button, Tabs } from 'antd';
 import {
-  Card, Row, Col, Avatar, Tag, Button, Descriptions, Spin, Tabs, Table, Badge,
-  Typography, Space, Empty, Modal,
-} from 'antd';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
+  ArrowLeftOutlined, EditOutlined, CalendarOutlined, HomeOutlined, SafetyCertificateOutlined,
+  ReadOutlined, TrophyOutlined, ScheduleOutlined, ClockCircleOutlined, ReloadOutlined,
+  UserOutlined, PhoneOutlined, MailOutlined, IdcardOutlined, EnvironmentOutlined, AlertOutlined,
+  ApartmentOutlined, BookOutlined, NodeIndexOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
-import PersonnelForm from './PersonnelForm';
-import { BASE_URL } from '../News/useNewsPage';
-const imgSrc = (p) => !p ? null : p.startsWith('http') ? p : `${BASE_URL}${p}`;
+import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
+import CountUp from '../../components/CountUp/CountUp';
+import PersonnelFormModal from './PersonnelForm';
+import {
+  toneOf, statusToneOf, positionLabel, genderLabel, initialOf, imgSrc, TONES,
+} from './personnelShared';
+import './peopleShared.css';
+import './PersonnelDetail.css';
 
-const { Title, Text } = Typography;
-const { TabPane } = Tabs;
+const fmt = (d) => (d ? dayjs(d).format('DD/MM/YYYY') : null);
+const asList = (data) => (Array.isArray(data) ? data : data?.data || []);
 
-/* ── Vertical timeline component ─────────────────────── */
+/* ── Vertical timeline ─────────────────────────────────── */
 function JourneyTimeline({ events, t }) {
-  if (!events.length) return <Empty description={t.personnel.journeyEmpty} style={{ padding: '32px 0' }} />;
+  if (!events.length) return <LotusEmpty description={t.personnel.journeyEmpty} hint={t.personnel.journeyEmptyHint} />;
   return (
-    <div style={{ position: 'relative', paddingLeft: 32, paddingTop: 8, paddingBottom: 8 }}>
-      {/* Vertical connecting line */}
-      <div style={{
-        position: 'absolute', left: 11, top: 0, bottom: 0, width: 2,
-        background: 'linear-gradient(to bottom, #b06f2c, #d4a017, #b06f2c)',
-        opacity: 0.25, borderRadius: 1,
-      }} />
-
-      {events.map((ev, i) => (
-        <div key={i} style={{ position: 'relative', marginBottom: 28, paddingLeft: 16 }}>
-          {/* Dot */}
-          <div style={{
-            position: 'absolute', left: -21, top: 4,
-            width: 14, height: 14, borderRadius: '50%',
-            background: ev.color || '#b06f2c',
-            border: '2.5px solid #fff',
-            boxShadow: `0 0 0 2.5px ${ev.color || '#b06f2c'}55, 0 2px 6px rgba(0,0,0,0.15)`,
-            zIndex: 1,
-          }} />
-
-          {/* Card */}
-          <div style={{
-            background: '#fafafa',
-            border: '1px solid #f0ebe3',
-            borderLeft: `3px solid ${ev.color || '#b06f2c'}`,
-            borderRadius: '0 10px 10px 0',
-            padding: '10px 14px',
-            transition: 'box-shadow 0.2s',
-          }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.09)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 18, lineHeight: 1 }}>{ev.icon}</span>
-              <span style={{ fontWeight: 700, fontSize: 14, color: '#222', flex: 1 }}>{ev.title}</span>
-              <span style={{
-                fontSize: 11, color: '#fff', background: ev.color || '#b06f2c',
-                padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', opacity: 0.88,
-              }}>{ev.dateStr}</span>
+    <ol className="pd-tl">
+      {events.map((ev) => (
+        <li key={ev.key} className="pd-tl__item" style={{ '--tone': ev.tone.c, '--tone-soft': ev.tone.s }}>
+          <span className="pd-tl__dot" aria-hidden="true">{ev.icon}</span>
+          <div className="pd-tl__card">
+            <div className="pd-tl__head">
+              <span className="pd-tl__title">{ev.title}</span>
+              <span className="pd-tl__date tbl-mono">{ev.dateStr}</span>
             </div>
-            {ev.subtitle && (
-              <div style={{ fontSize: 12, color: '#777', marginTop: 4, paddingLeft: 26 }}>{ev.subtitle}</div>
-            )}
+            {ev.subtitle && <div className="pd-tl__sub">{ev.subtitle}</div>}
           </div>
-        </div>
+        </li>
       ))}
-
-      {/* "Now" marker */}
-      <div style={{ position: 'relative', paddingLeft: 16 }}>
-        <div style={{
-          position: 'absolute', left: -18, top: 4,
-          width: 8, height: 8, borderRadius: '50%',
-          background: '#52c41a', border: '2px solid #fff',
-          boxShadow: '0 0 0 2px #52c41a66',
-        }} />
-        <Text style={{ fontSize: 12, color: '#52c41a', fontWeight: 600 }}>{t.personnel.journeyNow}</Text>
-      </div>
-    </div>
+      <li className="pd-tl__item pd-tl__item--now" style={{ '--tone': TONES.sage.c, '--tone-soft': TONES.sage.s }}>
+        <span className="pd-tl__dot pd-tl__dot--now" aria-hidden="true" />
+        <span className="pd-tl__now">{t.personnel.journeyNow}</span>
+      </li>
+    </ol>
   );
 }
 
-/* ── Main component ───────────────────────────────────── */
+function InfoGrid({ items }) {
+  return (
+    <dl className="pd-info">
+      {items.map(it => (
+        <div key={it.label} className={`pd-info__row${it.wide ? ' is-wide' : ''}`}>
+          <dt>{it.icon}{it.label}</dt>
+          <dd className={it.value ? '' : 'tbl-muted'}>{it.value || '—'}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/* ── Page ──────────────────────────────────────────────── */
 export default function PersonnelDetail() {
   const { t } = useLanguage();
+  const P = t.personnel;
   const { id } = useParams();
   const navigate = useNavigate();
   const { canManage } = useAuth();
-  const [person, setPerson]       = useState(null);
-  const [loading, setLoading]     = useState(true);
+  const [person, setPerson] = useState(null);
+  const [state, setState] = useState('loading'); // loading | ok | notFound | error
   const [trainings, setTrainings] = useState([]);
-  const [rewards, setRewards]     = useState([]);
-  const [duties, setDuties]       = useState([]);
-  const [editOpen, setEditOpen]   = useState(false);
+  const [rewards, setRewards] = useState([]);
+  const [duties, setDuties] = useState([]);
+  const [editOpen, setEditOpen] = useState(false);
 
-  const typeLabels = {
-    tang_ni: t.personnel.types.tang_ni,
-    cu_si: t.personnel.types.cu_si,
-    phat_tu: t.personnel.types.phat_tu,
-    tinh_nguyen_vien: t.personnel.types.tinh_nguyen_vien,
-    nhan_vien: t.personnel.types.nhan_vien,
-  };
-
-  useEffect(() => {
-    api.get(`/personnel/${id}`)
-      .then(({ data }) => setPerson(data))
-      .finally(() => setLoading(false));
-
-    // Load sub-data for journey tab (best-effort)
-    api.get(`/training?personnelId=${id}`).then(({ data }) => setTrainings(Array.isArray(data) ? data : data.data || [])).catch(() => {});
-    api.get(`/reward-discipline?personnelId=${id}`).then(({ data }) => setRewards(Array.isArray(data) ? data : data.data || [])).catch(() => {});
-    api.get(`/duty-schedules?personnelId=${id}&limit=20`).then(({ data }) => setDuties(Array.isArray(data) ? data : data.data || [])).catch(() => {});
+  const loadPerson = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/personnel/${id}`);
+      setPerson(data);
+      setState(data ? 'ok' : 'notFound');
+    } catch (e) {
+      setState(e.response?.status === 404 ? 'notFound' : 'error');
+    }
   }, [id]);
 
-  /* Build timeline events */
-  const buildJourneyEvents = () => {
+  useEffect(() => {
+    setState('loading');
+    loadPerson();
+    const pid = Number(id);
+    // Journey sub-data (best effort). /trainings has no person filter, so match on the participant list.
+    api.get('/trainings')
+      .then(({ data }) => setTrainings(asList(data)
+        .map(tr => ({ ...tr, me: (tr.participants || []).find(p => Number(p.personnelId ?? p.personnel?.id) === pid) }))
+        .filter(tr => tr.me)))
+      .catch(() => setTrainings([]));
+    api.get('/reward-disciplines', { params: { personnelId: id, type: 'khen_thưởng' } })
+      .then(({ data }) => setRewards(asList(data).filter(r => r.type === 'khen_thưởng' && Number(r.personnelId) === pid)))
+      .catch(() => setRewards([]));
+    api.get('/duty-schedules', { params: { personnelId: id } })
+      .then(({ data }) => setDuties(asList(data).filter(d => Number(d.personnelId ?? d.personnel?.id) === pid)))
+      .catch(() => setDuties([]));
+  }, [id, loadPerson]);
+
+  const journeyEvents = useMemo(() => {
+    if (!person) return [];
     const events = [];
-    const push = (ts, obj) => { if (ts && dayjs(ts).isValid()) events.push({ ts: dayjs(ts).valueOf(), dateStr: dayjs(ts).format('DD/MM/YYYY'), ...obj }); };
+    const push = (key, ts, obj) => {
+      if (ts && dayjs(ts).isValid()) events.push({ key, ts: dayjs(ts).valueOf(), dateStr: fmt(ts), ...obj });
+    };
 
-    // Birth
-    push(person?.dateOfBirth, { icon: '🗓️', title: t.personnel.dateOfBirth, color: '#e74c3c' });
-
-    // Join temple
-    push(person?.joinDate || person?.createdAt, {
-      icon: '🏛️', title: t.personnel.journeyJoinTemple,
-      subtitle: person?.department?.name ? `${t.personnel.journeyDeptPrefix}: ${person.department.name}` : undefined,
-      color: '#b06f2c',
+    push('dob', person.dateOfBirth, { icon: <CalendarOutlined />, title: P.dateOfBirth, tone: TONES.rose });
+    push('join', person.joinDate || person.createdAt, {
+      icon: <HomeOutlined />, title: P.journeyJoinTemple, tone: TONES.amber,
+      subtitle: person.department?.name ? `${P.journeyDeptPrefix}: ${person.department.name}` : undefined,
     });
-
-    // Ordination / precept
-    push(person?.ordinationDate, {
-      icon: '☸️', title: t.personnel.journeyOrdination,
-      subtitle: person?.precept ? `${t.personnel.precept}: ${person.precept}` : (person?.preceptorName ? `${t.personnel.preceptorName}: ${person.preceptorName}` : undefined),
-      color: '#722ed1',
+    push('ord', person.ordinationDate, {
+      icon: <SafetyCertificateOutlined />, title: P.journeyOrdination, tone: TONES.lavender,
+      subtitle: person.precept ? `${P.precept}: ${person.precept}` : (person.preceptorName ? `${P.preceptorName}: ${person.preceptorName}` : undefined),
     });
-
-    // Training completions
-    trainings.forEach(tr => {
-      const date = tr.endDate || tr.startDate;
-      push(date, {
-        icon: '📚', title: tr.name || t.personnel.journeyTrainingDefault,
-        subtitle: tr.type ? `${t.common.type}: ${tr.type.replace(/_/g, ' ')}` : undefined,
-        color: '#1890ff',
-      });
-    });
-
-    // Rewards only (not discipline)
-    rewards
-      .filter(r => r.recordType === 'khen_thuong' || r.type === 'khen_thuong' || r.category === 'reward')
-      .forEach(r => {
-        push(r.issuedDate || r.date, {
-          icon: '🏆', title: r.title || r.reason || t.personnel.journeyRewardDefault,
-          subtitle: r.description || undefined,
-          color: '#d4b106',
-        });
-      });
-
-    // 3 most recent duty dates
-    const sortedDuties = [...duties]
-      .filter(d => d.dutyDate)
+    trainings.forEach(tr => push(`tr-${tr.id}`, tr.endDate || tr.startDate, {
+      icon: <ReadOutlined />, title: tr.name || P.journeyTrainingDefault, tone: TONES.sky,
+      subtitle: [t.training.courseTypes?.[tr.type] || tr.type, tr.me?.result ? t.training.results?.[tr.me.result] : null].filter(Boolean).join(' · '),
+    }));
+    rewards.forEach(r => push(`rw-${r.id}`, r.issuedDate, {
+      icon: <TrophyOutlined />, title: r.title || P.journeyRewardDefault, tone: TONES.gold,
+      subtitle: [r.reason, r.issuedBy].filter(Boolean).join(' · ') || undefined,
+    }));
+    // The 3 most recent duties that already happened
+    duties
+      .filter(d => d.dutyDate && !dayjs(d.dutyDate).isAfter(dayjs(), 'day'))
       .sort((a, b) => dayjs(b.dutyDate).valueOf() - dayjs(a.dutyDate).valueOf())
-      .slice(0, 3);
-    sortedDuties.forEach(d => {
-      push(d.dutyDate, {
-        icon: '📅', title: `${t.personnel.journeyDutyPrefix} ${d.dutyType || t.personnel.journeyDutyTemple}`,
-        subtitle: d.shift ? `${t.common.shift}: ${d.shift}` : undefined,
-        color: '#4f9a72',
-      });
-    });
+      .slice(0, 3)
+      .forEach(d => push(`du-${d.id}`, d.dutyDate, {
+        icon: <ScheduleOutlined />, tone: TONES.sage,
+        title: t.dutySchedule.dutyTypes[d.dutyType] || `${P.journeyDutyPrefix} ${P.journeyDutyTemple}`,
+        subtitle: d.shift ? `${t.common.shift}: ${t.dutySchedule.shifts[d.shift] || d.shift}` : undefined,
+      }));
 
     return events.sort((a, b) => a.ts - b.ts);
-  };
+  }, [person, trainings, rewards, duties, t]);
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><Spin size="large" /></div>;
-  if (!person) return <div>{t.personnel.notFound}</div>;
+  if (state === 'loading') return <PageSpinner />;
 
-  const journeyEvents = buildJourneyEvents();
+  if (state !== 'ok') {
+    return (
+      <div className="pp-page">
+        <section className="pp-card">
+          <LotusEmpty
+            description={state === 'notFound' ? P.notFound : P.loadDetailError}
+            hint={state === 'notFound' ? P.notFoundHint : ''}
+          />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/app/personnel')}>{P.backToList}</Button>
+            {state === 'error' && <Button type="primary" icon={<ReloadOutlined />} onClick={() => { setState('loading'); loadPerson(); }}>{P.retry}</Button>}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const tone = toneOf(person.type);
+  const st = statusToneOf(person.status);
+  const sinceDate = person.ordinationDate || person.joinDate;
+  const years = sinceDate ? Math.max(0, dayjs().diff(dayjs(sinceDate), 'year')) : 0;
+  const upcomingDuties = duties.filter(d => d.dutyDate && !dayjs(d.dutyDate).isBefore(dayjs(), 'day')).length;
+
+  const stats = [
+    { label: P.statYearsOfPractice, value: years, icon: <ClockCircleOutlined />, tone: TONES.amber },
+    { label: P.statTrainings, value: trainings.length, icon: <ReadOutlined />, tone: TONES.sky },
+    { label: P.statDuties, value: duties.length, icon: <ScheduleOutlined />, tone: TONES.sage, hint: upcomingDuties ? (P.upcomingDuties || '+{n}').replace('{n}', upcomingDuties) : null },
+    { label: P.statRewards, value: rewards.length, icon: <TrophyOutlined />, tone: TONES.gold },
+  ];
+
+  const tabItems = [
+    {
+      key: 'info',
+      label: <span><UserOutlined /> {P.tabPersonalInfo}</span>,
+      children: (
+        <InfoGrid items={[
+          { label: P.gender, value: genderLabel(t, person.gender), icon: <UserOutlined /> },
+          { label: P.dateOfBirth, value: fmt(person.dateOfBirth), icon: <CalendarOutlined /> },
+          { label: P.idCard, value: person.idCard && <span className="tbl-mono">{person.idCard}</span>, icon: <IdcardOutlined /> },
+          { label: P.colPhone, value: person.phone && <a href={`tel:${person.phone}`} className="tbl-mono">{person.phone}</a>, icon: <PhoneOutlined /> },
+          { label: t.common.email, value: person.email && <a href={`mailto:${person.email}`}>{person.email}</a>, icon: <MailOutlined /> },
+          { label: P.address, value: person.address, icon: <EnvironmentOutlined />, wide: true },
+          { label: P.emergencyContact, value: person.emergencyContact, icon: <AlertOutlined /> },
+          { label: P.emergencyPhone, value: person.emergencyPhone && <a href={`tel:${person.emergencyPhone}`} className="tbl-mono">{person.emergencyPhone}</a>, icon: <PhoneOutlined /> },
+        ]} />
+      ),
+    },
+    {
+      key: 'study',
+      label: <span><BookOutlined /> {P.tabStudyInfo}</span>,
+      children: (
+        <InfoGrid items={[
+          { label: P.ordinationDate, value: fmt(person.ordinationDate), icon: <SafetyCertificateOutlined /> },
+          { label: P.preceptorName, value: person.preceptorName, icon: <UserOutlined /> },
+          { label: P.precept, value: person.precept, icon: <SafetyCertificateOutlined /> },
+          { label: P.buddhismEducation, value: person.buddhismEducation, icon: <ReadOutlined /> },
+          { label: P.secularEducation, value: person.secularEducation, icon: <BookOutlined /> },
+          { label: P.departmentLabel, value: person.department?.name, icon: <ApartmentOutlined /> },
+          { label: P.joinDate, value: fmt(person.joinDate), icon: <HomeOutlined /> },
+          { label: t.common.notes, value: person.notes, wide: true },
+        ]} />
+      ),
+    },
+    {
+      key: 'journey',
+      label: (
+        <span>
+          <NodeIndexOutlined /> {P.tabJourney}
+          {journeyEvents.length > 0 && <span className="pd-tab-count">{journeyEvents.length}</span>}
+        </span>
+      ),
+      children: <div className="pd-journey"><JourneyTimeline events={journeyEvents} t={t} /></div>,
+    },
+  ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/app/personnel')}>{t.common.back}</Button>
+    <div className="pp-page">
+      <div className="section-anim section-d0">
+        <Button type="text" icon={<ArrowLeftOutlined />} className="pd-back" onClick={() => navigate('/app/personnel')}>
+          {P.backToList}
+        </Button>
       </div>
 
-      <Card>
-        <Row gutter={24}>
-          <Col xs={24} sm={6} style={{ textAlign: 'center' }}>
-            {person.photo
-              ? <Avatar src={imgSrc(person.photo)} size={120} />
-              : <Avatar size={120} style={{ backgroundColor: '#b06f2c', fontSize: 48 }}>{person.fullName?.[0]}</Avatar>
-            }
-            <div style={{ marginTop: 12 }}>
-              <Tag>{person.code}</Tag>
+      {/* ── Hero ── */}
+      <section className="pp-hero pd-hero section-anim section-d0">
+        <div className="pp-hero__main">
+          {person.photo
+            ? <Avatar src={imgSrc(person.photo)} size={88} className="pd-hero__avatar" />
+            : <Avatar size={88} className="pd-hero__avatar" style={{ background: tone.s, color: tone.c, fontSize: 34, fontWeight: 800 }}>{initialOf(person.fullName)}</Avatar>}
+          <div style={{ minWidth: 0 }}>
+            <h1 className="pp-hero__title">{person.dharmName || person.fullName}</h1>
+            {person.dharmName && <div className="pd-hero__secular">{person.fullName}</div>}
+            <div className="pp-hero__sub" style={{ marginTop: 8 }}>
+              <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>{P.types[person.type] || person.type}</span>
+              {person.position && <span className="tbl-pill" style={{ color: '#5a4636', background: '#f6efe4' }}>{positionLabel(t, person.position)}</span>}
+              <span className="tbl-pill" style={{ color: st.c, background: st.s }}><span className="tbl-pill__dot" />{P.statuses[person.status] || person.status}</span>
+              {person.code && <span className="tbl-mono tbl-muted">{person.code}</span>}
             </div>
-          </Col>
-          <Col xs={24} sm={18}>
-            <Title level={3} style={{ margin: 0, color: '#5a3a22' }}>{person.fullName}</Title>
-            {person.dharmName && (
-              <Title level={5} style={{ color: '#b06f2c', margin: '4px 0 12px' }}>{person.dharmName}</Title>
-            )}
-            <Space wrap>
-              <Tag color="#b06f2c" style={{ color: '#fff' }}>{typeLabels[person.type]}</Tag>
-              {person.position && <Tag>{person.position.replace(/_/g, ' ')}</Tag>}
-              <Badge
-                status={person.status === 'đang_hoạt_động' ? 'success' : 'default'}
-                text={person.status}
-              />
-            </Space>
-            {canManage() && (
-              <div style={{ marginTop: 16 }}>
-                <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>{t.common.edit}</Button>
-              </div>
-            )}
-          </Col>
-        </Row>
-      </Card>
+          </div>
+        </div>
+        {canManage() && (
+          <div className="pp-hero__actions">
+            <Button icon={<EditOutlined />} className="pp-hero__btn" onClick={() => setEditOpen(true)}>{t.common.edit}</Button>
+          </div>
+        )}
+      </section>
 
-      <Card style={{ marginTop: 16 }}>
-        <Tabs defaultActiveKey="info">
-          <TabPane tab={t.personnel.tabPersonalInfo} key="info">
-            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-              <Descriptions.Item label={t.personnel.gender}>{person.gender}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.dateOfBirth}>
-                {person.dateOfBirth ? dayjs(person.dateOfBirth).format('DD/MM/YYYY') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t.personnel.idCard}>{person.idCard || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.colPhone}>{person.phone || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.common.email}>{person.email || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.address} span={2}>{person.address || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.emergencyContact}>{person.emergencyContact || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.emergencyPhone}>{person.emergencyPhone || '—'}</Descriptions.Item>
-            </Descriptions>
-          </TabPane>
-
-          <TabPane tab={t.personnel.tabStudyInfo} key="study">
-            <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-              <Descriptions.Item label={t.personnel.ordinationDate}>
-                {person.ordinationDate ? dayjs(person.ordinationDate).format('DD/MM/YYYY') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t.personnel.preceptorName}>{person.preceptorName || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.precept}>{person.precept || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.buddhismEducation}>{person.buddhismEducation || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.secularEducation}>{person.secularEducation || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.departmentLabel}>{person.department?.name || '—'}</Descriptions.Item>
-              <Descriptions.Item label={t.personnel.joinDate}>
-                {person.joinDate ? dayjs(person.joinDate).format('DD/MM/YYYY') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t.common.notes} span={2}>{person.notes || '—'}</Descriptions.Item>
-            </Descriptions>
-          </TabPane>
-
-          <TabPane
-            tab={<span>🛤️ {t.personnel.tabJourney} {journeyEvents.length > 0 && <Tag color="#b06f2c" style={{ marginLeft: 4, fontSize: 11, color: '#fff' }}>{journeyEvents.length}</Tag>}</span>}
-            key="journey"
-          >
-            <div style={{ maxWidth: 640, margin: '0 auto', padding: '8px 0' }}>
-              {/* Summary bar */}
-              {journeyEvents.length > 0 && (
-                <div style={{
-                  display: 'flex', gap: 16, flexWrap: 'wrap',
-                  background: 'linear-gradient(135deg, #fdf6ee, #fff9f4)',
-                  border: '1px solid #f0e8db', borderRadius: 10,
-                  padding: '12px 16px', marginBottom: 24,
-                }}>
-                  {person.joinDate && (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#b06f2c' }}>
-                        {dayjs().diff(dayjs(person.joinDate), 'year')}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#999' }}>{t.personnel.statYearsOfPractice}</div>
-                    </div>
-                  )}
-                  {trainings.length > 0 && (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#1890ff' }}>{trainings.length}</div>
-                      <div style={{ fontSize: 11, color: '#999' }}>{t.personnel.statTrainings}</div>
-                    </div>
-                  )}
-                  {duties.length > 0 && (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#4f9a72' }}>{duties.length}</div>
-                      <div style={{ fontSize: 11, color: '#999' }}>{t.personnel.statDuties}</div>
-                    </div>
-                  )}
-                  {rewards.filter(r => r.recordType === 'khen_thuong' || r.type === 'khen_thuong' || r.category === 'reward').length > 0 && (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#d4b106' }}>
-                        {rewards.filter(r => r.recordType === 'khen_thuong' || r.type === 'khen_thuong' || r.category === 'reward').length}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#999' }}>{t.personnel.statRewards}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-              <JourneyTimeline events={journeyEvents} t={t} />
+      {/* ── Stats ── */}
+      <div className="pp-stats section-anim section-d1">
+        {stats.map(s => (
+          <div key={s.label} className="pp-stat" style={{ '--st': s.tone.c, '--st-soft': s.tone.s }}>
+            <span className="pp-stat__icon">{s.icon}</span>
+            <div className="pp-stat__body">
+              <div className="pp-stat__value"><CountUp value={s.value} /></div>
+              <div className="pp-stat__label">{s.label}</div>
+              {s.hint && <div className="pd-stat__hint" style={{ color: s.tone.c }}>{s.hint}</div>}
             </div>
-          </TabPane>
-        </Tabs>
-      </Card>
+          </div>
+        ))}
+      </div>
 
-      <Modal
-        title={t.personnel.editTitle}
+      {/* ── Tabs ── */}
+      <section className="pp-card pd-tabs section-anim section-d2">
+        <Tabs defaultActiveKey="info" items={tabItems} />
+      </section>
+
+      <PersonnelFormModal
         open={editOpen}
-        onCancel={() => setEditOpen(false)}
-        footer={null}
-        width={720}
-        destroyOnClose
-      >
-        <PersonnelForm
-          record={person}
-          onSuccess={() => {
-            setEditOpen(false);
-            api.get(`/personnel/${id}`).then(r => setPerson(r.data)).catch(() => {});
-          }}
-          onCancel={() => setEditOpen(false)}
-        />
-      </Modal>
+        record={person}
+        onClose={() => setEditOpen(false)}
+        onSaved={() => { setEditOpen(false); loadPerson(); }}
+      />
     </div>
   );
 }

@@ -1,25 +1,35 @@
-import React, { useState } from 'react';
+import { useCreateParam } from '../../utils/useCreateParam';
+import React, { useMemo, useRef, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
+import CountUp from '../../components/CountUp/CountUp';
 import {
-  Card, Table, Button, Select, DatePicker, Space, Tag, Modal, Form,
-  Input, message, Popconfirm, Badge, Row, Col, Tabs, Descriptions,
+  Table, Button, DatePicker, Popconfirm, Descriptions, Segmented, Tooltip, Avatar, Input, Select,
 } from 'antd';
 import {
-  PlusOutlined, DeleteOutlined, EditOutlined,
-  TableOutlined, CalendarOutlined, FileExcelOutlined,
+  PlusOutlined, DeleteOutlined, EditOutlined, UnorderedListOutlined, CalendarOutlined,
+  FileExcelOutlined, ScheduleOutlined, ClockCircleOutlined, CheckCircleOutlined,
+  StopOutlined, SearchOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import api from '../../api/axios';
-import {
-  useDutySchedulePage, dutyTypeOptions, statusColors, shiftColors,
-} from './useDutySchedulePage';
+import { useDutySchedulePage, DUTY_TYPES } from './useDutySchedulePage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { exportToExcel } from '../../utils/exportData';
-import DutyCalendar, { monthGridRange } from './DutyCalendar';
+import DutyCalendar, { monthGridRange, SHIFT_TONE, SHIFT_ORDER, STATUS_TONE } from './DutyCalendar';
+import DutyFormModal from './DutyFormModal';
+import { initialOf, personName, imgSrc, TONES } from '../Personnel/personnelShared';
+import '../Personnel/peopleShared.css';
 import './DutySchedulePage.css';
 
-const { Option } = Select;
 const { RangePicker } = DatePicker;
+
+function Pill({ tone, dot, children }) {
+  return (
+    <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>
+      {dot && <span className="tbl-pill__dot" />}{children}
+    </span>
+  );
+}
 
 export default function DutySchedulePage() {
   const {
@@ -31,47 +41,51 @@ export default function DutySchedulePage() {
   } = useDutySchedulePage();
 
   const { t, lang } = useLanguage();
-  const [form] = Form.useForm();
+  const D = t.dutySchedule;
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'calendar'
   const [calendarValue, setCalendarValue] = useState(dayjs());
+  const [defaultDate, setDefaultDate] = useState(null);
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const manage = canManage();
+  useCreateParam(() => openModal(), manage);
+  // Full-page spinner only until the first fetch settles (later range/month changes keep the layout)
+  const sawLoading = useRef(false);
+  const booted = useRef(false);
+  if (loading) sawLoading.current = true;
+  else if (sawLoading.current) booted.current = true;
 
-  const openModal = (record = null, defaultDate = null) => {
+  const openModal = (record = null, day = null) => {
     setEditRecord(record);
-    if (record) {
-      form.setFieldsValue({ ...record, dutyDate: dayjs(record.dutyDate) });
-    } else {
-      form.resetFields();
-      if (defaultDate) form.setFieldsValue({ dutyDate: defaultDate });
-    }
+    setDefaultDate(day);
     setModalOpen(true);
   };
 
-  const handleSubmit = async (values) => {
-    try {
-      const submitData = { ...values, dutyDate: values.dutyDate.format('YYYY-MM-DD') };
-      if (editRecord) {
-        await api.put(`/duty-schedules/${editRecord.id}`, submitData);
-        message.success(t.dutySchedule.updateSuccess);
-      } else {
-        await api.post('/duty-schedules', submitData);
-        message.success(t.dutySchedule.addSuccess);
-      }
-      setModalOpen(false);
-      fetchData();
-    } catch {
-      message.error(t.common.error);
-    }
-  };
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return data.filter(d => {
+      if (filterType && d.dutyType !== filterType) return false;
+      if (!q) return true;
+      return [d.personnel?.fullName, d.personnel?.dharmName, d.notes].some(v => v?.toLowerCase().includes(q));
+    });
+  }, [data, search, filterType]);
+
+  const stats = useMemo(() => ({
+    total: data.length,
+    pending: data.filter(d => d.status === 'chờ').length,
+    done: data.filter(d => d.status === 'hoàn_thành').length,
+    absent: data.filter(d => d.status === 'vắng' || d.status === 'đổi_ca').length,
+  }), [data]);
 
   const handleExport = () => {
-    exportToExcel(data, [
-      { header: t.dutySchedule.fields.date, render: (r) => dayjs(r.dutyDate).format('DD/MM/YYYY') },
-      { header: t.dutySchedule.fields.dutyType, render: (r) => t.dutySchedule.dutyTypes[r.dutyType] || r.dutyType },
-      { header: t.dutySchedule.colShift, render: (r) => t.dutySchedule.shifts[r.shift] || r.shift },
-      { header: t.dutySchedule.colPerson, render: (r) => r.personnel?.dharmName || r.personnel?.fullName || '' },
-      { header: t.dutySchedule.fields.startTime, key: 'startTime' },
-      { header: t.dutySchedule.fields.endTime, key: 'endTime' },
-      { header: t.common.status, render: (r) => t.dutySchedule.statuses[r.status] || r.status },
+    exportToExcel(rows, [
+      { header: D.fields.date, render: (r) => dayjs(r.dutyDate).format('DD/MM/YYYY') },
+      { header: D.fields.dutyType, render: (r) => D.dutyTypes[r.dutyType] || r.dutyType },
+      { header: D.colShift, render: (r) => D.shifts[r.shift] || r.shift },
+      { header: D.colPerson, render: (r) => r.personnel?.dharmName || r.personnel?.fullName || '' },
+      { header: D.fields.startTime, key: 'startTime' },
+      { header: D.fields.endTime, key: 'endTime' },
+      { header: t.common.status, render: (r) => D.statuses[r.status] || r.status },
       { header: t.common.notes, key: 'notes' },
     ], 'lich-truc');
   };
@@ -84,45 +98,32 @@ export default function DutySchedulePage() {
 
   const dutyPopoverContent = (d, close) => (
     <div style={{ width: 260 }}>
-      <Descriptions column={1} size="small" style={{ marginBottom: canManage() ? 10 : 0 }}>
-        <Descriptions.Item label={t.dutySchedule.fields.person}>
-          <strong>{d.personnel?.dharmName || d.personnel?.fullName || '—'}</strong>
-        </Descriptions.Item>
-        <Descriptions.Item label={t.dutySchedule.fields.date}>
-          {dayjs(d.dutyDate).format('DD/MM/YYYY (ddd)')}
-        </Descriptions.Item>
-        <Descriptions.Item label={t.dutySchedule.fields.dutyType}>
-          {t.dutySchedule.dutyTypes[d.dutyType] || d.dutyType}
-        </Descriptions.Item>
-        <Descriptions.Item label={t.dutySchedule.fields.shift}>
-          <Tag color={shiftColors[d.shift]}>{t.dutySchedule.shifts[d.shift] || d.shift}</Tag>
+      <Descriptions column={1} size="small" style={{ marginBottom: manage ? 10 : 0 }}>
+        <Descriptions.Item label={D.fields.person}><strong>{personName(d.personnel)}</strong></Descriptions.Item>
+        <Descriptions.Item label={D.fields.date}>{dayjs(d.dutyDate).format('DD/MM/YYYY (ddd)')}</Descriptions.Item>
+        <Descriptions.Item label={D.fields.dutyType}>{D.dutyTypes[d.dutyType] || d.dutyType}</Descriptions.Item>
+        <Descriptions.Item label={D.fields.shift}>
+          <Pill tone={SHIFT_TONE[d.shift] || SHIFT_TONE['cả_ngày']}>{D.shifts[d.shift] || d.shift}</Pill>
         </Descriptions.Item>
         {(d.startTime || d.endTime) && (
-          <Descriptions.Item label={t.dutySchedule.colTime}>
-            {d.startTime} – {d.endTime}
-          </Descriptions.Item>
+          <Descriptions.Item label={D.colTime}><span className="pp-time">{d.startTime} – {d.endTime}</span></Descriptions.Item>
         )}
         <Descriptions.Item label={t.common.status}>
-          <Badge status={statusColors[d.status] || 'default'} text={t.dutySchedule.statuses[d.status] || d.status} />
+          <Pill dot tone={STATUS_TONE[d.status] || STATUS_TONE['chờ']}>{D.statuses[d.status] || d.status}</Pill>
         </Descriptions.Item>
-        {d.notes && (
-          <Descriptions.Item label={t.common.notes}>{d.notes}</Descriptions.Item>
-        )}
+        {d.notes && <Descriptions.Item label={t.common.notes}>{d.notes}</Descriptions.Item>}
       </Descriptions>
-      {canManage() && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
+      {manage && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f3ebdf', paddingTop: 8 }}>
           <Popconfirm
-            title={t.dutySchedule.confirmDelete}
+            title={D.confirmDelete}
             onConfirm={() => { close(); handleDelete(d.id); }}
             okText={t.common.delete} cancelText={t.common.cancel}
             okButtonProps={{ danger: true }}
           >
             <Button size="small" danger icon={<DeleteOutlined />}>{t.common.delete}</Button>
           </Popconfirm>
-          <Button
-            size="small" type="primary" icon={<EditOutlined />}
-            onClick={() => { close(); openModal(d); }}
-          >
+          <Button size="small" type="primary" icon={<EditOutlined />} onClick={() => { close(); openModal(d); }}>
             {t.common.edit}
           </Button>
         </div>
@@ -130,211 +131,223 @@ export default function DutySchedulePage() {
     </div>
   );
 
+  const isToday = (v) => dayjs(v).isSame(dayjs(), 'day');
+
   const columns = [
     {
-      title: t.dutySchedule.colDate,
+      title: D.colDate,
       dataIndex: 'dutyDate',
-      width: 140,
-      render: (v) => dayjs(v).format('DD/MM/YYYY (ddd)'),
-      sorter: (a, b) => a.dutyDate.localeCompare(b.dutyDate),
-    },
-    {
-      title: t.dutySchedule.colDuty,
-      dataIndex: 'dutyType',
-      width: 220,
-      render: (v) => t.dutySchedule.dutyTypes[v] || v,
-    },
-    {
-      title: t.dutySchedule.colShift,
-      dataIndex: 'shift',
-      width: 90,
-      render: (v) => <Tag color={shiftColors[v]}>{t.dutySchedule.shifts[v] || v}</Tag>,
-    },
-    {
-      title: t.dutySchedule.colPerson,
       width: 150,
+      render: (v) => (
+        <div>
+          <div className="tbl-mono" style={{ fontWeight: 600, color: '#3e2c1f' }}>{dayjs(v).format('DD/MM/YYYY')}</div>
+          <div className="tbl-muted" style={{ fontSize: 12, textTransform: 'capitalize' }}>
+            {isToday(v) ? <span style={{ color: TONES.sage.c, fontWeight: 600 }}>{D.today}</span> : dayjs(v).format('dddd')}
+          </div>
+        </div>
+      ),
+      sorter: (a, b) => String(a.dutyDate).localeCompare(String(b.dutyDate))
+        || SHIFT_ORDER.indexOf(a.shift) - SHIFT_ORDER.indexOf(b.shift),
+      defaultSortOrder: 'ascend',
+    },
+    {
+      title: D.colPerson,
+      key: 'person',
+      width: 220,
       render: (_, r) => {
         const p = r.personnel;
-        return p ? (p.dharmName || p.fullName) : '—';
+        if (!p) return <span className="tbl-muted">—</span>;
+        return (
+          <div className="person-cell">
+            {p.photo
+              ? <Avatar src={imgSrc(p.photo)} size={34} className="person-cell__avatar" />
+              : <Avatar size={34} className="person-cell__avatar" style={{ background: TONES.amber.s, color: TONES.amber.c, fontWeight: 700 }}>{initialOf(p.fullName)}</Avatar>}
+            <div className="person-cell__text">
+              <div className="person-cell__name">{personName(p)}</div>
+              {p.dharmName && p.fullName && <div className="person-cell__sub"><span>{p.fullName}</span></div>}
+            </div>
+          </div>
+        );
       },
+      sorter: (a, b) => personName(a.personnel).localeCompare(personName(b.personnel), lang),
     },
     {
-      title: t.dutySchedule.colTime,
-      width: 110,
-      render: (_, r) => r.startTime && r.endTime ? `${r.startTime} - ${r.endTime}` : '—',
+      title: D.colDuty,
+      dataIndex: 'dutyType',
+      width: 170,
+      render: (v) => <span style={{ color: '#5a4636', fontWeight: 500 }}>{D.dutyTypes[v] || v}</span>,
+    },
+    {
+      title: D.colShift,
+      dataIndex: 'shift',
+      width: 170,
+      render: (v, r) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <Pill tone={SHIFT_TONE[v] || SHIFT_TONE['cả_ngày']}>{D.shifts[v] || v}</Pill>
+          {r.startTime && r.endTime && <span className="pp-time" style={{ fontSize: 12, fontWeight: 500 }}>{r.startTime}–{r.endTime}</span>}
+        </div>
+      ),
     },
     {
       title: t.common.status,
       dataIndex: 'status',
-      width: 130,
-      render: (v) => <Badge status={statusColors[v] || 'default'} text={t.dutySchedule.statuses[v] || v} />,
+      width: 140,
+      render: (v) => <Pill dot tone={STATUS_TONE[v] || STATUS_TONE['chờ']}>{D.statuses[v] || v}</Pill>,
     },
-    {
-      title: t.common.actions,
-      width: 90,
-      render: (_, r) => canManage() && (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
-          <Popconfirm title={t.dutySchedule.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel}>
-            <Button type="text" danger icon={<DeleteOutlined />} />
+    ...(manage ? [{
+      title: '',
+      key: 'actions',
+      width: 96,
+      align: 'right',
+      render: (_, r) => (
+        <div className="personnel-action-group">
+          <Tooltip title={t.common.edit}>
+            <Button type="text" aria-label={t.common.edit} icon={<EditOutlined />} onClick={() => openModal(r)} />
+          </Tooltip>
+          <Popconfirm title={D.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
+            <Tooltip title={t.common.delete}>
+              <Button type="text" danger aria-label={t.common.delete} icon={<DeleteOutlined />} />
+            </Tooltip>
           </Popconfirm>
-        </Space>
+        </div>
       ),
-    },
+    }] : []),
   ];
 
-  if (loading && !data.length) return <PageSpinner />;
+  if (!booted.current && !data.length) return <PageSpinner />;
+
+  const statTiles = [
+    { key: 'total', label: D.statTotal, value: stats.total, icon: <ScheduleOutlined />, tone: TONES.amber },
+    { key: 'pending', label: D.statuses['chờ'], value: stats.pending, icon: <ClockCircleOutlined />, tone: TONES.sky },
+    { key: 'done', label: D.statuses['hoàn_thành'], value: stats.done, icon: <CheckCircleOutlined />, tone: TONES.sage },
+    { key: 'absent', label: D.statAbsent, value: stats.absent, icon: <StopOutlined />, tone: TONES.rose },
+  ];
+  const isFiltered = Boolean(search.trim() || filterType);
 
   return (
-    <Card>
-      {/* Toolbar */}
-      <div className="duty-schedule-toolbar section-anim section-d0">
-        <Space wrap>
-          {viewMode === 'table' && (
-            <RangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              format="DD/MM/YYYY"
-              placeholder={[t.dutySchedule.rangePickerFrom, t.dutySchedule.rangePickerTo]}
-            />
-          )}
-        </Space>
-        <Space>
-          <Button icon={<FileExcelOutlined />} onClick={handleExport}>
-            Excel
-          </Button>
-          {canManage() && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
-              {t.dutySchedule.addNew}
+    <div className="pp-page">
+      {/* ── Header ── */}
+      <section className="pp-hero section-anim section-d0">
+        <div className="pp-hero__main">
+          <div className="pp-hero__icon"><ScheduleOutlined /></div>
+          <div>
+            <h1 className="pp-hero__title">{D.title}</h1>
+            <p className="pp-hero__sub">{D.subtitle}</p>
+          </div>
+        </div>
+        {manage && (
+          <div className="pp-hero__actions">
+            <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => openModal()}>
+              {D.addNew}
             </Button>
+          </div>
+        )}
+      </section>
+
+      {/* ── Stats (current range) ── */}
+      <div className="pp-stats section-anim section-d1">
+        {statTiles.map(s => (
+          <div key={s.key} className="pp-stat" style={{ '--st': s.tone.c, '--st-soft': s.tone.s }}>
+            <span className="pp-stat__icon">{s.icon}</span>
+            <div className="pp-stat__body">
+              <div className="pp-stat__value"><CountUp value={s.value} /></div>
+              <div className="pp-stat__label">{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <section className={`section-anim section-d2${viewMode === 'table' ? ' pp-card' : ''}`}>
+        {/* ── Toolbar ── */}
+        <div className={`pp-toolbar${viewMode === 'calendar' ? ' duty-toolbar--calendar' : ''}`}>
+          <Segmented
+            className="pp-seg"
+            value={viewMode}
+            onChange={(k) => {
+              setViewMode(k);
+              if (k === 'calendar') setDateRange(monthGridRange(calendarValue));
+            }}
+            options={[
+              { value: 'table', icon: <UnorderedListOutlined />, label: D.viewTable },
+              { value: 'calendar', icon: <CalendarOutlined />, label: D.viewCalendar },
+            ]}
+          />
+          {viewMode === 'table' && (
+            <>
+              <RangePicker
+                className="pp-picker"
+                value={dateRange}
+                onChange={setDateRange}
+                format="DD/MM/YYYY"
+                placeholder={[D.rangePickerFrom, D.rangePickerTo]}
+                allowClear={false}
+                presets={[
+                  { label: D.presetThisWeek, value: [dayjs().startOf('week'), dayjs().endOf('week')] },
+                  { label: D.presetNextWeek, value: [dayjs().add(1, 'week').startOf('week'), dayjs().add(1, 'week').endOf('week')] },
+                  { label: D.presetThisMonth, value: [dayjs().startOf('month'), dayjs().endOf('month')] },
+                ]}
+              />
+              <Input
+                className="pp-search"
+                placeholder={D.searchPlaceholder}
+                prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                allowClear
+              />
+              <Select className="pp-select" value={filterType} onChange={setFilterType}
+                options={[{ value: '', label: D.allDutyTypes }, ...DUTY_TYPES.map(k => ({ value: k, label: D.dutyTypes[k] }))]} />
+            </>
           )}
-        </Space>
-      </div>
+          <div className="pp-toolbar__end">
+            <Button className="pp-tool-btn" icon={<FileExcelOutlined />} onClick={handleExport} disabled={!rows.length}>
+              {t.common.exportExcel}
+            </Button>
+          </div>
+        </div>
 
-      {/* View toggle */}
-      <div className="section-anim section-d1">
-      <Tabs
-        activeKey={viewMode}
-        onChange={(k) => {
-          setViewMode(k);
-          if (k === 'calendar') setDateRange(monthGridRange(calendarValue));
-        }}
-        size="small"
-        style={{ marginBottom: 8 }}
-        items={[
-          {
-            key: 'table',
-            label: <span><TableOutlined /> {t.dutySchedule.viewTable}</span>,
-          },
-          {
-            key: 'calendar',
-            label: <span><CalendarOutlined /> {t.dutySchedule.viewCalendar}</span>,
-          },
-        ]}
-      />
+        {viewMode === 'table' ? (
+          <Table
+            dataSource={rows}
+            columns={columns}
+            rowKey="id"
+            loading={loading}
+            size="middle"
+            className="personnel-table"
+            scroll={{ x: 'max-content' }}
+            pagination={rows.length > 20 ? { pageSize: 20, showSizeChanger: false } : false}
+            rowClassName={(r) => (isToday(r.dutyDate) ? 'duty-row--today' : '')}
+            locale={{
+              emptyText: isFiltered
+                ? <LotusEmpty description={D.emptyFiltered} hint={D.emptyFilteredHint} />
+                : <LotusEmpty description={D.emptyRange} hint={manage ? D.emptyRangeHint : ''} />,
+            }}
+          />
+        ) : (
+          <DutyCalendar
+            data={data}
+            month={calendarValue}
+            onMonthChange={handleCalendarMonthChange}
+            canManage={manage}
+            onAdd={(day) => openModal(null, day)}
+            onEdit={(d) => openModal(d)}
+            onDelete={handleDelete}
+            renderDetails={dutyPopoverContent}
+            t={t}
+            lang={lang}
+          />
+        )}
+      </section>
 
-      {/* Table view */}
-      {viewMode === 'table' && (
-        <Table
-          dataSource={data}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          size="small"
-          className="personnel-table"
-          scroll={{ x: 'max-content' }}
-        />
-      )}
-
-      {/* Calendar view */}
-      {viewMode === 'calendar' && (
-        <DutyCalendar
-          data={data}
-          month={calendarValue}
-          onMonthChange={handleCalendarMonthChange}
-          canManage={canManage()}
-          onAdd={(day) => openModal(null, day)}
-          onEdit={(d) => openModal(d)}
-          onDelete={handleDelete}
-          renderDetails={dutyPopoverContent}
-          t={t}
-          lang={lang}
-        />
-      )}
-      </div>
-
-      {/* Form modal */}
-      <Modal
-        title={editRecord ? t.dutySchedule.editTitle : t.dutySchedule.addTitle}
+      <DutyFormModal
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={() => form.submit()}
-        okText={editRecord ? t.common.update : t.common.add}
-        cancelText={t.common.cancel}
-        okButtonProps={{ style: { backgroundColor: '#b06f2c', borderColor: '#b06f2c' } }}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="personnelId" label={t.dutySchedule.fields.person} rules={[{ required: true }]}>
-            <Select showSearch optionFilterProp="children">
-              {personnel.map(p => (
-                <Option key={p.id} value={p.id}>
-                  {p.dharmName ? `${p.dharmName} (${p.fullName})` : p.fullName}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="dutyDate" label={t.dutySchedule.fields.date} rules={[{ required: true }]}>
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="dutyType" label={t.dutySchedule.fields.dutyType} rules={[{ required: true }]}>
-                <Select>
-                  {dutyTypeOptions.map(o => (
-                    <Option key={o.value} value={o.value}>
-                      {t.dutySchedule.dutyTypes[o.value] || o.label}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="shift" label={t.dutySchedule.fields.shift} rules={[{ required: true }]}>
-                <Select>
-                  <Option value="sáng">{t.dutySchedule.shifts['sáng']}</Option>
-                  <Option value="chiều">{t.dutySchedule.shifts['chiều']}</Option>
-                  <Option value="tối">{t.dutySchedule.shifts['tối']}</Option>
-                  <Option value="cả_ngày">{t.dutySchedule.shifts['cả_ngày']}</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="startTime" label={t.dutySchedule.fields.startTime}>
-                <Input placeholder="07:00" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="endTime" label={t.dutySchedule.fields.endTime}>
-                <Input placeholder="12:00" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="status" label={t.common.status} initialValue="chờ">
-            <Select>
-              <Option value="chờ">{t.dutySchedule.statuses['chờ']}</Option>
-              <Option value="hoàn_thành">{t.dutySchedule.statuses['hoàn_thành']}</Option>
-              <Option value="vắng">{t.dutySchedule.statuses['vắng']}</Option>
-              <Option value="đổi_ca">{t.dutySchedule.statuses['đổi_ca']}</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="notes" label={t.common.notes}>
-            <Input.TextArea rows={2} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </Card>
+        record={editRecord}
+        defaultDate={defaultDate}
+        personnel={personnel}
+        t={t}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => { setModalOpen(false); fetchData(); }}
+      />
+    </div>
   );
 }

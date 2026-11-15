@@ -1,3 +1,4 @@
+import { useCreateParam } from '../../utils/useCreateParam';
 import React, { useMemo, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import CountUp from '../../components/CountUp/CountUp';
@@ -15,6 +16,8 @@ import {
 import dayjs from 'dayjs';
 import { useTrainingPage, TRAINING_TYPES, effectiveStatus } from './useTrainingPage';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { HiddenSubmit } from '../Personnel/PersonnelForm';
 import './TrainingPage.css';
 
 const { Option } = Select;
@@ -80,8 +83,10 @@ export default function TrainingPage() {
     handleSubmit, handleDelete, addParticipants, updateResult, removeParticipant,
     canManage, canDelete,
   } = useTrainingPage();
+  useCreateParam(() => openModal(), canManage());
 
   const [form] = Form.useForm();
+  const R = makeRules(t);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -362,19 +367,21 @@ export default function TrainingPage() {
       <Modal
         title={editRecord ? T.editTitle : T.addTitle}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => guardedClose(form, () => setModalOpen(false), t)}
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         confirmLoading={saving}
+        maskClosable={false}
         width={620}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit} className="tr-form">
-          <Form.Item name="name" label={T.colName} rules={[{ required: true, message: T.colName }]}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} className="tr-form" requiredMark={false}>
+          <HiddenSubmit />
+          <Form.Item name="name" label={T.colName} rules={[{ ...R.required(T.colName.toLowerCase()), whitespace: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="type" label={T.colType} rules={[{ required: true, message: T.colType }]}>
+          <Form.Item name="type" label={T.colType} rules={[R.select(T.colType.toLowerCase())]}>
             <Select placeholder={T.colType}>
               {TRAINING_TYPES.map(k => {
                 const ty = TYPE_STYLE[k];
@@ -388,7 +395,7 @@ export default function TrainingPage() {
           </Form.Item>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
-              <Form.Item name="startDate" label={T.fieldStartDate} rules={[{ required: true, message: T.fieldStartDate }]}>
+              <Form.Item name="startDate" label={T.fieldStartDate} rules={[R.select(T.fieldStartDate.toLowerCase())]}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
@@ -398,7 +405,7 @@ export default function TrainingPage() {
                 label={T.fieldEndDate}
                 dependencies={['startDate']}
                 rules={[
-                  { required: true, message: T.fieldEndDate },
+                  R.select(T.fieldEndDate.toLowerCase()),
                   ({ getFieldValue }) => ({
                     validator(_, value) {
                       const start = getFieldValue('startDate');

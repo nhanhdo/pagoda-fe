@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export type DeptTheme = { accent: string; soft: string; tint: string; icon: string };
 
@@ -26,6 +27,7 @@ export const getDeptTheme = (code = ''): DeptTheme => {
 };
 
 export function useDepartmentPage() {
+  const { t } = useLanguage() as any;
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { isAdmin, hasRole } = useAuth();
@@ -37,7 +39,7 @@ export function useDepartmentPage() {
       const { data: r } = await api.get('/departments');
       setData(r);
     } catch {
-      message.error('Không thể tải danh sách');
+      message.error(t.department.loadError);
     } finally {
       setLoading(false);
     }
@@ -48,10 +50,10 @@ export function useDepartmentPage() {
   const handleDelete = async (id: any) => {
     try {
       await api.delete(`/departments/${id}`);
-      message.success('Đã xóa');
+      message.success(t.common.deleteSuccess);
       fetchData();
-    } catch {
-      message.error('Không thể xóa');
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || t.department.deleteError);
     }
   };
 

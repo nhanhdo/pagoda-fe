@@ -12,6 +12,7 @@ import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import CountUp from '../../components/CountUp/CountUp';
 import { KIND_TONE, lunarLabel, daysUntil } from './ceremonyShared';
 import { compactVnd } from '../Finance/financeShared';
+import { guardedClose } from '../../utils/formGuard';
 
 const PRESETS = [
   { key: 'thuong_nguyen', name: 'Đại lễ Rằm tháng Giêng (Thượng Nguyên)', lunarDay: 15, lunarMonth: 1, ceremonyType: 'cả_hai' },
@@ -77,7 +78,8 @@ function CeremonyModal({ C, t, open, record, funds, onClose, onSaved }) {
 
   return (
     <Modal
-      open={open} onCancel={onClose} onOk={() => form.submit()} confirmLoading={saving}
+      open={open} onCancel={() => guardedClose(form, onClose, t)} maskClosable={false} onOk={() => form.submit()} confirmLoading={saving}
+      okButtonProps={{ disabled: !!previewErr }}
       title={record ? C.editCeremony : C.addCeremony} okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
       width={600} destroyOnClose
     >

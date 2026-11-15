@@ -3,24 +3,23 @@ import { message } from 'antd';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
-export const dutyTypeOptions = [
-  { value: 'trực_cổng', label: 'Trực cổng' },
-  { value: 'trực_điện_phật', label: 'Trực điện Phật' },
-  { value: 'trực_văn_phòng', label: 'Trực văn phòng' },
-  { value: 'trực_lễ_hội', label: 'Trực lễ hội' },
-  { value: 'công_phu_sáng', label: 'Công phu sáng' },
-  { value: 'công_phu_chiều', label: 'Công phu chiều' },
-  { value: 'khác', label: 'Khác' },
+export const DUTY_TYPES = [
+  'trực_cổng', 'trực_điện_phật', 'trực_văn_phòng', 'trực_lễ_hội', 'công_phu_sáng', 'công_phu_chiều', 'khác',
 ];
-export const statusColors: Record<string, string> = {
-  'chờ': 'processing', 'hoàn_thành': 'success', 'vắng': 'error', 'đổi_ca': 'warning',
-};
-export const shiftColors: Record<string, string> = {
-  sáng: 'gold', chiều: 'orange', tối: 'purple', cả_ngày: 'blue',
+export const DUTY_STATUSES = ['chờ', 'hoàn_thành', 'vắng', 'đổi_ca'];
+
+/* Default hours used to prefill the form when a shift is picked. */
+export const SHIFT_HOURS: Record<string, [string, string]> = {
+  'sáng':    ['06:00', '11:30'],
+  'chiều':   ['13:30', '17:30'],
+  'tối':     ['18:00', '21:30'],
+  'cả_ngày': ['06:00', '21:30'],
 };
 
 export function useDutySchedulePage() {
+  const { t } = useLanguage() as any;
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<any>([dayjs().startOf('week'), dayjs().endOf('week')]);
@@ -30,8 +29,9 @@ export function useDutySchedulePage() {
   const { canManage } = useAuth();
 
   useEffect(() => {
-    api.get('/personnel', { params: { limit: 200, status: 'đang_hoạt_động' } })
-      .then(({ data: r }) => setPersonnel(r.data));
+    api.get('/personnel', { params: { limit: 500, status: 'đang_hoạt_động' } })
+      .then(({ data: r }: any) => setPersonnel(r.data || []))
+      .catch(() => setPersonnel([]));
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -41,9 +41,9 @@ export function useDutySchedulePage() {
       if (dateRange?.[0]) params.startDate = dateRange[0].format('YYYY-MM-DD');
       if (dateRange?.[1]) params.endDate = dateRange[1].format('YYYY-MM-DD');
       const { data: r } = await api.get('/duty-schedules', { params });
-      setData(r);
+      setData(r as any[]);
     } catch {
-      message.error('Không thể tải lịch trực');
+      message.error(t.dutySchedule.loadError);
     } finally {
       setLoading(false);
     }
@@ -54,10 +54,10 @@ export function useDutySchedulePage() {
   const handleDelete = async (id: any) => {
     try {
       await api.delete(`/duty-schedules/${id}`);
-      message.success('Đã xóa');
+      message.success(t.common.deleteSuccess);
       fetchData();
-    } catch {
-      message.error('Không thể xóa');
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || t.dutySchedule.deleteError);
     }
   };
 
