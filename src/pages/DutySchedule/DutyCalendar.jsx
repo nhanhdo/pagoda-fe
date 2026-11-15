@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Popover, Avatar, Tooltip, Popconfirm } from 'antd';
 import {
   LeftOutlined, RightOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
@@ -6,7 +6,24 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { solarToLunar } from '../../utils/lunarCalendar';
-
+ 
+// Phones (≤767px) show shifts as bars only; the day's details live in the agenda below the grid,
+// so a popover there would just cover the calendar.
+const NARROW_QUERY = '(max-width: 767px)';
+function useNarrow() {
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(NARROW_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.(NARROW_QUERY);
+    if (!mq) return undefined;
+    const on = () => setNarrow(mq.matches);
+    on();
+    // Safari < 14 only has the old addListener API
+    if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener?.(on);
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener?.(on); };
+  }, []);
+  return narrow;
+}
+ 
 export const SHIFT_TONE = {
   'sáng':    { c: '#c98a1e', s: '#fdf3dc', dot: '#e0a83a' },
   'chiều':   { c: '#d0674b', s: '#fdece6', dot: '#e98a6a' },
@@ -20,7 +37,7 @@ export const STATUS_TONE = {
   'vắng':       { c: '#c4545d', s: '#fdeeee' },
   'đổi_ca':     { c: '#b9841f', s: '#fdf3dc' },
 };
-
+ 
 /** Monday-first grid covering every day shown for the month. */
 export function monthGridRange(month) {
   const first = month.startOf('month');
@@ -29,11 +46,11 @@ export function monthGridRange(month) {
   const end = last.add(6 - ((last.day() + 6) % 7), 'day').endOf('day');
   return [start, end];
 }
-
+ 
 const dateKey = (v) => (typeof v === 'string' ? v.slice(0, 10) : dayjs(v).format('YYYY-MM-DD'));
 const personName = (d) => d.personnel?.dharmName || d.personnel?.fullName || '—';
 const initialOf = (name = '') => name.trim().split(/\s+/).pop()?.[0]?.toUpperCase() || '?';
-
+ 
 export default function DutyCalendar({
   data, month, onMonthChange, canManage, onAdd, onEdit, onDelete, renderDetails, t, lang,
 }) {
@@ -41,7 +58,18 @@ export default function DutyCalendar({
   const [selected, setSelected] = useState(dayjs());
   const [hiddenShifts, setHiddenShifts] = useState([]);
   const [openId, setOpenId] = useState(null);
-
+  const narrow = useNarrow();
+  const agendaRef = useRef(null);
+  const revealTimer = useRef(null);
+  // On phones, tapping a shift brings the selected day's details into view
+  const revealAgenda = () => {
+    clearTimeout(revealTimer.current);
+    revealTimer.current = setTimeout(() => agendaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
+  useEffect(() => () => clearTimeout(revealTimer.current), []);
+  // A popover left open would point at nothing once the layout switches to phone mode
+  useEffect(() => { if (narrow) setOpenId(null); }, [narrow]);
+ 
   const byDate = useMemo(() => {
     const map = new Map();
     data.forEach(d => {
@@ -53,28 +81,28 @@ export default function DutyCalendar({
       SHIFT_ORDER.indexOf(a.shift) - SHIFT_ORDER.indexOf(b.shift) || String(a.startTime || '').localeCompare(String(b.startTime || ''))));
     return map;
   }, [data]);
-
+ 
   const [gridStart, gridEnd] = monthGridRange(month);
   const cellCount = gridEnd.startOf('day').diff(gridStart, 'day') + 1;
   const days = Array.from({ length: cellCount }, (_, i) => gridStart.add(i, 'day'));
-
+ 
   const inMonth = data.filter(d => dayjs(dateKey(d.dutyDate)).isSame(month, 'month'));
   const shiftCounts = SHIFT_ORDER.map(s => inMonth.filter(d => d.shift === s).length);
   const visible = (d) => !hiddenShifts.includes(d.shift);
   const toggleShift = (s) => setHiddenShifts(h => (h.includes(s) ? h.filter(x => x !== s) : [...h, s]));
-
+ 
   const monthTitle = lang === 'en'
     ? month.toDate().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : `Tháng ${month.month() + 1}, ${month.year()}`;
-
+    : Tháng ${month.month() + 1}, ${month.year()};
+ 
   const goMonth = (m) => {
     onMonthChange(m);
     setSelected(m.isSame(dayjs(), 'month') ? dayjs() : m.startOf('month'));
   };
-
+ 
   const selectedDuties = (byDate.get(selected.format('YYYY-MM-DD')) || []).filter(visible);
   const selLunar = solarToLunar(selected.date(), selected.month() + 1, selected.year());
-
+ 
   return (
     <div className="dc-root">
       {/* ── Toolbar ── */}
@@ -113,7 +141,7 @@ export default function DutyCalendar({
           <span className="dc-total">{D.monthTotal.replace('{n}', inMonth.length)}</span>
         </div>
       </div>
-
+ 
       <div className="dc-body">
         {/* ── Month grid ── */}
         <div className="dc-grid-wrap">
@@ -144,14 +172,19 @@ export default function DutyCalendar({
                     isSel && 'is-selected',
                     wd >= 5 && 'is-weekend',
                   ].filter(Boolean).join(' ')}
-                  onClick={() => setSelected(day)}
-                  onDoubleClick={() => canManage && onAdd(day)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') setSelected(day); }}
+                  onClick={() => { setSelected(day); if (narrow && duties.length) revealAgenda(); }}
+                  onDoubleClick={() => canManage && !outside && onAdd(day)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                    e.preventDefault();
+                    setSelected(day);
+                    if (narrow && duties.length) revealAgenda();
+                  }}
                 >
                   <div className="dc-cell__head">
                     <span className="dc-cell__num">{day.date()}</span>
                     <span className={`dc-cell__lunar${holyDay ? ' is-holy' : ''}`}>
-                      {lunar.day === 1 ? `${lunar.day}/${lunar.month}` : lunar.day}
+                      {lunar.day === 1 ? ${lunar.day}/${lunar.month} : lunar.day}
                     </span>
                     {canManage && !outside && (
                       <button
@@ -167,6 +200,21 @@ export default function DutyCalendar({
                   <div className="dc-cell__events">
                     {duties.slice(0, 3).map(d => {
                       const tone = SHIFT_TONE[d.shift] || SHIFT_TONE['cả_ngày'];
+                      if (narrow) {
+                        return (
+                          <div
+                            key={d.id}
+                            className="dc-event"
+                            style={{ '--c': tone.c, '--s': tone.s, '--dot': tone.dot }}
+                            onClick={(e) => { e.stopPropagation(); setSelected(day); revealAgenda(); }}
+                            onDoubleClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="dc-event__dot" />
+                            <span className="dc-event__name">{personName(d)}</span>
+                            {d.startTime && <span className="dc-event__time">{d.startTime}</span>}
+                          </div>
+                        );
+                      }
                       return (
                         <Popover
                           key={d.id}
@@ -174,6 +222,8 @@ export default function DutyCalendar({
                           onOpenChange={(v) => setOpenId(v ? d.id : null)}
                           trigger="click"
                           placement="rightTop"
+                          autoAdjustOverflow
+                          styles={{ root: { maxWidth: 'min(360px, calc(100vw - 24px))' } }}
                           title={<span className="dc-pop__title">{D.shifts[d.shift] || d.shift} · {dayjs(d.dutyDate).format('DD/MM')}</span>}
                           content={renderDetails(d, () => setOpenId(null))}
                         >
@@ -181,6 +231,7 @@ export default function DutyCalendar({
                             className="dc-event"
                             style={{ '--c': tone.c, '--s': tone.s, '--dot': tone.dot }}
                             onClick={(e) => { e.stopPropagation(); setSelected(day); }}
+                            onDoubleClick={(e) => e.stopPropagation()}
                           >
                             <span className="dc-event__dot" />
                             <span className="dc-event__name">{personName(d)}</span>
@@ -198,9 +249,9 @@ export default function DutyCalendar({
             })}
           </div>
         </div>
-
+ 
         {/* ── Day agenda ── */}
-        <aside className="dc-agenda">
+        <aside className="dc-agenda" ref={agendaRef}>
           <div className="dc-agenda__head">
             <div className="dc-agenda__date">
               <span className="dc-agenda__day">{selected.format('DD')}</span>
@@ -220,7 +271,7 @@ export default function DutyCalendar({
               </Button>
             )}
           </div>
-
+ 
           {selectedDuties.length === 0 ? (
             <div className="dc-agenda__empty">
               <span className="dc-agenda__empty-icon"><CalendarOutlined /></span>
