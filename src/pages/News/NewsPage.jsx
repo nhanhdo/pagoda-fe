@@ -1075,6 +1075,7 @@ export default function NewsPage() {
         {canPost && (
           <Button
             icon={<PlusOutlined />} onClick={openCreate}
+            className="news-add-btn"
             title={canEdit ? t.news.shareDescription : t.news.pendingDescription}
             type="primary"
             style={{ fontWeight: 700, height: 40, borderRadius: 10, fontSize: 14, position: 'relative', zIndex: 1 }}

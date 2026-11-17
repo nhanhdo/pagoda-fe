@@ -28,8 +28,8 @@
 .bf-stat {
   display: flex; align-items: center; gap: 14px; min-width: 0;
   padding: 18px 20px;
-  border-radius: 18px; border: 1px solid #f1e8da;
-  background: linear-gradient(170deg, #fff 0%, #fffcf8 100%);
+  border-radius: 18px; border: 1px solid #ece1d1;
+  background: #fff;
   box-shadow: var(--shadow-card);
 }
 .bf-stat__icon {
@@ -39,7 +39,7 @@
 }
 .bf-stat__body { min-width: 0; }
 .bf-stat__value { font-size: 26px; font-weight: 800; color: #2f2117; line-height: 1.1; }
-.bf-stat__label { font-size: 12.5px; color: #8c7a6b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bf-stat__label { font-size: 13px; color: #5f4d3f; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bf-stat__hint { font-size: 11.5px; color: var(--st); font-weight: 600; margin-top: 2px; }
 
 /* ── Cards ───────────────────────────────────────────────── */
@@ -67,7 +67,7 @@
 .bf-mini__item span { display: block; margin-top: 3px; font-size: 11px; color: #a8978a; line-height: 1.3; }
 .bf-card {
   min-width: 0;
-  background: #fff; border: 1px solid #f1e8da; border-radius: 18px;
+  background: #fff; border: 1px solid #ece1d1; border-radius: 18px;
   box-shadow: var(--shadow-card);
   padding: 16px 18px 18px;
 }
@@ -169,7 +169,7 @@
   padding: 18px 22px;
   border-radius: 16px;
   background: linear-gradient(120deg, var(--tier-soft) 0%, #fff 70%);
-  border: 1px solid color-mix(in srgb, var(--tier) 18%, #f1e8da);
+  border: 1px solid color-mix(in srgb, var(--tier) 18%, #ece1d1);
   animation: bf-rise .35s cubic-bezier(.22,1,.36,1);
 }
 @keyframes bf-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -201,7 +201,7 @@
 .bf-merit__facts { display: flex; gap: 10px; }
 .bf-fact {
   min-width: 108px; padding: 10px 14px; border-radius: 14px;
-  background: rgba(255,255,255,.85); border: 1px solid #f1e8da; text-align: center;
+  background: rgba(255,255,255,.85); border: 1px solid #ece1d1; text-align: center;
 }
 .bf-fact strong { display: block; font-size: 17px; font-weight: 800; color: #2f2117; white-space: nowrap; }
 .bf-fact strong small { font-size: 12px; font-weight: 600; color: #a8978a; }

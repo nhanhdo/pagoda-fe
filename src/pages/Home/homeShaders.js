@@ -27,12 +27,16 @@ void main() {
   float breath = 0.88 + 0.12 * sin(t * 1.2);
   float core = exp(-r * r * 5.5) * breath;
 
-  vec3 col = vec3(1.0, 0.97, 0.88) * core
-           + rainbow * aura * 0.75
-           + vec3(1.0, 0.98, 0.92) * rays * 0.55;
-  float alpha = clamp(core * 0.95 + aura * 0.6 + rays * 0.5, 0.0, 1.0);
-  alpha *= 1.0 - smoothstep(0.82, 1.0, r);    // fade out before the square edge
-  gl_FragColor = vec4(col * alpha, alpha);
+  // Build the premultiplied colour directly: each layer contributes (colour × its own coverage).
+  // (Multiplying colour by coverage AND by alpha again darkened the faint outer glow into a grey ring.)
+  vec3 pm = vec3(1.0, 0.97, 0.88) * core * 0.95
+          + rainbow * aura * 0.6
+          + vec3(1.0, 0.98, 0.92) * rays * 0.5;
+  float alpha = core * 0.95 + aura * 0.6 + rays * 0.5;
+  pm /= max(alpha, 1.0);                       // keep premultiplied rgb <= alpha where layers overlap
+  alpha = min(alpha, 1.0);
+  float fade = 1.0 - smoothstep(0.82, 1.0, r); // fade out before the square edge
+  gl_FragColor = vec4(pm * fade, alpha * fade);
 }
 `;
 

@@ -164,7 +164,7 @@
 .dc-agenda__list { list-style: none; margin: 0; padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 560px; }
 .dc-item {
   display: flex; gap: 0;
-  border: 1px solid #f1e8da; border-radius: 14px; background: #fff;
+  border: 1px solid #ece1d1; border-radius: 14px; background: #fff;
   overflow: hidden;
   transition: box-shadow .2s ease;
 }

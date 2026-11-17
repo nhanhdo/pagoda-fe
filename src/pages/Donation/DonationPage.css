@@ -81,8 +81,8 @@
 .dn-stat {
   display: flex; flex-direction: column; min-width: 0;
   padding: 18px 20px;
-  border-radius: 18px; border: 1px solid #f1e8da;
-  background: linear-gradient(170deg, #fff 0%, #fffcf8 100%);
+  border-radius: 18px; border: 1px solid #ece1d1;
+  background: #fff;
   box-shadow: var(--shadow-card);
 }
 .dn-stat__icon {
@@ -90,9 +90,9 @@
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--st-soft); color: var(--st); font-size: 18px;
 }
-.dn-stat__label { font-size: 13px; font-weight: 600; color: #8c7a6b; }
+.dn-stat__label { font-size: 13.5px; font-weight: 600; color: #5f4d3f; }
 .dn-stat__value { margin: 4px 0 6px; font-size: 26px; font-weight: 800; color: #2f2117; line-height: 1.1; }
-.dn-stat__hint { font-size: 12px; color: #a8978a; }
+.dn-stat__hint { font-size: 12px; color: #7a6656; }
 .dn-trend { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; }
 .dn-trend span { font-weight: 500; color: #a8978a; }
 .dn-trend.is-up { color: #3f8461; }
@@ -101,7 +101,7 @@
 /* ── Table card ──────────────────────────────────────────── */
 .dn-card {
   min-width: 0; padding: 16px;
-  background: #fff; border: 1px solid #f1e8da; border-radius: 18px;
+  background: #fff; border: 1px solid #ece1d1; border-radius: 18px;
   box-shadow: var(--shadow-card);
 }
 .dn-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }

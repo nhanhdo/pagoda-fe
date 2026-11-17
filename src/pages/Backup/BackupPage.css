@@ -31,7 +31,7 @@
 .bk-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
 .bk-card {
   min-width: 0; padding: 18px 20px; border-radius: 18px;
-  background: #fff; border: 1px solid #f1e8da; box-shadow: var(--shadow-card);
+  background: #fff; border: 1px solid #ece1d1; box-shadow: var(--shadow-card);
 }
 .bk-card--danger { border-color: #f4d6d3; background: linear-gradient(180deg, #fffafa 0%, #fff 60%); }
 .bk-card__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 15px; font-weight: 700; color: #4a2f1c; }
@@ -62,7 +62,7 @@
 .bk-kind--manual { background: #fbf1e4; color: #b06f2c; }
 .bk-kind--safety { background: #fdeeee; color: #c4545d; }
 
-.bk-confirm__file { display: grid; gap: 6px; padding: 12px; border-radius: 12px; background: #fcf9f4; border: 1px solid #f1e8da; }
+.bk-confirm__file { display: grid; gap: 6px; padding: 12px; border-radius: 12px; background: #fcf9f4; border: 1px solid #ece1d1; }
 .bk-confirm__file div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
 .bk-confirm__file span { color: #8c7a6b; }
 .bk-confirm__file strong { color: #3e2c1f; word-break: break-all; text-align: right; }

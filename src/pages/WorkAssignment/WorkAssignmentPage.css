@@ -72,7 +72,7 @@ button.wa-stat.is-active { border-color: var(--st); box-shadow: 0 0 0 3px var(--
   background: #fff;
   border-radius: 12px;
   padding: 12px 14px 10px;
-  border: 1px solid #f1e8da;
+  border: 1px solid #ece1d1;
   box-shadow: 0 1px 3px rgba(120,90,50,.06);
   transition: box-shadow .2s, transform .15s, border-color .18s;
   position: relative;

@@ -71,7 +71,7 @@
   padding: 20px 20px 0;
   border-radius: 18px;
   background: linear-gradient(180deg, var(--dept-tint, #fffaf3) 0%, #fff 55%);
-  border: 1px solid #f1e8da;
+  border: 1px solid #ece1d1;
   box-shadow: var(--shadow-card);
   cursor: pointer;
   outline: none;
@@ -90,7 +90,7 @@
 .dept-card:focus-visible {
   transform: translateY(-3px);
   box-shadow: var(--shadow-card-hover);
-  border-color: color-mix(in srgb, var(--dept-accent) 30%, #f1e8da);
+  border-color: color-mix(in srgb, var(--dept-accent) 30%, #ece1d1);
 }
 .dept-card:focus-visible { outline: 2px solid var(--dept-accent); outline-offset: 2px; }
 

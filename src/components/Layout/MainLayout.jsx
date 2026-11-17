@@ -412,21 +412,26 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
               cursor: 'pointer',
               outline: 'none',
               overflow: 'hidden',
-              background: sel
-                ? 'linear-gradient(135deg, #dca35e 0%, #c47f36 60%, #b56f28 100%)'
-                : hov ? '#f8f2ea' : 'transparent',
-              boxShadow: sel ? '0 6px 16px rgba(196,127,54,.30)' : 'none',
-              transition: 'background 0.18s ease, box-shadow 0.18s ease',
+              // Light, quiet menu: soft tint + accent bar for the current page (no heavy gradient)
+              background: sel ? '#fbeedd' : hov ? '#faf5ee' : 'transparent',
+              transition: 'background 0.18s ease',
             }}
           >
+            {/* accent bar for the current page */}
+            {sel && !collapsed && (
+              <span aria-hidden style={{
+                position: 'absolute', left: 0, top: 8, bottom: 8, width: 3,
+                borderRadius: 3, background: '#c47f36',
+              }} />
+            )}
             {/* icon tile */}
             <span style={{
               width: 32, height: 32, flexShrink: 0,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: 10,
               fontSize: 15.5, lineHeight: 1,
-              background: sel ? 'rgba(255,255,255,.22)' : hov ? '#fff' : '#f7f2ec',
-              color: sel ? '#ffffff' : hov ? '#c47f36' : '#a8957f',
+              background: 'transparent',
+              color: sel ? '#b06f2c' : hov ? '#b06f2c' : '#8f7a66',
               transition: 'color 0.18s, background 0.18s',
             }}>
               {item.icon}
@@ -436,10 +441,10 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
             {!collapsed && (
               <span style={{
                 fontSize: 13.5, flex: 1,
-                fontWeight: sel ? 650 : 500,
+                fontWeight: sel ? 700 : 500,
                 letterSpacing: 0.1,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                color: sel ? '#ffffff' : hov ? '#3e2c1f' : '#5f5046',
+                color: sel ? '#8a4f1c' : hov ? '#2f2117' : '#4f4238',
                 transition: 'color 0.18s',
               }}>
                 {item.label}
@@ -452,7 +457,7 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
                 position: 'absolute', bottom: 1,
                 left: '50%', transform: 'translateX(-50%)',
                 display: 'block', width: 4, height: 4,
-                borderRadius: '50%', background: '#ffffff',
+                borderRadius: '50%', background: '#c47f36',
                 boxShadow: 'none',
               }} />
             )}
@@ -613,7 +618,7 @@ export default function MainLayout() {
         tabIndex={0}
         aria-label={t.layout.goHome}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLogoClick(); } }}
-        style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid #f0e6d8', cursor: 'pointer', gap: 10 }}
+        style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid #ece1d1', cursor: 'pointer', gap: 10 }}
         onClick={handleLogoClick}
       >
         {/* Logo Buddha circle */}
@@ -706,7 +711,7 @@ export default function MainLayout() {
     <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       {!isMobile && (
         <Sider trigger={null} collapsible collapsed={collapsed} width={240}
-          style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #f1e8db, 6px 0 24px rgba(120,90,50,0.04)', position: 'relative', overflow: 'hidden', height: '100vh' }}>
+          style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #ece1d1', position: 'relative', overflow: 'hidden', height: '100vh' }}>
           {sidebarContent}
         </Sider>
       )}
@@ -723,7 +728,7 @@ export default function MainLayout() {
       </Drawer>
 
       <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Header style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f0e6d8', boxShadow: '0 1px 12px rgba(120,90,50,.04)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
+        <Header style={{ background: '#ffffff', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #ece1d1', boxShadow: '0 1px 0 rgba(120,90,50,.02)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
 
           {/* ── Navigation progress bar ── */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>

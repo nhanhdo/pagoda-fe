@@ -42,7 +42,7 @@
 .pd-tl__dot--now { width: 14px; height: 14px; left: -33px; top: 3px; border-radius: 50%; background: var(--tone); }
 .pd-tl__card {
   padding: 10px 14px; border-radius: 14px;
-  background: #fff; border: 1px solid #f1e8da;
+  background: #fff; border: 1px solid #ece1d1;
   transition: box-shadow .2s, transform .2s;
 }
 .pd-tl__card:hover { box-shadow: 0 6px 16px rgba(120,90,50,.10); transform: translateY(-1px); }

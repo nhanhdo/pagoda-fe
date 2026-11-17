@@ -186,17 +186,22 @@ const CSS = `
   .lg-input .ant-input-suffix .anticon{color:#c49a5c}
 
   .lg-btn.ant-btn{
-    height:50px; border-radius:12px; border:none;
-    background:linear-gradient(135deg, #c98a2e 0%, #e0a84a 50%, #b8741f 100%);
+    height:50px; border-radius:12px; border:2px solid transparent !important;
+    background:linear-gradient(135deg, #c98a2e 0%, #e0a84a 50%, #b8741f 100%) padding-box;
     color:#fff; font-weight:700; font-size:15px; letter-spacing:.06em;
     box-shadow:0 8px 22px rgba(185,116,31,0.30);
     transition:transform .2s, box-shadow .2s, filter .2s;
   }
-  .lg-btn.ant-btn:not(:disabled):hover{
-    background:linear-gradient(135deg, #c98a2e 0%, #e0a84a 50%, #b8741f 100%) !important;
+  /* Gold fill + spinning rainbow ring (shared glow-spin / glow-halo keyframes in index.css) */
+  .lg-btn.ant-btn:not(:disabled):is(:hover, :focus-visible){
+    background:
+      linear-gradient(135deg, #c98a2e 0%, #e0a84a 50%, #b8741f 100%) padding-box,
+      conic-gradient(from var(--glow-angle), #4285f4, #9b72cb, #d96570, #fbbc05, #34a853, #4285f4) border-box !important;
     color:#fff !important; filter:brightness(1.05);
-    transform:translateY(-1px); box-shadow:0 12px 28px rgba(185,116,31,0.38);
+    transform:translateY(-1px);
+    animation: glow-spin 2.6s linear infinite, glow-halo 2.6s linear infinite;
   }
+  @media (prefers-reduced-motion: reduce){ .lg-btn.ant-btn:not(:disabled):is(:hover, :focus-visible){ animation:none; } }
   .lg-btn.ant-btn:not(:disabled):active{transform:none}
 
   .lg-error{

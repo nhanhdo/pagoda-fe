@@ -752,7 +752,7 @@ const vi = {
     shiftPrefix: 'Ca',
     daysLater: 'ngày nữa',
     pageTitle: {
-      dashboard: 'Dashboard',
+      dashboard: 'Tổng quan',
       personnel: 'Nhân sự',
       departments: 'Ban ngành',
       dutySchedule: 'Lịch trực',
