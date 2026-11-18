@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import DharmaWheel from '../DharmaWheel/DharmaWheel';
+import LangToggle from '../LangToggle/LangToggle';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getBuddhistHolidays } from '../../utils/lunarCalendar';
@@ -169,9 +170,11 @@ function NotificationBell() {
     if (unread > prevUnread.current) setRinging(true);
     prevUnread.current = unread;
   }, [unread]);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { isAdmin, hasRole } = useAuth();
   const navigate = useNavigate();
+  const langRef = React.useRef(lang);
+  langRef.current = lang;
   const canApprove = isAdmin() || hasRole('truotri') || hasRole('thuki');
   // ref so handleOpenChange always has latest list (avoids stale closure)
   const notifsRef = React.useRef([]);
@@ -270,7 +273,7 @@ function NotificationBell() {
           d.setDate(d.getDate() + i);
           const key = ymd(d);
           const y = d.getFullYear();
-          if (!holidayMaps[y]) holidayMaps[y] = getBuddhistHolidays(y);
+          if (!holidayMaps[y]) holidayMaps[y] = getBuddhistHolidays(y, langRef.current);
           const h = holidayMaps[y].get(key);
           if (h) {
             h.names.forEach((name, idx) => items.push({
@@ -280,6 +283,7 @@ function NotificationBell() {
               title: name,
               subtitle: i === 0 ? t.layout.today : `${i} ${t.layout.daysLater}`,
               time: `${d.getDate()}/${d.getMonth() + 1}`,
+              link: '/app/news?tab=calendar',
             }));
           }
         }
@@ -319,6 +323,9 @@ function NotificationBell() {
       window.removeEventListener('focus', onVisible);
     };
   }, [canApprove]);
+
+  // Rebuild the list in the new language right away (holiday names, relative times)
+  useEffect(() => { loadRef.current(); }, [lang]);
 
   const handleOpenChange = (v) => {
     setOpen(v);
@@ -376,8 +383,10 @@ const SIDEBAR_BG = '#ffffff';
 /* ── Custom sidebar menu — replaces Ant Design <Menu> ── */
 function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
   const [hovered, setHovered] = useState(null);
+  const { t } = useLanguage();
+  // Plain navigation landmark + buttons with aria-current (a role="menu" would promise arrow-key behaviour)
   return (
-    <nav role="menu" style={{ padding: '8px 0', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+    <nav aria-label={t.layout.mainNav} style={{ padding: '8px 0', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
       {items.map((item, idx) => {
         if (item.type === 'divider') {
           return (
@@ -390,14 +399,13 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
         const sel = selectedKey === item.key;
         const hov = hovered === item.key;
         const node = (
-          <div
+          <button
+            type="button"
             key={item.key}
-            role="menuitem"
-            aria-label={item.label}
-            tabIndex={0}
+            className="sb-item"
+            aria-label={collapsed ? item.label : undefined}
             aria-current={sel ? 'page' : undefined}
             onClick={() => onSelect(item.key)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(item.key); } }}
             onMouseEnter={() => setHovered(item.key)}
             onMouseLeave={() => setHovered(null)}
             style={{
@@ -407,10 +415,13 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
               gap: collapsed ? 0 : 10,
               justifyContent: collapsed ? 'center' : 'flex-start',
               padding: collapsed ? '6px 0' : '5px 10px 5px 6px',
+              width: 'calc(100% - 24px)',
               margin: '2px 12px',
+              border: 0,
+              font: 'inherit',
+              textAlign: 'left',
               borderRadius: 12,
               cursor: 'pointer',
-              outline: 'none',
               overflow: 'hidden',
               // Light, quiet menu: soft tint + accent bar for the current page (no heavy gradient)
               background: sel ? '#fbeedd' : hov ? '#faf5ee' : 'transparent',
@@ -461,7 +472,7 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
                 boxShadow: 'none',
               }} />
             )}
-          </div>
+          </button>
         );
         return collapsed
           ? <Tooltip key={item.key} title={item.label} placement="right">{node}</Tooltip>
@@ -489,7 +500,7 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const outlet = useOutlet();
-  const { lang, setLang, t } = useLanguage();
+  const { lang, t } = useLanguage();
 
   const contentRef = useRef(null);
   const isFirstNav = useRef(true);
@@ -708,10 +719,10 @@ export default function MainLayout() {
   );
 
   return (
-    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
+    <Layout className="app-shell" style={{ overflow: 'hidden' }}>
       {!isMobile && (
         <Sider trigger={null} collapsible collapsed={collapsed} width={240}
-          style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #ece1d1', position: 'relative', overflow: 'hidden', height: '100vh' }}>
+          style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #ece1d1', position: 'relative', overflow: 'hidden' }}>
           {sidebarContent}
         </Sider>
       )}
@@ -727,7 +738,7 @@ export default function MainLayout() {
         {sidebarContent}
       </Drawer>
 
-      <Layout style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Layout className="app-shell" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header style={{ background: '#ffffff', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #ece1d1', boxShadow: '0 1px 0 rgba(120,90,50,.02)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
 
           {/* ── Navigation progress bar ── */}
@@ -788,22 +799,7 @@ export default function MainLayout() {
 
           <div className="hdr-actions">
             {/* Language switch */}
-            <div className={`hdr-lang is-${lang}`} role="radiogroup" aria-label="Language">
-              <span className="hdr-lang__thumb" aria-hidden="true" />
-              {['vi', 'en'].map(code => (
-                <button
-                  key={code}
-                  type="button"
-                  role="radio"
-                  aria-checked={lang === code}
-                  className={`hdr-lang__opt${lang === code ? ' is-active' : ''}`}
-                  onClick={() => setLang(code)}
-                  title={code === 'vi' ? 'Tiếng Việt' : 'English'}
-                >
-                  {code.toUpperCase()}
-                </button>
-              ))}
-            </div>
+            <LangToggle />
 
             <NotificationBell />
 
@@ -851,7 +847,7 @@ export default function MainLayout() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { duration: 0.18, ease: 'easeOut' } }}
               exit={{ opacity: 0, transition: { duration: 0.08, ease: 'easeIn' } }}
-              style={{ minHeight: '100%' }}
+              style={{ minHeight: '100%', paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom, 0px))' : 0 }}
             >
               {outlet}
             </motion.div>

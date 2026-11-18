@@ -132,7 +132,7 @@ export default function DutyFormModal({ open, record, defaultDate, personnel, t,
       width={600}
       destroyOnClose
     >
-      <Form form={form} layout="vertical" onFinish={submit} className="pp-form" requiredMark={false}>
+      <Form form={form} layout="vertical" onFinish={submit} className="pp-form">
         <HiddenSubmit />
         <Form.Item name="personnelId" label={D.fields.person} rules={[R.select(D.fields.person.toLowerCase())]}>
           <Select

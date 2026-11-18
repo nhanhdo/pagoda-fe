@@ -3,6 +3,7 @@ import { Button, Modal, Form, Input, InputNumber, Switch, Popconfirm, Tooltip, m
 import { PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { guardedClose } from '../../utils/formGuard';
 import { vnd, compactVnd, softOf } from './financeShared';
 
 const SWATCHES = ['#c47f36', '#4d8fc7', '#d9646c', '#4f9a72', '#8b6fc9', '#3a9483', '#d39a2c', '#b8893a'];
@@ -85,15 +86,15 @@ export default function FundsTab({ F, funds, onChanged }) {
                 </div>
               </div>
               <div className="personnel-action-group">
-                <Tooltip title={t.common.edit}><Button type="text" icon={<EditOutlined />} onClick={() => open(f)} /></Tooltip>
+                <Tooltip title={t.common.edit}><Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => open(f)} /></Tooltip>
                 {!isDefault && (
                   <Tooltip title={f.isActive === false ? F.activate : F.deactivate}>
-                    <Button type="text" icon={f.isActive === false ? <CheckCircleOutlined /> : <StopOutlined />} onClick={() => toggle(f)} />
+                    <Button aria-label={f.isActive === false ? F.activate : F.deactivate} type="text" icon={f.isActive === false ? <CheckCircleOutlined /> : <StopOutlined />} onClick={() => toggle(f)} />
                   </Tooltip>
                 )}
                 {!isDefault && !used && (
                   <Popconfirm title={F.deleteFundConfirm} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }} onConfirm={() => remove(f)}>
-                    <Tooltip title={t.common.delete}><Button type="text" danger icon={<DeleteOutlined />} /></Tooltip>
+                    <Tooltip title={t.common.delete}><Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} /></Tooltip>
                   </Popconfirm>
                 )}
               </div>
@@ -105,14 +106,15 @@ export default function FundsTab({ F, funds, onChanged }) {
       <Modal
         open={!!editing}
         title={editing && editing !== 'new' ? F.editFund : F.addFund}
-        onCancel={() => setEditing(null)}
+        onCancel={() => guardedClose(form, () => setEditing(null), t)}
         onOk={() => form.submit()}
+        maskClosable={false}
         okText={editing && editing !== 'new' ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         confirmLoading={saving}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={save} requiredMark={false}>
+        <Form form={form} layout="vertical" onFinish={save}>
           <Form.Item name="name" label={F.fieldName} rules={[{ required: true, whitespace: true, message: F.nameRequired }]}><Input /></Form.Item>
           <Form.Item name="description" label={F.fieldFundDescription}><Input.TextArea rows={2} /></Form.Item>
           <Form.Item name="targetAmount" label={F.fieldTarget}>

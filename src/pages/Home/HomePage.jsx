@@ -6,11 +6,30 @@ import { LoginOutlined, StarFilled, StarOutlined, CalendarOutlined, ArrowRightOu
 import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
 import ShaderCanvas from '../../components/ShaderCanvas/ShaderCanvas';
 import { HALO_FRAG, POND_FRAG } from './homeShaders';
+import LangToggle from '../../components/LangToggle/LangToggle';
+import { useLanguage } from '../../i18n/LanguageContext';
+
+// Phones get one WebGL scene (the halo); the pond falls back to its CSS gradient
+function usePhone() {
+  const q = '(max-width: 720px)';
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(q).matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.(q);
+    if (!mq) return undefined;
+    const on = () => setPhone(mq.matches);
+    mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, []);
+  return phone;
+}
 
 /* ── Canvas: petals ─────────────────────────────────────── */
 function usePetals(ref) {
   useEffect(() => {
-    const c = ref.current; if (!c) return;
+    const c = ref.current; if (!c) return undefined;
+    // Decorative only: skip for reduced-motion users; lighter on touch devices
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const coarse = !!window.matchMedia?.('(pointer: coarse)').matches;
     const resize = () => { c.width = innerWidth; c.height = innerHeight; };
     resize();
     const ctx = c.getContext('2d');
@@ -29,8 +48,8 @@ function usePetals(ref) {
         const op = 0.45 + Math.random() * 0.45;
         this.c  = `rgba(${palette[~~(Math.random() * palette.length)]},${op})`;
       }
-      tick(t) {
-        this.y += this.vy; this.x += Math.sin(t*this.fr+this.ph)*0.42; this.a += this.rv;
+      tick(t, k = 1) {
+        this.y += this.vy * k; this.x += Math.sin(t*this.fr+this.ph)*0.42; this.a += this.rv;
         if (this.y > c.height+16) this.reset();
       }
       draw() {
@@ -42,10 +61,19 @@ function usePetals(ref) {
         ctx.fill(); ctx.restore();
       }
     }
-    const ps = Array.from({length: innerWidth < 640 ? 40 : 80},()=>new P(true));
-    let t=0,id;
-    const go=()=>{ id=requestAnimationFrame(go); ctx.clearRect(0,0,c.width,c.height); t+=.013; ps.forEach(p=>{p.tick(t);p.draw();}); };
-    const onVis=()=>{ if(document.hidden) cancelAnimationFrame(id); else go(); };
+    const ps = Array.from({ length: coarse ? (innerWidth < 640 ? 20 : 40) : 80 }, () => new P(true));
+    const frameMs = coarse ? 1000 / 30 : 0; // ~30fps on touch devices
+    let t = 0, id, last = 0;
+    const go = (now = 0) => {
+      id = requestAnimationFrame(go);
+      if (frameMs && now - last < frameMs) return;
+      const step = frameMs && last ? (now - last) / 16.67 : 1;
+      last = now;
+      ctx.clearRect(0, 0, c.width, c.height);
+      t += .013 * step;
+      ps.forEach(p => { p.tick(t, step); p.draw(); });
+    };
+    const onVis = () => { cancelAnimationFrame(id); if (!document.hidden) { last = 0; go(); } };
     go();
     window.addEventListener('resize',resize);
     document.addEventListener('visibilitychange',onVis);
@@ -192,9 +220,9 @@ function useNow() {
   return now;
 }
 
-function nextHolyDay(from) {
+function nextHolyDay(from, lang) {
   const start = dayjs(from).startOf('day');
-  const maps = [start.year(), start.year() + 1].map(y => getBuddhistHolidays(y));
+  const maps = [start.year(), start.year() + 1].map(y => getBuddhistHolidays(y, lang));
   for (let i = 0; i <= 60; i++) {
     const d = start.add(i, 'day');
     const hit = maps[d.year() === start.year() ? 0 : 1].get(d.format('YYYY-MM-DD'));
@@ -204,6 +232,7 @@ function nextHolyDay(from) {
 }
 
 const CSS = `
+  .hp__top-actions{display:flex;align-items:center;gap:10px}
   @keyframes hpFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
   @keyframes hpSpin{to{transform:rotate(360deg)}}
   @keyframes hpBreath{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
@@ -242,7 +271,7 @@ const CSS = `
   /* Text column */
   .hp__text{max-width:560px}
   .hp__eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
-    background:rgba(255,255,255,.75);border:1px solid #f0dfc6;color:#b07a3a;font-size:11.5px;font-weight:700;
+    background:rgba(255,255,255,.75);border:1px solid #f0dfc6;color:#8a5a28;font-size:11.5px;font-weight:700;
     letter-spacing:.22em;text-transform:uppercase;animation:hpRise .6s ease both .05s}
   .hp__title{margin:18px 0 14px;font-size:clamp(44px,6.2vw,88px);font-weight:900;line-height:.98;letter-spacing:-.01em;color:#5a2c0e;
     animation:hpRise .6s ease both .15s}
@@ -256,15 +285,15 @@ const CSS = `
   .hp__cta:focus-visible{outline:3px solid #6b3410;outline-offset:4px}
   .hp__cta .anticon{font-size:16px;transition:transform .2s ease}
   .hp__cta:hover .anticon{transform:translateX(3px)}
-  .hp__hint{font-size:13px;color:#a8917a}
+  .hp__hint{font-size:13px;color:#6f5e50}
 
   .hp__facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:clamp(26px,5vh,48px);max-width:560px;
     animation:hpRise .6s ease both .45s}
   .hp__fact{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.95);
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(120,90,50,.07);min-width:0}
-  .hp__fact-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b09075}
+  .hp__fact-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7a5e44}
   .hp__fact-value{margin-top:6px;font-size:18px;font-weight:800;color:#3e2c1f;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hp__fact-sub{margin-top:2px;font-size:12px;color:#a8917a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize}
+  .hp__fact-sub{margin-top:2px;font-size:12px;color:#6f5e50;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize}
   .hp__fact--holy .hp__fact-value{font-size:15px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .hp__fact--holy .hp__fact-sub{color:#c4545d;font-weight:700;text-transform:none}
   .hp__mono{font-family:ui-monospace,Consolas,monospace;letter-spacing:.02em}
@@ -354,10 +383,14 @@ export default function HomePage() {
   const petalsRef = useRef(null);
   const navigate = useNavigate();
   const now = useNow();
+  const { t, lang } = useLanguage();
+  const L = t.login;
+  const D = t.dashboard;
+  const phone = usePhone();
   usePetals(petalsRef);
 
   const lunar = solarToLunar(now.getDate(), now.getMonth() + 1, now.getFullYear());
-  const holy = nextHolyDay(now);
+  const holy = nextHolyDay(now, lang);
   const two = (n) => String(n).padStart(2, '0');
   const goLogin = () => navigate('/login');
 
@@ -370,46 +403,46 @@ export default function HomePage() {
         <div className="hp__brand">
           <span className="hp__logo"><img src="/adida.PNG" alt="" /></span>
           <span>
-            <div className="hp__name">Chùa Tân Thành</div>
-            <div className="hp__sub">Hệ thống quản lý</div>
+            <div className="hp__name">{L.pagodaName}</div>
+            <div className="hp__sub">{L.brandSubtitle}</div>
           </span>
         </div>
-        <button type="button" className="hp__login-sm" onClick={goLogin}>
-          <LoginOutlined /> Đăng nhập
-        </button>
+        <div className="hp__top-actions">
+          <LangToggle />
+          <button type="button" className="hp__login-sm" onClick={goLogin}>
+            <LoginOutlined /> {L.signIn}
+          </button>
+        </div>
       </header>
 
       <main className="hp__main">
         {/* Text */}
         <section className="hp__text">
-          <span className="hp__eyebrow"><DharmaWheel /> Nam Mô A Di Đà Phật</span>
-          <h1 className="hp__title">Chùa<span>Tân Thành</span></h1>
-          <p className="hp__lead">
-            Nơi an lạc, nơi tu tập và kết nối thiện duyên. Hệ thống quản lý giúp đại chúng
-            theo dõi lịch trực, khóa tu, Phật sự và công đức một cách trang nghiêm, minh bạch.
-          </p>
+          <span className="hp__eyebrow"><DharmaWheel /> {L.footerChant}</span>
+          <h1 className="hp__title">{L.homeTitleA}<span>{L.homeTitleB}</span></h1>
+          <p className="hp__lead">{L.homeLead}</p>
           <div className="hp__actions">
             <button type="button" className="hp__cta" onClick={goLogin}>
-              Vào hệ thống <ArrowRightOutlined />
+              {L.homeEnter} <ArrowRightOutlined />
             </button>
-            <span className="hp__hint">Dành cho chư Tăng Ni &amp; ban điều hành</span>
+            <span className="hp__hint">{L.homeAudience}</span>
           </div>
 
           <div className="hp__facts">
             <div className="hp__fact">
-              <div className="hp__fact-label"><CalendarOutlined /> Hôm nay</div>
+              <div className="hp__fact-label"><CalendarOutlined /> {D.today}</div>
               <div className="hp__fact-value">{two(now.getDate())}/{two(now.getMonth() + 1)}/{now.getFullYear()}</div>
-              <div className="hp__fact-sub">{now.toLocaleDateString('vi-VN', { weekday: 'long' })} · <span className="hp__mono">{two(now.getHours())}:{two(now.getMinutes())}</span></div>
+              <div className="hp__fact-sub">{now.toLocaleDateString(lang === 'en' ? 'en-US' : 'vi-VN', { weekday: 'long' })} · <span className="hp__mono">{two(now.getHours())}:{two(now.getMinutes())}</span></div>
             </div>
             <div className="hp__fact">
-              <div className="hp__fact-label"><MoonOutlined /> Âm lịch</div>
+              <div className="hp__fact-label"><MoonOutlined /> {D.lunarLabel}</div>
               <div className="hp__fact-value">{lunar.day}/{lunar.month}{lunar.leap ? '*' : ''}</div>
-              <div className="hp__fact-sub">Năm {lunar.yearName}</div>
+              <div className="hp__fact-sub">{L.homeYear.replace('{y}', lunar.yearName)}</div>
             </div>
             <div className="hp__fact hp__fact--holy">
-              <div className="hp__fact-label">{holy?.major ? <StarFilled style={{ color: '#e0a83a' }} /> : <StarOutlined />} Sắp tới</div>
+              <div className="hp__fact-label">{holy?.major ? <StarFilled style={{ color: '#e0a83a' }} /> : <StarOutlined />} {L.homeUpcoming}</div>
               <div className="hp__fact-value">{holy ? holy.name : '—'}</div>
-              {holy && <div className="hp__fact-sub">{holy.diff === 0 ? 'Hôm nay' : `Còn ${holy.diff} ngày · ${holy.date.format('DD/MM')}`}</div>}
+              {holy && <div className="hp__fact-sub">{holy.diff === 0 ? D.today : `${D.inDays.replace('{n}', holy.diff)} · ${holy.date.format('DD/MM')}`}</div>}
             </div>
           </div>
         </section>
@@ -452,7 +485,9 @@ export default function HomePage() {
             <div className="hp__temple"><Temple /></div>
 
             <div className="hp__pond">
-              <ShaderCanvas fragment={POND_FRAG} fps={40} fallback={<span className="hp__pond-fallback" />} />
+              {phone
+                ? <span className="hp__pond-fallback" />
+                : <ShaderCanvas fragment={POND_FRAG} fps={40} fallback={<span className="hp__pond-fallback" />} />}
             </div>
             <div className="hp__lotus" style={{ left: '10%', bottom: '5%' }}><LotusFlower size={38} /></div>
             <div className="hp__lotus" style={{ right: '12%', bottom: '8%', animationDelay: '1.4s' }}><LotusFlower size={30} /></div>

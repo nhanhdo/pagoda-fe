@@ -28,7 +28,7 @@
   pointer-events: none;
 }
 .db-hero__main { position: relative; z-index: 1; flex: 1; min-width: 0; }
-.db-hero__date { font-size: 12.5px; font-weight: 600; letter-spacing: .04em; color: #a8836a; text-transform: capitalize; }
+.db-hero__date { font-size: 12.5px; font-weight: 600; letter-spacing: .04em; color: #7a5e44; text-transform: capitalize; }
 .db-hero__greet { margin: 6px 0 4px; font-size: 26px; font-weight: 800; color: #4a2f1c; letter-spacing: .1px; line-height: 1.25; }
 .db-hero__greet span { color: #c47f36; }
 .db-hero__bless { margin: 0; font-size: 13.5px; color: #8c7a6b; }
@@ -70,7 +70,7 @@
   box-shadow: 0 10px 26px rgba(217,100,108,.28);
 }
 .db-lunar__label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
-.db-lunar__day { font-size: 54px; font-weight: 900; line-height: 1; margin: 6px 0 2px; letter-spacing: -2px; }
+.db-lunar__day { font-size: 54px; font-weight: 900; line-height: 1; margin: 6px 0 2px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .db-lunar__month { font-size: 13px; font-weight: 600; opacity: .95; }
 .db-lunar__year {
   margin-top: 8px; padding: 2px 10px; border-radius: 999px;
@@ -136,7 +136,7 @@
 }
 .db-card__count {
   min-width: 22px; padding: 0 7px; border-radius: 999px;
-  background: #f4ece0; color: #9a8470; font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center;
+  background: #f4ece0; color: #6f5a46; font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center;
 }
 .db-card__body { padding: 0 20px 18px; }
 
@@ -159,7 +159,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   background: #fff; color: #cdb08a; font-size: 18px; box-shadow: 0 2px 6px rgba(120,90,50,.06);
 }
-.db-empty__text { flex: 1; min-width: 160px; font-size: 13.5px; color: #a8978a; }
+.db-empty__text { flex: 1; min-width: 160px; font-size: 13.5px; color: #6f5e50; }
 
 .db-pill {
   display: inline-flex; align-items: center;
@@ -173,7 +173,7 @@
 .db-duty__row:hover { background: #fcf6ee; }
 .db-duty__info { flex: 1; min-width: 0; }
 .db-duty__person { font-size: 14px; font-weight: 700; color: #3e2c1f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-duty__type { font-size: 12.5px; color: #a8978a; margin-top: 1px; }
+.db-duty__type { font-size: 12.5px; color: #6f5e50; margin-top: 1px; }
 
 /* Personnel breakdown chart */
 .db-bd { display: flex; flex-direction: column; align-items: center; gap: 18px; }
@@ -190,7 +190,7 @@
 }
 .db-bd__center strong { font-size: 32px; font-weight: 800; line-height: 1; color: #2f2117; letter-spacing: -.5px; }
 .db-bd__center-label { margin-top: 5px; font-size: 12.5px; font-weight: 600; color: #8c7a6b; max-width: 92px; line-height: 1.25; }
-.db-bd__center-sub { margin-top: 2px; font-size: 11.5px; color: #b3a08b; }
+.db-bd__center-sub { margin-top: 2px; font-size: 11.5px; color: #7a6a5c; }
 
 .db-bd__legend { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; }
 .db-bd__row {
@@ -213,7 +213,7 @@
   display: block; height: 100%; border-radius: inherit; background: var(--c);
   transition: width 1s cubic-bezier(.22,1,.36,1);
 }
-.db-bd__pct { width: 38px; flex-shrink: 0; text-align: right; font-size: 12px; font-weight: 600; color: #a8978a; font-variant-numeric: tabular-nums; }
+.db-bd__pct { width: 38px; flex-shrink: 0; text-align: right; font-size: 12px; font-weight: 600; color: #6f5e50; font-variant-numeric: tabular-nums; }
 
 /* Events */
 .db-events { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
@@ -235,7 +235,7 @@
 .db-event.is-today .db-event__tile strong { color: #c4545d; }
 .db-event__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .db-event__title { font-size: 13.5px; font-weight: 700; color: #3e2c1f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-event__meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: #a8978a; }
+.db-event__meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: #6f5e50; }
 .db-event__loc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .db-pair .db-events { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .db-pair .db-event { align-items: center; }
@@ -263,8 +263,8 @@
 .db-holy__name > span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .db-holy__star { color: #e0a83a; font-size: 12px; flex-shrink: 0; }
 .db-holy__bell { color: #4f9a72; font-size: 11px; flex-shrink: 0; }
-.db-holy__extra { flex-shrink: 0; padding: 0 6px; border-radius: 999px; background: #f4ece0; color: #9a8470; font-size: 10.5px; font-weight: 700; cursor: default; }
-.db-holy__lunar { margin-top: 2px; font-size: 12px; color: #a8978a; text-transform: capitalize; }
+.db-holy__extra { flex-shrink: 0; padding: 0 6px; border-radius: 999px; background: #f4ece0; color: #6f5a46; font-size: 10.5px; font-weight: 700; cursor: default; }
+.db-holy__lunar { margin-top: 2px; font-size: 12px; color: #6f5e50; text-transform: capitalize; }
 .db-holy__row .db-event__when { margin: 0; flex-shrink: 0; }
 
 .db-event__when {
@@ -294,7 +294,7 @@
   .db-hero { flex-direction: column-reverse; padding: 18px; border-radius: 16px; gap: 16px; }
   .db-hero__greet { font-size: 21px; }
   .db-lunar { width: 100%; flex-direction: row; justify-content: flex-start; gap: 14px; padding: 12px 16px; }
-  .db-lunar__day { font-size: 34px; margin: 0; }
+  .db-lunar__day { font-size: 34px; margin: 0; letter-spacing: 0; }
   .db-lunar__label { order: 2; }
   .db-lunar__year { margin-top: 0; margin-left: auto; }
   .db-actions { margin-top: 14px; }

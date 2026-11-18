@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 import ShaderCanvas from '../../components/ShaderCanvas/ShaderCanvas';
+import LangToggle from '../../components/LangToggle/LangToggle';
 import { HALO_FRAG } from '../Home/homeShaders';
 
 // Shader halo only where the brand panel is large (desktop/tablet); phones keep the CSS glow.
@@ -23,7 +24,10 @@ function useWideBrand() {
 /* ── Falling petals canvas ───────────────────────────── */
 function usePetals(ref) {
   useEffect(() => {
-    const c = ref.current; if (!c) return;
+    const c = ref.current; if (!c) return undefined;
+    // Decorative only: skip for reduced-motion users; lighter on touch devices (phones/tablets)
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const coarse = !!window.matchMedia?.('(pointer: coarse)').matches;
     const resize = () => { c.width = innerWidth; c.height = innerHeight; };
     resize();
     const ctx = c.getContext('2d');
@@ -42,8 +46,8 @@ function usePetals(ref) {
         const op = 0.35 + Math.random() * 0.4;
         this.c = `rgba(${palette[~~(Math.random() * palette.length)]},${op})`;
       }
-      tick(t) {
-        this.y += this.vy;
+      tick(t, k = 1) {
+        this.y += this.vy * k;
         this.x += Math.sin(t * this.fr + this.ph) * 0.35;
         this.a += this.rv;
         if (this.y > c.height + 16) this.reset(false);
@@ -58,16 +62,21 @@ function usePetals(ref) {
         ctx.fill(); ctx.restore();
       }
     }
-    const count = innerWidth < 600 ? 45 : 90;
+    const count = coarse ? (innerWidth < 600 ? 22 : 40) : 90;
+    const frameMs = coarse ? 1000 / 30 : 0; // ~30fps on touch devices
+    let last = 0;
     const ps = Array.from({ length: count }, () => new P(true));
     let t = 0, id;
-    const go = () => {
+    const go = (now = 0) => {
       id = requestAnimationFrame(go);
+      if (frameMs && now - last < frameMs) return;
+      const step = frameMs && last ? (now - last) / 16.67 : 1;
+      last = now;
       ctx.clearRect(0, 0, c.width, c.height);
-      t += 0.013;
-      ps.forEach(p => { p.tick(t); p.draw(); });
+      t += 0.013 * step;
+      ps.forEach(p => { p.tick(t, step); p.draw(); });
     };
-    const onVis = () => { if (document.hidden) cancelAnimationFrame(id); else go(); };
+    const onVis = () => { cancelAnimationFrame(id); if (!document.hidden) { last = 0; go(); } };
     go();
     window.addEventListener('resize', resize);
     document.addEventListener('visibilitychange', onVis);
@@ -76,6 +85,7 @@ function usePetals(ref) {
 }
 
 const CSS = `
+  .lg-lang{position:fixed; top:14px; right:14px; z-index:5; background:rgba(255,255,255,.85); backdrop-filter:blur(6px)}
   @keyframes lgRays{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
   @keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   @keyframes lgGlow{0%,100%{opacity:.55}50%{opacity:.95}}
@@ -145,7 +155,7 @@ const CSS = `
   }
   .lg-sub{
     position:relative; z-index:1; margin:0 0 28px;
-    font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:#a0703a;
+    font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:#85562a;
   }
   .lg-quote{
     position:relative; z-index:1; max-width:250px; margin:0;
@@ -169,7 +179,7 @@ const CSS = `
     color:#b07a2a; background:#fdf3e2; border:1px solid #f0dcb8;
   }
   .lg-head h2{margin:0; font-size:26px; font-weight:800; color:#3d2410; letter-spacing:.01em}
-  .lg-head p{margin:6px 0 0; font-size:13px; color:#9a8068}
+  .lg-head p{margin:6px 0 0; font-size:13px; color:#6f5e50}
   .lg-label{font-size:12.5px; font-weight:600; color:#6b4a2e}
 
   .lg-input.ant-input-affix-wrapper{
@@ -181,7 +191,7 @@ const CSS = `
     background:#fff; border-color:#c98a2e; box-shadow:0 0 0 3px rgba(201,138,46,0.14);
   }
   .lg-input .ant-input{background:transparent; color:#3d2410; font-size:14.5px}
-  .lg-input .ant-input::placeholder{color:#bfa98c}
+  .lg-input .ant-input::placeholder{color:#9a8470}
   .lg-input .ant-input-prefix{margin-inline-end:10px; color:#c49a5c}
   .lg-input .ant-input-suffix .anticon{color:#c49a5c}
 
@@ -211,11 +221,11 @@ const CSS = `
   }
   .lg-forgot{
     display:block; margin:18px auto 0; padding:4px 8px; background:none; border:none;
-    color:#a0703a; font-size:13px; cursor:pointer; transition:color .18s;
+    color:#85562a; font-size:13px; cursor:pointer; transition:color .18s;
   }
   .lg-forgot:hover{color:#6b3410; text-decoration:underline}
   .lg-foot{margin-top:28px; text-align:center}
-  .lg-foot span{display:block; margin-top:6px; font-size:11.5px; letter-spacing:.14em; color:#b8996f}
+  .lg-foot span{display:block; margin-top:6px; font-size:11.5px; letter-spacing:.14em; color:#7a6a5c}
 
   /* ── Tablet: narrower brand panel ── */
   @media (max-width: 960px){
@@ -303,6 +313,7 @@ export default function Login() {
     <div className="lg-root">
       <style>{CSS}</style>
       <canvas ref={canvasRef} className="lg-canvas" />
+      <LangToggle className="lg-lang" />
 
       <div className="lg-center">
         <div className="lg-card">
@@ -337,9 +348,9 @@ export default function Login() {
             </div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <h1 className="lg-title">Chùa Tân Thành</h1>
-              <p className="lg-sub">Hệ thống quản lý</p>
-              <p className="lg-quote">"Tâm bình thì thế giới bình, tâm an thì vạn sự an"</p>
+              <h1 className="lg-title">{t.login.pagodaName}</h1>
+              <p className="lg-sub">{t.login.brandSubtitle}</p>
+              <p className="lg-quote">“{t.login.brandQuote}”</p>
             </div>
 
             <div className="lg-orn" aria-hidden="true"><i /><DharmaWheel /><i /></div>
@@ -350,8 +361,8 @@ export default function Login() {
             <div className="lg-form-inner">
               <div className="lg-head">
                 <div className="lg-head-icon"><DharmaWheel /></div>
-                <h2>{t.login.sectionLabel || 'Đăng nhập'}</h2>
-                <p>Vui lòng đăng nhập để tiếp tục</p>
+                <h2>{t.login.signIn}</h2>
+                <p>{t.login.signInHint}</p>
               </div>
 
               <Form layout="vertical" onFinish={onFinish} size="large" requiredMark={false}>
@@ -394,7 +405,7 @@ export default function Login() {
 
               <div className="lg-foot">
                 <div className="lg-orn" aria-hidden="true"><i /><span style={{ fontSize: 10 }}>✦</span><i /></div>
-                <span>Nam Mô A Di Đà Phật</span>
+                <span>{t.login.footerChant}</span>
               </div>
             </div>
           </div>

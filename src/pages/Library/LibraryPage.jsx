@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Input, Segmented, message } from 'antd';
+import { Button, Input, Segmented } from 'antd';
 import { PlusOutlined, SearchOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
@@ -26,6 +26,7 @@ export default function LibraryPage() {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState('all');
   const [form, setForm] = useState({ open: false, record: null });
@@ -34,8 +35,10 @@ export default function LibraryPage() {
     try {
       const { data } = await api.get('/library');
       setItems(Array.isArray(data) ? data : []);
+      setFailed(false);
     } catch {
-      message.error(L.loadError);
+      // Show an error state with Retry — not "the library is empty"
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -122,7 +125,14 @@ export default function LibraryPage() {
         />
       </section>
 
-      {filtered.length === 0 ? (
+      {failed && !items.length ? (
+        <div className="lib-empty">
+          <LotusEmpty description={L.loadError} hint={L.loadErrorHint} />
+          <div style={{ textAlign: 'center', marginTop: 8 }}>
+            <Button onClick={() => { setLoading(true); fetchData(); }}>{t.common.retry}</Button>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="lib-empty">
           {items.length === 0
             ? <LotusEmpty description={L.emptyTitle} hint={canEdit ? L.emptyHint : ''} />

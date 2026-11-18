@@ -259,7 +259,6 @@ export default function FigureFormModal({ open, record, onClose, onSaved }) {
         layout="vertical"
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
-        requiredMark={false}
         initialValues={{ kind: 'phat', feastDays: [], bioSections: [], vows: [] }}
       >
         <Tabs

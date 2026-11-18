@@ -1,5 +1,5 @@
 import { useCreateParam } from '../../utils/useCreateParam';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
@@ -15,8 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import PersonnelFormModal from './PersonnelForm';
 import { usePersonnelList } from './usePersonnelList';
 import {
-  toneOf, statusToneOf, positionLabel, initialOf, imgSrc,
-} from './personnelShared';
+  toneOf, statusToneOf, positionLabel, initialOf, imgSrc, pinLeft, PIN_RIGHT } from './personnelShared';
 import { useLanguage } from '../../i18n/LanguageContext';
 import './PersonnelList.css';
 import './peopleShared.css';
@@ -35,7 +34,18 @@ export default function PersonnelList() {
   const navigate = useNavigate();
   const { t: tt } = useLanguage();
   const P = tt.personnel;
-  const [viewMode, setViewMode] = useState('table');
+  // Phones default to the card view (a wide table is hard to use there); an explicit choice wins
+  const [viewChoice, setViewChoice] = useState(null);
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.('(max-width: 767px)');
+    if (!mq) return undefined;
+    const on = () => setNarrow(mq.matches);
+    if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener?.(on);
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener?.(on); };
+  }, []);
+  const viewMode = viewChoice || (narrow ? 'card' : 'table');
+  const setViewMode = setViewChoice;
   const canRemove = isAdmin() || hasRole('truotri');
   const isFiltered = Boolean(search.trim() || filterType || filterStatus);
 
@@ -84,6 +94,7 @@ export default function PersonnelList() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: P.colName,
       key: 'name',
       width: 280,
@@ -141,7 +152,7 @@ export default function PersonnelList() {
     },
     {
       title: '',
-      key: 'actions',
+      key: 'actions', fixed: PIN_RIGHT,
       width: 120,
       align: 'right',
       render: (_, r) => <ActionBtns r={r} />,

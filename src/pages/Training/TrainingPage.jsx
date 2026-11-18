@@ -5,7 +5,7 @@ import CountUp from '../../components/CountUp/CountUp';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
   Table, Button, Select, Modal, Form, Input, InputNumber, DatePicker, Row, Col,
-  Avatar, Tooltip, Popconfirm, Segmented,
+  Avatar, Tooltip, Popconfirm, Segmented, message,
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, SearchOutlined,
@@ -19,6 +19,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { HiddenSubmit } from '../Personnel/PersonnelForm';
 import './TrainingPage.css';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { Option } = Select;
 
@@ -136,6 +137,7 @@ export default function TrainingPage() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: T.colName,
       dataIndex: 'name',
       width: 300,
@@ -223,16 +225,16 @@ export default function TrainingPage() {
     },
     {
       title: '',
-      key: 'actions',
+      key: 'actions', fixed: PIN_RIGHT,
       width: 130,
       align: 'right',
       render: (_, r) => canManage() && (
         <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
           <Tooltip title={T.manageParticipants}>
-            <Button type="text" icon={<TeamOutlined />} onClick={() => setParticipantModal(r)} />
+            <Button aria-label={T.manageParticipants} type="text" icon={<TeamOutlined />} onClick={() => setParticipantModal(r)} />
           </Tooltip>
           <Tooltip title={t.common.edit}>
-            <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+            <Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
           </Tooltip>
           {canDelete() && (
             <Popconfirm
@@ -242,7 +244,7 @@ export default function TrainingPage() {
               okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}
             >
               <Tooltip title={t.common.delete}>
-                <Button type="text" danger icon={<DeleteOutlined />} />
+                <Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} />
               </Tooltip>
             </Popconfirm>
           )}
@@ -262,6 +264,8 @@ export default function TrainingPage() {
 
   const enrolledIds = new Set((participantModal?.participants || []).map(p => p.personnelId ?? p.personnel?.id));
   const pm = participantModal;
+  // Seats still free on this course (Infinity when it has no capacity limit)
+  const seatsLeft = pm?.maxParticipants ? Math.max(0, pm.maxParticipants - (pm.participants?.length || 0)) : Infinity;
   const pmType = pm ? (TYPE_STYLE[pm.type] || TYPE_STYLE['khác']) : null;
   const pmStatus = pm ? effectiveStatus(pm) : null;
 
@@ -376,7 +380,7 @@ export default function TrainingPage() {
         width={620}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit} className="tr-form" requiredMark={false}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} className="tr-form">
           <HiddenSubmit />
           <Form.Item name="name" label={T.colName} rules={[{ ...R.required(T.colName.toLowerCase()), whitespace: true }]}>
             <Input />
@@ -475,24 +479,36 @@ export default function TrainingPage() {
               <Select
                 mode="multiple"
                 style={{ flex: 1, minWidth: 0 }}
-                placeholder={T.selectPersonnelPlaceholder}
+                placeholder={seatsLeft <= 0 ? T.capacityFull : T.selectPersonnelPlaceholder}
                 value={selectedPersonnelIds}
-                onChange={setSelectedPersonnelIds}
+                disabled={seatsLeft <= 0}
+                onChange={(ids) => {
+                  // Never select more people than there are seats left
+                  if (ids.length > seatsLeft) {
+                    message.warning(T.seatsLeft.replace('{n}', seatsLeft));
+                    setSelectedPersonnelIds(ids.slice(0, seatsLeft));
+                  } else {
+                    setSelectedPersonnelIds(ids);
+                  }
+                }}
                 showSearch
                 optionFilterProp="label"
                 maxTagCount="responsive"
                 options={personnel.map(p => ({
                   value: p.id,
                   label: p.dharmName ? `${p.dharmName} (${p.fullName})` : p.fullName,
-                  disabled: enrolledIds.has(p.id),
+                  disabled: enrolledIds.has(p.id)
+                    || (selectedPersonnelIds.length >= seatsLeft && !selectedPersonnelIds.includes(p.id)),
                 }))}
               />
-              <Button type="primary" icon={<PlusOutlined />} onClick={addParticipants} disabled={!selectedPersonnelIds.length}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={addParticipants} disabled={!selectedPersonnelIds.length || seatsLeft <= 0}>
                 {T.addParticipantsBtn}
               </Button>
             </div>
-            {pm.maxParticipants && (pm.participants?.length || 0) >= pm.maxParticipants && (
+            {seatsLeft <= 0 ? (
               <div className="tr-pm__full">{T.capacityFull}</div>
+            ) : Number.isFinite(seatsLeft) && (
+              <div className="tr-pm__seats">{T.seatsLeft.replace('{n}', seatsLeft - selectedPersonnelIds.length)}</div>
             )}
 
             <div className="tr-pm__listhead">
@@ -528,7 +544,7 @@ export default function TrainingPage() {
                     />
                     <Popconfirm title={T.removeParticipant} onConfirm={() => removeParticipant(p.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
                       <Tooltip title={T.removeParticipant}>
-                        <Button type="text" danger size="small" icon={<DeleteOutlined />} className="tr-pm__remove" />
+                        <Button aria-label={T.removeParticipant} type="text" danger size="small" icon={<DeleteOutlined />} className="tr-pm__remove" />
                       </Tooltip>
                     </Popconfirm>
                   </li>

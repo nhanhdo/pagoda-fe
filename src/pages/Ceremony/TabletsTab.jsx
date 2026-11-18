@@ -10,6 +10,7 @@ import api from '../../api/axios';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { STATUS_TONE, displayName, fetchFollowersCached } from './ceremonyShared';
 import { guardedClose } from '../../utils/formGuard';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 function TabletModal({ C, t, open, record, preset, areas, followers, onClose, onSaved }) {
   const [form] = Form.useForm();
@@ -43,7 +44,7 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
       title={record ? `${C.editTablet} · ${record.code}` : C.addTablet}
       okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
     >
-      <Form form={form} layout="vertical" onFinish={submit} requiredMark={false}>
+      <Form form={form} layout="vertical" onFinish={submit}>
         <div className="cer-section">{C.spiritSection}</div>
         <Form.Item name="spiritName" label={C.fields.spiritName} rules={[{ required: true, message: C.fields.nameRequired }]}><Input /></Form.Item>
         <div className="cer-form-row">
@@ -80,7 +81,9 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
             allowClear showSearch placeholder={C.fields.followerPlaceholder}
             onChange={(id) => { const f = followers.find(x => x.id === id); if (f) form.setFieldsValue({ worshipperName: displayName(f), worshipperPhone: f.phone || form.getFieldValue('worshipperPhone') }); }}
             filterOption={(input, opt) => String(opt?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-            options={followers.map(f => ({ value: f.id, label: displayName(f) }))}
+            options={(record?.buddhistFollower && !followers.some(f => f.id === record.buddhistFollower.id)
+              ? [record.buddhistFollower, ...followers] : followers
+            ).map(f => ({ value: f.id, label: displayName(f) }))}
           />
         </Form.Item>
         <div className="cer-form-row">
@@ -191,6 +194,7 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: C.cols.spirit, key: 'spirit', width: 260,
       render: (_, r) => (
         <div className="person-cell">
@@ -211,13 +215,13 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
     { title: C.cols.worshipper, key: 'w', width: 200, render: (_, r) => (r.worshipperName ? <span>{r.worshipperName}{r.worshipperPhone && <span className="tbl-muted"> · {r.worshipperPhone}</span>}</span> : <span className="tbl-muted">—</span>) },
     { title: C.cols.status, dataIndex: 'status', width: 140, render: (v) => <span className="tbl-pill" style={{ color: STATUS_TONE[v].c, background: STATUS_TONE[v].s }}><span className="tbl-pill__dot" />{C.statuses[v]}</span> },
     {
-      title: '', key: 'actions', width: 96, align: 'right',
+      title: '', key: 'actions', fixed: PIN_RIGHT, width: 96, align: 'right',
       render: (_, r) => (
         <div className="personnel-action-group">
-          {canWrite && <Tooltip title={t.common.edit}><Button type="text" icon={<EditOutlined />} onClick={() => setModal({ open: true, record: r, preset: null })} /></Tooltip>}
+          {canWrite && <Tooltip title={t.common.edit}><Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => setModal({ open: true, record: r, preset: null })} /></Tooltip>}
           {canRemove && (
             <Popconfirm title={C.confirmDeleteTablet} onConfirm={() => remove(r)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
-              <Tooltip title={t.common.delete}><Button type="text" danger icon={<DeleteOutlined />} /></Tooltip>
+              <Tooltip title={t.common.delete}><Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} /></Tooltip>
             </Popconfirm>
           )}
         </div>

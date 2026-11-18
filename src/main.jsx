@@ -5,14 +5,16 @@ import viVN from 'antd/locale/vi_VN';
 import enUS from 'antd/locale/en_US';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 import App from './App';
 import './index.css';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
-dayjs.locale('vi');
-
 function Root() {
   const { lang } = useLanguage();
+  // Relative times, weekday/month names and antd pickers follow the UI language.
+  // Set during render (idempotent) so the first paint after switching already uses it.
+  dayjs.locale(lang === 'en' ? 'en' : 'vi');
   return (
     <ConfigProvider
       locale={lang === 'vi' ? viVN : enUS}

@@ -20,6 +20,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { guardedClose } from '../../utils/formGuard';
 import './UserManagementPage.css';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 dayjs.extend(relativeTime);
 
@@ -85,7 +86,7 @@ function ResetPasswordModal({ open, user, onClose }) {
       destroyOnClose
       width={440}
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false} style={{ marginTop: 12 }}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: 12 }}>
         <Form.Item
           name="newPassword"
           label={t.auth.newPassword}
@@ -184,7 +185,7 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
       width={520}
       destroyOnClose
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false} style={{ marginTop: 12 }}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: 12 }}>
         <Form.Item
           name="username"
           label={U.usernameLabel}
@@ -288,6 +289,7 @@ export default function UserManagementPage() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: U.colAccount,
       key: 'account',
       width: 300,
@@ -351,7 +353,7 @@ export default function UserManagementPage() {
     },
     ...(admin ? [{
       title: '',
-      key: 'actions',
+      key: 'actions', fixed: PIN_RIGHT,
       width: 160,
       align: 'right',
       render: (_, r) => {
@@ -359,14 +361,14 @@ export default function UserManagementPage() {
         return (
           <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
             <Tooltip title={t.common.edit}>
-              <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+              <Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} />
             </Tooltip>
             <Tooltip title={U.resetPassword}>
-              <Button type="text" icon={<KeyOutlined />} onClick={() => setResetModal({ open: true, user: r })} />
+              <Button aria-label={U.resetPassword} type="text" icon={<KeyOutlined />} onClick={() => setResetModal({ open: true, user: r })} />
             </Tooltip>
             {isMe ? (
               <Tooltip title={U.selfActionBlocked}>
-                <Button type="text" icon={<LockOutlined />} disabled />
+                <Button aria-label={U.selfActionBlocked} type="text" icon={<LockOutlined />} disabled />
               </Tooltip>
             ) : (
               <Popconfirm
@@ -378,13 +380,13 @@ export default function UserManagementPage() {
                 okButtonProps={r.isActive ? { danger: true } : undefined}
               >
                 <Tooltip title={r.isActive ? U.lockAction : U.unlockAction}>
-                  <Button type="text" icon={r.isActive ? <LockOutlined /> : <UnlockOutlined />} />
+                  <Button aria-label={r.isActive ? U.lockAction : U.unlockAction} type="text" icon={r.isActive ? <LockOutlined /> : <UnlockOutlined />} />
                 </Tooltip>
               </Popconfirm>
             )}
             {isMe ? (
               <Tooltip title={U.selfActionBlocked}>
-                <Button type="text" danger icon={<DeleteOutlined />} disabled />
+                <Button aria-label={U.selfActionBlocked} type="text" danger icon={<DeleteOutlined />} disabled />
               </Tooltip>
             ) : (
               <Popconfirm
@@ -396,7 +398,7 @@ export default function UserManagementPage() {
                 okButtonProps={{ danger: true }}
               >
                 <Tooltip title={t.common.delete}>
-                  <Button type="text" danger icon={<DeleteOutlined />} />
+                  <Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} />
                 </Tooltip>
               </Popconfirm>
             )}

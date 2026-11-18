@@ -15,6 +15,7 @@ import { useBuddhistFollowerPage } from './useBuddhistFollowerPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { guardedClose, rules } from '../../utils/formGuard';
 import './BuddhistFollowerPage.css';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { Option } = Select;
 
@@ -217,6 +218,7 @@ export default function BuddhistFollowerPage() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: B.colName,
       key: 'name',
       width: 260,
@@ -274,18 +276,18 @@ export default function BuddhistFollowerPage() {
     },
     {
       title: '',
-      key: 'actions',
+      key: 'actions', fixed: PIN_RIGHT,
       width: 96,
       align: 'right',
       render: (_, r) => canManage() && (
         <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
           <Tooltip title={t.common.edit}>
-            <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+            <Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
           </Tooltip>
           {(isAdmin() || hasRole('truotri')) && (
             <Popconfirm title={t.common.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
               <Tooltip title={t.common.delete}>
-                <Button type="text" danger icon={<DeleteOutlined />} />
+                <Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} />
               </Tooltip>
             </Popconfirm>
           )}

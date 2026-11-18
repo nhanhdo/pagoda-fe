@@ -17,7 +17,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { exportToExcel } from '../../utils/exportData';
 import DutyCalendar, { monthGridRange, SHIFT_TONE, SHIFT_ORDER, STATUS_TONE } from './DutyCalendar';
 import DutyFormModal from './DutyFormModal';
-import { initialOf, personName, imgSrc, TONES } from '../Personnel/personnelShared';
+import { initialOf, personName, imgSrc, TONES, pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 import '../Personnel/peopleShared.css';
 import './DutySchedulePage.css';
 
@@ -135,6 +135,7 @@ export default function DutySchedulePage() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: D.colDate,
       dataIndex: 'dutyDate',
       width: 150,
@@ -196,7 +197,7 @@ export default function DutySchedulePage() {
     },
     ...(manage ? [{
       title: '',
-      key: 'actions',
+      key: 'actions', fixed: PIN_RIGHT,
       width: 96,
       align: 'right',
       render: (_, r) => (

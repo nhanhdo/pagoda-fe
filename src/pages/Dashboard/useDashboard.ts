@@ -48,20 +48,25 @@ export function useDashboard() {
   const [upcomingEvents, setUpcomingEvents] = useState([] as any[]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(false);
+  const [partialError, setPartialError] = useState(false);
 
+  // Each section loads independently: one failing endpoint must not blank the whole dashboard
   const reload = useCallback(() => {
     setLoading(true);
     setError(false);
-    Promise.all([
+    setPartialError(false);
+    Promise.allSettled([
       api.get('/dashboard/stats'),
       api.get('/dashboard/duty-today'),
       api.get('/dashboard/events-upcoming'),
     ]).then(([statsRes, dutyRes, eventsRes]) => {
-      setStats(statsRes.data);
-      setDutyToday(dutyRes.data);
-      setUpcomingEvents(eventsRes.data);
-    }).catch(() => setError(true))
-      .finally(() => setLoading(false));
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+      if (dutyRes.status === 'fulfilled') setDutyToday(dutyRes.value.data || []);
+      if (eventsRes.status === 'fulfilled') setUpcomingEvents(eventsRes.value.data || []);
+      const failed = [statsRes, dutyRes, eventsRes].filter(r => r.status === 'rejected').length;
+      if (failed === 3) setError(true);
+      else if (failed > 0) setPartialError(true);
+    }).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
@@ -71,5 +76,5 @@ export function useDashboard() {
     (user as any)?.personnel?.fullName ||
     (user as any)?.username;
 
-  return { stats, dutyToday, upcomingEvents, loading, error, reload, displayName };
+  return { stats, dutyToday, upcomingEvents, loading, error, partialError, reload, displayName };
 }

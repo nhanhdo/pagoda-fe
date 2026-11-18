@@ -99,8 +99,8 @@ export function useTrainingPage() {
       message.success(T.participantsAdded);
       setSelectedPersonnelIds([]);
       fetchData();
-    } catch {
-      message.error(t.common.error);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || t.common.error);
     }
   };
 

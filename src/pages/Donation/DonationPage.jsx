@@ -20,6 +20,7 @@ import api from '../../api/axios';
 import { printReceipt, printThankYou } from '../../utils/printDocs';
 import { guardedClose, rules } from '../../utils/formGuard';
 import './DonationPage.css';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { RangePicker } = DatePicker;
 
@@ -140,6 +141,7 @@ export default function DonationPage() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: D.colDate,
       dataIndex: 'donationDate',
       width: 130,
@@ -235,26 +237,26 @@ export default function DonationPage() {
     },
     {
       title: '',
-      key: 'actions',
+      key: 'actions', fixed: PIN_RIGHT,
       width: 170,
       align: 'right',
       render: (_, r) => (
         <div className="personnel-action-group">
           <Tooltip title={D.printReceipt}>
-            <Button type="text" icon={<PrinterOutlined />} onClick={() => printReceipt(r)} />
+            <Button aria-label={D.printReceipt} type="text" icon={<PrinterOutlined />} onClick={() => printReceipt(r)} />
           </Tooltip>
           <Tooltip title={D.printThanks}>
-            <Button type="text" icon={<FileDoneOutlined />} onClick={() => printThankYou(r)} />
+            <Button aria-label={D.printThanks} type="text" icon={<FileDoneOutlined />} onClick={() => printThankYou(r)} />
           </Tooltip>
           {canManage() && (
             <Tooltip title={t.common.edit}>
-              <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+              <Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
             </Tooltip>
           )}
           {(isAdmin() || hasRole('truotri')) && (
             <Popconfirm title={D.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
               <Tooltip title={t.common.delete}>
-                <Button type="text" danger icon={<DeleteOutlined />} />
+                <Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} />
               </Tooltip>
             </Popconfirm>
           )}
@@ -421,7 +423,9 @@ export default function DonationPage() {
                   showSearch
                   placeholder={D.form.followerPlaceholder}
                   filterOption={(input, opt) => String(opt?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                  options={followers.map((f) => ({ value: f.id, label: f.dharmName ? `${f.fullName} (${f.dharmName})` : f.fullName }))}
+                  options={(editRecord?.buddhistFollower && !followers.some(f => f.id === editRecord.buddhistFollower.id)
+                    ? [editRecord.buddhistFollower, ...followers] : followers
+                  ).map((f) => ({ value: f.id, label: f.dharmName ? `${f.fullName} (${f.dharmName})` : f.fullName }))}
                 />
               </Form.Item>
             </Col>
@@ -453,7 +457,7 @@ export default function DonationPage() {
           <div className="dn-quick">
             <span className="dn-quick__label">{D.quickAmount}:</span>
             {QUICK_AMOUNTS.map(a => (
-              <button key={a} type="button" className="dn-quick__chip" onClick={() => form.setFieldsValue({ amount: a })}>
+              <button key={a} type="button" className="dn-quick__chip" onClick={() => form.setFields([{ name: 'amount', value: a, touched: true, errors: [] }])}>
                 {compactVnd(a, lang)}
               </button>
             ))}

@@ -19,7 +19,7 @@ import {
 import { useLanguage } from '../../i18n/LanguageContext';
 import { guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { HiddenSubmit } from '../Personnel/PersonnelForm';
-import { personName, personOptionLabel, initialOf, TONES } from '../Personnel/personnelShared';
+import { personName, personOptionLabel, initialOf, TONES, pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 import '../Personnel/peopleShared.css';
 import './WorkAssignmentPage.css';
 
@@ -204,7 +204,7 @@ function WorkFormModal({ open, record, personnel, saving, W, t, onClose, onSubmi
       width={620}
       destroyOnClose
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit} className="pp-form" requiredMark={false}
+      <Form form={form} layout="vertical" onFinish={onSubmit} className="pp-form"
         initialValues={{ priority: 'trung_bình', status: 'chưa_bắt_đầu' }}>
         <HiddenSubmit />
         <Form.Item name="title" label={W.fieldTitle} rules={[{ ...R.required(W.fieldTitle.toLowerCase()), whitespace: true }]}>
@@ -295,6 +295,7 @@ export default function WorkAssignmentPage() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: W.colTask, dataIndex: 'title', width: 300,
       sorter: (a, b) => String(a.title).localeCompare(String(b.title), lang),
       render: (v, r) => (
@@ -350,7 +351,7 @@ export default function WorkAssignmentPage() {
       },
     },
     ...(manage ? [{
-      title: '', key: 'actions', width: 96, align: 'right',
+      title: '', key: 'actions', fixed: PIN_RIGHT, width: 96, align: 'right',
       render: (_, r) => (
         <div className="personnel-action-group">
           <Tooltip title={t.common.edit}>

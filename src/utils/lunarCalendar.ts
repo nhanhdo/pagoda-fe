@@ -202,29 +202,40 @@ export function solarToLunar(dd: number, mm: number, yy: number): LunarDate {
 }
 
 // ─── Buddhist holidays (lunar dates) ─────────────────────────
-const LUNAR_HOLIDAYS: { month: number; day: number; name: string; major?: boolean }[] = [
-  { month: 1, day: 1,  name: 'Tết Nguyên Đán', major: true },
-  { month: 1, day: 15, name: 'Rằm Thượng Nguyên', major: true },
-  { month: 2, day: 8,  name: 'Phật Thích Ca xuất gia' },
-  { month: 2, day: 15, name: 'Phật Thích Ca Niết Bàn' },
-  { month: 2, day: 19, name: 'Quan Âm Bồ Tát đản sinh', major: true },
-  { month: 3, day: 21, name: 'Phổ Hiền Bồ Tát đản sinh' },
-  { month: 4, day: 4,  name: 'Văn Thù Bồ Tát đản sinh' },
-  { month: 4, day: 15, name: 'Đại lễ Phật Đản (Vesak)', major: true },
-  { month: 6, day: 3,  name: 'Hộ Pháp Bồ Tát đản sinh' },
-  { month: 6, day: 19, name: 'Quan Âm Bồ Tát thành đạo', major: true },
-  { month: 7, day: 13, name: 'Đại lễ Vu Lan', major: true },
-  { month: 7, day: 15, name: 'Rằm tháng 7 – Vu Lan', major: true },
-  { month: 7, day: 30, name: 'Địa Tạng Bồ Tát đản sinh' },
-  { month: 9, day: 9,  name: 'Quan Âm Bồ Tát xuất gia' },
-  { month: 9, day: 19, name: 'Quan Âm Bồ Tát đắc đạo', major: true },
-  { month: 10, day: 5, name: 'Đạt Ma Tổ Sư đản sinh' },
-  { month: 11, day: 17, name: 'A Di Đà Phật đản sinh', major: true },
-  { month: 12, day: 8,  name: 'Phật Thích Ca thành đạo', major: true },
+const LUNAR_HOLIDAYS: { month: number; day: number; name: string; en: string; major?: boolean }[] = [
+  { month: 1, day: 1,  name: 'Tết Nguyên Đán', en: "Lunar New Year", major: true },
+  { month: 1, day: 15, name: 'Rằm Thượng Nguyên', en: "First Full Moon Festival", major: true },
+  { month: 2, day: 8,  name: 'Phật Thích Ca xuất gia', en: "Shakyamuni Buddha's Renunciation" },
+  { month: 2, day: 15, name: 'Phật Thích Ca Niết Bàn', en: "Shakyamuni Buddha's Parinirvana" },
+  { month: 2, day: 19, name: 'Quan Âm Bồ Tát đản sinh', en: "Avalokiteshvara's Birthday", major: true },
+  { month: 3, day: 21, name: 'Phổ Hiền Bồ Tát đản sinh', en: "Samantabhadra's Birthday" },
+  { month: 4, day: 4,  name: 'Văn Thù Bồ Tát đản sinh', en: "Manjushri's Birthday" },
+  { month: 4, day: 15, name: 'Đại lễ Phật Đản (Vesak)', en: "Vesak – Buddha's Birthday", major: true },
+  { month: 6, day: 3,  name: 'Hộ Pháp Bồ Tát đản sinh', en: "Dharma Protector Skanda's Day" },
+  { month: 6, day: 19, name: 'Quan Âm Bồ Tát thành đạo', en: "Avalokiteshvara's Enlightenment", major: true },
+  { month: 7, day: 13, name: 'Đại lễ Vu Lan', en: "Ullambana Festival", major: true },
+  { month: 7, day: 15, name: 'Rằm tháng 7 – Vu Lan', en: "Ullambana – 7th Full Moon", major: true },
+  { month: 7, day: 30, name: 'Địa Tạng Bồ Tát đản sinh', en: "Kshitigarbha's Birthday" },
+  { month: 9, day: 9,  name: 'Quan Âm Bồ Tát xuất gia', en: "Avalokiteshvara's Renunciation" },
+  { month: 9, day: 19, name: 'Quan Âm Bồ Tát đắc đạo', en: "Avalokiteshvara's Attainment", major: true },
+  { month: 10, day: 5, name: 'Đạt Ma Tổ Sư đản sinh', en: "Bodhidharma's Day" },
+  { month: 11, day: 17, name: 'A Di Đà Phật đản sinh', en: "Amitabha Buddha's Birthday", major: true },
+  { month: 12, day: 8,  name: 'Phật Thích Ca thành đạo', en: "Buddha's Enlightenment Day", major: true },
 ];
 
-// Returns a Map from YYYY-MM-DD to { names, major }
-export function getBuddhistHolidays(year: number): Map<string, { names: string[]; major: boolean }> {
+export type HolidayLang = 'vi' | 'en';
+const newMoonName = (m: number, leap: boolean, lang: HolidayLang) =>
+  lang === 'en' ? `New moon · month ${m}${leap ? ' (leap)' : ''}` : `Mùng 1 tháng ${m}${leap ? ' nhuận' : ''}`;
+const fullMoonName = (m: number, leap: boolean, lang: HolidayLang) =>
+  lang === 'en' ? `Full moon · month ${m}${leap ? ' (leap)' : ''}` : `Rằm tháng ${m}${leap ? ' nhuận' : ''}`;
+
+const holidayCache = new Map<string, Map<string, { names: string[]; major: boolean }>>();
+
+// Returns a Map from YYYY-MM-DD to { names, major }. Names are Vietnamese unless lang === 'en'.
+export function getBuddhistHolidays(year: number, lang: HolidayLang = 'vi'): Map<string, { names: string[]; major: boolean }> {
+  const cacheKey = `${year}-${lang}`;
+  const cached = holidayCache.get(cacheKey);
+  if (cached) return cached;
   const result = new Map<string, { names: string[]; major: boolean }>();
 
   const addDay = (key: string, name: string, major: boolean) => {
@@ -245,27 +256,28 @@ export function getBuddhistHolidays(year: number): Map<string, { names: string[]
       for (const h of LUNAR_HOLIDAYS) {
         if (!lunar.leap && lunar.month === h.month && lunar.day === h.day) {
           const key = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          addDay(key, h.name, !!h.major);
+          addDay(key, lang === 'en' ? h.en : h.name, !!h.major);
         }
       }
 
       // Mark every lunar 1st (Sóc) and 15th (Vọng/Rằm)
       if (lunar.day === 1) {
         const key = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        addDay(key, `Mùng 1 tháng ${lunar.month}${lunar.leap ? ' nhuận' : ''}`, false);
+        addDay(key, newMoonName(lunar.month, lunar.leap, lang), false);
       }
       if (lunar.day === 15 && (lunar.leap || !LUNAR_HOLIDAYS.some(h => h.month === lunar.month && h.day === 15))) {
         const key = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        addDay(key, `Rằm tháng ${lunar.month}${lunar.leap ? ' nhuận' : ''}`, false);
+        addDay(key, fullMoonName(lunar.month, lunar.leap, lang), false);
       }
     }
   }
 
+  holidayCache.set(cacheKey, result);
   return result;
 }
 
-export function formatLunarDate(l: LunarDate): string {
-  return `${l.day}/${l.month}${l.leap ? ' (nhuận)' : ''} ${l.yearName}`;
+export function formatLunarDate(l: LunarDate, lang: HolidayLang = 'vi'): string {
+  return `${l.day}/${l.month}${l.leap ? (lang === 'en' ? ' (leap)' : ' (nhuận)') : ''} ${l.yearName}`;
 }
 
 // ─── Giờ Hoàng Đạo ───────────────────────────────────────

@@ -50,7 +50,7 @@
 .le-spark--3 { top: 30px; left: 2px; width: 3px; height: 3px; background: #b9a3e6; box-shadow: 0 0 6px rgba(185,163,230,.8); animation-delay: 1.7s; }
 
 .le-title { font-size: 14px; font-weight: 700; color: #7a5a40; }
-.le-hint { margin-top: 4px; max-width: 280px; font-size: 12.5px; line-height: 1.5; color: #b3a08b; }
+.le-hint { margin-top: 4px; max-width: 280px; font-size: 12.5px; line-height: 1.5; color: #7a6a5c; }
 
 .le-compact {
   display: flex;
@@ -59,7 +59,7 @@
   gap: 8px;
   padding: 10px 8px;
   font-size: 13px;
-  color: #a8978a;
+  color: #6f5e50;
 }
 
 @keyframes le-spin { to { transform: rotate(360deg); } }

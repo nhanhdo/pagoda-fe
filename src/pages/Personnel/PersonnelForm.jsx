@@ -126,7 +126,7 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved }) {
       destroyOnClose
       styles={{ body: { maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: 4 } }}
     >
-      <Form form={form} layout="vertical" onFinish={onFinish} className="pp-form" requiredMark={false}
+      <Form form={form} layout="vertical" onFinish={onFinish} className="pp-form"
         initialValues={{ status: 'đang_hoạt_động' }}>
         <HiddenSubmit />
 

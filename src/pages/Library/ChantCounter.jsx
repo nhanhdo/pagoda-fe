@@ -12,7 +12,7 @@ const load = (id) => Math.max(0, parseInt(localStorage.getItem(keyOf(id)) || '0'
 
 /** Tap-to-count mantra counter (108 beads per round), remembered per figure on this device. */
 export default function ChantCounter({ open, figure, onClose }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const L = t.library;
   const [count, setCount] = useState(0);
   const [pulse, setPulse] = useState(0);
@@ -73,7 +73,7 @@ export default function ChantCounter({ open, figure, onClose }) {
 
           <div className="lib-chant__stats">
             <div><strong>{rounds}</strong><span>{L.chantRounds}</span></div>
-            <div><strong>{count.toLocaleString('vi-VN')}</strong><span>{L.chantTotal}</span></div>
+            <div><strong>{count.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}</strong><span>{L.chantTotal}</span></div>
           </div>
 
           <div className="lib-chant__actions">

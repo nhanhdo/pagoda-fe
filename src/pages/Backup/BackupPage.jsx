@@ -29,7 +29,9 @@ export default function BackupPage() {
   const [restoring, setRestoring] = useState(false);
   const fileRef = useRef(null);
 
+  const [refreshing, setRefreshing] = useState(false);
   const loadStatus = async () => {
+    setRefreshing(true);
     try {
       const { data } = await api.get('/backup/status');
       setStatus(data);
@@ -37,6 +39,7 @@ export default function BackupPage() {
       message.error(B.statusError);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
   useEffect(() => { loadStatus(); }, []);
@@ -174,7 +177,9 @@ export default function BackupPage() {
       <section className="bk-card section-anim section-d2">
         <header className="bk-card__head">
           <span className="bk-card__icon"><HistoryOutlined /></span>{B.autoTitle}
-          <Button size="small" type="text" icon={<ReloadOutlined />} onClick={loadStatus} style={{ marginLeft: 'auto' }} />
+          <Tooltip title={B.refreshList}>
+            <Button size="small" type="text" icon={<ReloadOutlined />} onClick={loadStatus} loading={refreshing} aria-label={B.refreshList} style={{ marginLeft: 'auto' }} />
+          </Tooltip>
         </header>
         {!status?.cloudEnabled ? (
           <Alert type="warning" showIcon message={B.cloudDisabled} description={B.cloudDisabledHint} />

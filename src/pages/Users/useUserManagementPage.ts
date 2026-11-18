@@ -27,7 +27,7 @@ export function useUserManagementPage(t: any) {
       const resp: any = await api.get('/users');
       setUsers(resp.data);
     } catch {
-      if (!silent) message.error(U.loadError || 'Không thể tải danh sách tài khoản');
+      if (!silent) message.error(U.loadError);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -62,20 +62,20 @@ export function useUserManagementPage(t: any) {
   const handleDelete = async (id: any) => {
     try {
       await api.delete(`/users/${id}`);
-      message.success(U.deleteSuccess || 'Đã xóa tài khoản');
+      message.success(U.deleteSuccess);
       fetchUsers();
     } catch (err: any) {
-      message.error(err.response?.data?.message || t?.common?.error || 'Không thể xóa');
+      message.error(err.response?.data?.message || t?.common?.deleteError);
     }
   };
 
   const toggleActive = async (record: any) => {
     try {
       await api.put(`/users/${record.id}`, { isActive: !record.isActive });
-      message.success(record.isActive ? (U.lockSuccess || 'Đã khoá tài khoản') : (U.unlockSuccess || 'Đã mở khoá tài khoản'));
+      message.success(record.isActive ? U.lockSuccess : U.unlockSuccess);
       fetchUsers();
     } catch (err: any) {
-      message.error(err.response?.data?.message || t?.common?.error || 'Có lỗi xảy ra');
+      message.error(err.response?.data?.message || t?.common?.error);
     }
   };
 

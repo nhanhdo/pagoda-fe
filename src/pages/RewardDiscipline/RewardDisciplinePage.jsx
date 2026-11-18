@@ -14,7 +14,9 @@ import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useRewardDisciplinePage, rewardSubTypes, disciplineSubTypes } from './useRewardDisciplinePage';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { guardedClose } from '../../utils/formGuard';
 import './RewardDisciplinePage.css';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { Option } = Select;
 
@@ -141,6 +143,7 @@ export default function RewardDisciplinePage() {
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: R.colPerson,
       key: 'person',
       width: 230,
@@ -220,17 +223,17 @@ export default function RewardDisciplinePage() {
     },
     {
       title: '',
-      key: 'actions',
+      key: 'actions', fixed: PIN_RIGHT,
       width: 96,
       align: 'right',
       render: (_, r) => canEdit && (
         <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
           <Tooltip title={t.common.edit}>
-            <Button type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
+            <Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => openModal(r)} />
           </Tooltip>
           <Popconfirm title={R.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
             <Tooltip title={t.common.delete}>
-              <Button type="text" danger icon={<DeleteOutlined />} />
+              <Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
         </div>
@@ -363,16 +366,17 @@ export default function RewardDisciplinePage() {
       <Modal
         title={editRecord ? R.editTitle : R.addTitle}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => guardedClose(form, () => setModalOpen(false), t)}
         onOk={() => form.submit()}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         okButtonProps={{ danger: formType === DISCIPLINE }}
         confirmLoading={saving}
+        maskClosable={false}
         width={600}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false} className="rd-form">
+        <Form form={form} layout="vertical" onFinish={handleSubmit} className="rd-form">
           <Form.Item name="type" label={R.fieldType} initialValue={REWARD}>
             <Segmented
               block

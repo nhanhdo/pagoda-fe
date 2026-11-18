@@ -89,7 +89,7 @@ function CeremonyModal({ C, t, open, record, funds, onClose, onSaved }) {
           {PRESETS.map(p => <button type="button" key={p.key} className="cer-chip" onClick={() => applyPreset(p)}>{p.name}</button>)}
         </div>
       )}
-      <Form form={form} layout="vertical" onFinish={submit} requiredMark={false}>
+      <Form form={form} layout="vertical" onFinish={submit}>
         <Form.Item name="name" label={C.fields.name} rules={[{ required: true, message: C.fields.nameRequired }]}>
           <Input placeholder={C.fields.namePlaceholder} />
         </Form.Item>

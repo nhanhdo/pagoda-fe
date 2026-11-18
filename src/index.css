@@ -40,6 +40,11 @@ body {
   overflow: hidden;
 }
 
+/* App frame = the *visible* viewport. On phones 100vh includes the area under the browser's
+   address/tool bars, which hid the bottom of every page and made scrolling bounce back. */
+.app-shell { height: 100vh; height: 100dvh; }
+.app-shell .ant-layout-sider { height: 100vh; height: 100dvh; }
+
 /* Prevent any element from causing horizontal scroll */
 #root {
   height: 100%;
@@ -319,26 +324,6 @@ body {
   font-size: 16px;
 }
 
-/* ===== Click Ripple Effect ===== */
-.click-ripple {
-  position: fixed;
-  border-radius: 50%;
-  width: 180px;
-  height: 180px;
-  transform: translate(-50%, -50%) scale(0);
-  pointer-events: none;
-  z-index: 99999;
-  animation: click-ripple-expand 0.75s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
-  border: 1.5px solid rgba(212, 160, 23, 0.55);
-  box-shadow: 0 0 6px rgba(212, 160, 23, 0.15);
-  will-change: transform, opacity;
-}
-
-@keyframes click-ripple-expand {
-  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0.9; }
-  60%  { opacity: 0.4; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-}
 
 /* ═══════════════════════════════════════════════════════
    ANIMATION SYSTEM
@@ -525,69 +510,6 @@ body {
   animation: welcome-in 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ═══════════════════════════════════════════════════════
-   CUSTOM CURSOR  (desktop only — pointer: fine)
-   Outer element is positioned with translate3d by JS;
-   the inner <span> handles size/state so transforms never clash.
-═══════════════════════════════════════════════════════ */
-@media (pointer: fine) {
-  html.has-custom-cursor, html.has-custom-cursor * { cursor: none !important; }
-  html.has-custom-cursor input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
-  html.has-custom-cursor textarea,
-  html.has-custom-cursor [contenteditable="true"] { cursor: text !important; }
-}
-@media (pointer: coarse) {
-  .cc-dot, .cc-ring { display: none; }
-}
-
-.cc-dot, .cc-ring {
-  position: fixed;
-  left: 0; top: 0;
-  pointer-events: none;
-  will-change: transform;
-  transition: opacity .2s ease;
-}
-.cc-dot { z-index: 1000002; }
-.cc-ring { z-index: 1000001; }
-.cc-dot > span, .cc-ring > span {
-  position: absolute;
-  left: 0; top: 0;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Dot: exact pointer position, outlined so it reads on any background */
-.cc-dot > span {
-  width: 8px; height: 8px;
-  background: #b5702a;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.95), 0 1px 4px rgba(80,40,10,.35);
-  transition: width .18s ease, height .18s ease, background .18s ease, transform .15s ease;
-}
-
-/* Ring: follows with a light ease */
-.cc-ring > span {
-  width: 32px; height: 32px;
-  border: 1.5px solid rgba(181,112,42,.45);
-  background: rgba(255,255,255,0);
-  transition: width .25s cubic-bezier(.22,1,.36,1), height .25s cubic-bezier(.22,1,.36,1),
-              border-color .2s ease, background .2s ease, transform .2s ease;
-}
-
-/* Hovering something clickable */
-.cc-ring.is-hover > span {
-  width: 46px; height: 46px;
-  border-color: rgba(196,127,54,.55);
-  background: rgba(224,164,84,.14);
-}
-.cc-dot.is-hover > span { width: 6px; height: 6px; background: #c47f36; }
-
-/* Pressing */
-.cc-ring.is-down > span { transform: translate(-50%, -50%) scale(.78); background: rgba(224,164,84,.24); }
-.cc-dot.is-down > span { transform: translate(-50%, -50%) scale(.8); }
-
-/* Over text fields the native I-beam takes over */
-.cc-dot.is-text, .cc-ring.is-text,
-.cc-dot.is-hidden, .cc-ring.is-hidden { opacity: 0; }
 
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE
@@ -1194,4 +1116,22 @@ body {
     animation: none;
     box-shadow: -4px -2px 14px rgba(66,133,244,.35), 4px 2px 14px rgba(251,188,5,.3);
   }
+}
+
+/* Sidebar items: visible keyboard focus */
+.sb-item:focus-visible { outline: 2px solid #c47f36; outline-offset: -2px; }
+
+/* ── Touch screens: every tap target at least 40px (WCAG 2.5.5 / Apple HIG) ── */
+@media (pointer: coarse) {
+  .hdr-lang { --opt-w: 40px; }
+  .hdr-lang__opt, .hdr-lang__thumb { height: 34px; }
+  .hdr-lang { padding: 3px; }
+  .hdr-icon-btn, .hdr-toggle { width: 40px; height: 40px; }
+  .notif__mark { height: 36px; padding: 0 14px; }
+  .notif__item { min-height: 48px; }
+  .list-toggle { min-height: 40px; padding: 8px 16px; }
+  .db-link { min-height: 40px; padding-inline: 10px; }
+  .personnel-table td .ant-btn-text.ant-btn-icon-only,
+  .personnel-table td .ant-btn-link.ant-btn-icon-only { width: 40px; height: 40px; }
+  .cmt__act { padding: 8px 4px; margin: -8px 0; }
 }

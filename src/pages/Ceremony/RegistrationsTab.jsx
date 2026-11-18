@@ -13,6 +13,7 @@ import { printReceipt, printSoList } from '../../utils/printDocs';
 import { KIND_TONE, lunarLabel, displayName, QUICK_OFFERINGS, emptyEntry, daysUntil, fetchFollowersCached, slotLabel, entryHasData } from './ceremonyShared';
 import { guardedClose } from '../../utils/formGuard';
 import { vnd, compactVnd, softOf } from '../Finance/financeShared';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const METHODS = ['tiền_mặt', 'chuyển_khoản', 'khác'];
 
@@ -96,7 +97,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
       title={<span>{record ? C.editRegistration : C.addRegistration}<span className="cer-modal-sub"> · {ceremony?.name}</span></span>}
       okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
     >
-      <Form form={form} layout="vertical" onFinish={submit} requiredMark={false} className="cer-reg-form">
+      <Form form={form} layout="vertical" onFinish={submit} className="cer-reg-form">
         <Form.Item name="kind" label={C.fields.kind}>
           <Segmented block onChange={onKindChange} options={allowedKinds.map(k => ({ value: k, label: C.types[k] }))} />
         </Form.Item>
@@ -106,7 +107,12 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
           <Select
             allowClear showSearch placeholder={C.fields.followerPlaceholder} onChange={onPickFollower}
             filterOption={(input, opt) => String(opt?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-            options={followers.map(f => ({ value: f.id, label: displayName(f) }))}
+            options={[
+              // A follower who has since left the active list still shows by name when editing
+              ...(record?.buddhistFollowerId && !followers.some(f => f.id === record.buddhistFollowerId)
+                ? [{ value: record.buddhistFollowerId, label: record.registrantName || `#${record.buddhistFollowerId}` }] : []),
+              ...followers.map(f => ({ value: f.id, label: displayName(f) })),
+            ]}
           />
         </Form.Item>
         <div className="cer-form-row">
@@ -264,6 +270,7 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: C.cols.registrant, key: 'registrant', width: 260,
       render: (_, r) => {
         const tone = KIND_TONE[r.kind];
@@ -303,14 +310,14 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
       ) : <span className="tbl-muted">—</span>),
     },
     {
-      title: '', key: 'actions', width: 130, align: 'right',
+      title: '', key: 'actions', fixed: PIN_RIGHT, width: 130, align: 'right',
       render: (_, r) => (
         <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
-          {r.donation && <Tooltip title={C.printReceipt}><Button type="text" icon={<PrinterOutlined />} onClick={() => printRegReceipt(r)} /></Tooltip>}
-          {canWrite && <Tooltip title={t.common.edit}><Button type="text" icon={<EditOutlined />} onClick={() => setModal({ open: true, record: r })} /></Tooltip>}
+          {r.donation && <Tooltip title={C.printReceipt}><Button aria-label={C.printReceipt} type="text" icon={<PrinterOutlined />} onClick={() => printRegReceipt(r)} /></Tooltip>}
+          {canWrite && <Tooltip title={t.common.edit}><Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => setModal({ open: true, record: r })} /></Tooltip>}
           {canWrite && (!r.donation || canRemove) && (
             <Popconfirm title={C.confirmDeleteReg} description={r.donation ? C.deleteRegNote : undefined} onConfirm={() => remove(r)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
-              <Tooltip title={t.common.delete}><Button type="text" danger icon={<DeleteOutlined />} /></Tooltip>
+              <Tooltip title={t.common.delete}><Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} /></Tooltip>
             </Popconfirm>
           )}
         </div>

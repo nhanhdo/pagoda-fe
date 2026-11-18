@@ -14,6 +14,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { printExpenseVoucher } from '../../utils/printDocs';
 import { guardedClose } from '../../utils/formGuard';
 import { vnd, compactVnd, STATUS_TONE, CATEGORY_COLOR, softOf, personName, presetRanges, ymd, QUICK_AMOUNTS } from './financeShared';
+import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { RangePicker } = DatePicker;
 const METHOD_ICON = { 'tiền_mặt': <WalletOutlined />, 'chuyển_khoản': <BankOutlined />, 'khác': <EllipsisOutlined /> };
@@ -38,21 +39,29 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
   const [focusId, setFocusId] = useState(focusExpenseId ? Number(focusExpenseId) : null);
   const firstSignal = useRef(createSignal);
 
+  // Typing waits 300ms before searching; a slower, older response never overwrites a newer one
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => { const id = setTimeout(() => setDebouncedSearch(filters.search), 300); return () => clearTimeout(id); }, [filters.search]);
+  const reqId = useRef(0);
+
   const load = useCallback(async () => {
+    const id = ++reqId.current;
     setLoading(true);
     try {
-      const params = { page, limit: PAGE, search: filters.search || undefined, fundId: filters.fundId, status: filters.status, category: filters.category };
+      const params = { page, limit: PAGE, search: debouncedSearch || undefined, fundId: filters.fundId, status: filters.status, category: filters.category };
       if (filters.range?.[0]) params.startDate = ymd(filters.range[0]);
       if (filters.range?.[1]) params.endDate = ymd(filters.range[1]);
       const { data } = await api.get('/expenses', { params });
+      if (id !== reqId.current) return;
       setRows(data.data);
       setTotal(data.total);
     } catch {
-      message.error(F.loadError);
+      if (id === reqId.current) message.error(F.loadError);
     } finally {
-      setLoading(false);
+      if (id === reqId.current) setLoading(false);
     }
-  }, [page, filters, F.loadError]);
+    // filters.search is intentionally read through debouncedSearch
+  }, [page, debouncedSearch, filters.fundId, filters.status, filters.category, filters.range, F.loadError]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Notification deep link: fetch that voucher even if it's not on page 1, then highlight it
@@ -146,6 +155,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
 
   const columns = [
     {
+      fixed: pinLeft(),
       title: F.colCode, dataIndex: 'code', width: 130,
       render: (v, r) => (
         <div className="fin-code">
@@ -201,7 +211,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       },
     },
     {
-      title: '', key: 'actions', width: 170, align: 'right',
+      title: '', key: 'actions', fixed: PIN_RIGHT, width: 170, align: 'right',
       render: (_, r) => {
         const pending = r.status === 'chờ_duyệt';
         const mine = r.createdBy === user?.id;
@@ -210,20 +220,20 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
             {admin && pending && (
               <>
                 <Popconfirm title={F.approveConfirm} description={F.approveHint} okText={F.approve} cancelText={t.common.cancel} onConfirm={() => approve(r)}>
-                  <Tooltip title={F.approve}><Button type="text" className="fin-act fin-act--ok" icon={<CheckOutlined />} /></Tooltip>
+                  <Tooltip title={F.approve}><Button aria-label={F.approve} type="text" className="fin-act fin-act--ok" icon={<CheckOutlined />} /></Tooltip>
                 </Popconfirm>
-                <Tooltip title={F.reject}><Button type="text" danger icon={<CloseOutlined />} onClick={() => { rejectForm.resetFields(); setRejecting(r); }} /></Tooltip>
+                <Tooltip title={F.reject}><Button aria-label={F.reject} type="text" danger icon={<CloseOutlined />} onClick={() => { rejectForm.resetFields(); setRejecting(r); }} /></Tooltip>
               </>
             )}
             {pending && (admin || mine) && (
-              <Tooltip title={t.common.edit}><Button type="text" icon={<EditOutlined />} onClick={() => openForm(r)} /></Tooltip>
+              <Tooltip title={t.common.edit}><Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => openForm(r)} /></Tooltip>
             )}
             {r.status === 'đã_duyệt' && (
-              <Tooltip title={F.print}><Button type="text" icon={<PrinterOutlined />} onClick={() => printExpenseVoucher(r, { category: F.categories[r.category] })} /></Tooltip>
+              <Tooltip title={F.print}><Button aria-label={F.print} type="text" icon={<PrinterOutlined />} onClick={() => printExpenseVoucher(r, { category: F.categories[r.category] })} /></Tooltip>
             )}
             {(pending || r.status === 'từ_chối') && (admin || (mine && pending)) && (
               <Popconfirm title={F.deleteConfirm} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }} onConfirm={() => remove(r)}>
-                <Tooltip title={t.common.delete}><Button type="text" danger icon={<DeleteOutlined />} /></Tooltip>
+                <Tooltip title={t.common.delete}><Button aria-label={t.common.delete} type="text" danger icon={<DeleteOutlined />} /></Tooltip>
               </Popconfirm>
             )}
           </div>
@@ -283,7 +293,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
         destroyOnClose
       >
         <div className="fin-note"><InfoCircleOutlined /> {F.approvalNote}</div>
-        <Form form={form} layout="vertical" onFinish={save} requiredMark={false}>
+        <Form form={form} layout="vertical" onFinish={save}>
           <Form.Item name="fundId" label={F.fieldFund} rules={[{ required: true, message: F.fundRequired }]}>
             <Select options={funds.map(f => ({
               value: f.id,
@@ -312,7 +322,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
           <div className="dn-quick">
             <span className="dn-quick__label">{F.quickAmount}:</span>
             {QUICK_AMOUNTS.map(a => (
-              <button key={a} type="button" className="dn-quick__chip" onClick={() => form.setFieldsValue({ amount: a })}>{compactVnd(a, lang)}</button>
+              <button key={a} type="button" className="dn-quick__chip" onClick={() => form.setFields([{ name: 'amount', value: a, touched: true, errors: [] }])}>{compactVnd(a, lang)}</button>
             ))}
           </div>
           <div className="fin-form-row">
@@ -344,7 +354,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
         cancelText={t.common.cancel}
         destroyOnClose
       >
-        <Form form={rejectForm} layout="vertical" onFinish={reject} requiredMark={false}>
+        <Form form={rejectForm} layout="vertical" onFinish={reject}>
           <Form.Item name="reason" label={F.rejectReason} rules={[{ required: true, whitespace: true, message: F.rejectReasonRequired }]}>
             <Input.TextArea rows={3} autoFocus />
           </Form.Item>

@@ -1,42 +1,41 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 import { Button } from 'antd';
+import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
+import LangToggle from '../../components/LangToggle/LangToggle';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  // Signed-in users belong in the app, not on the public landing page
+  const home = user ? '/app/dashboard' : '/';
+
   return (
+    // html/body don't scroll (the app shell does), so this page scrolls itself on short screens
     <div style={{
-      minHeight: '100vh',
+      height: '100dvh', overflowY: 'auto',
       background: 'radial-gradient(ellipse 50% 40% at 80% 10%, rgba(255,200,170,.45) 0%, transparent 70%), radial-gradient(ellipse 45% 40% at 10% 90%, rgba(200,230,210,.45) 0%, transparent 70%), linear-gradient(180deg,#fffaf2 0%,#fbf1e3 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      gap: 20, padding: 24, textAlign: 'center',
     }}>
-      <div style={{ fontSize: 72, color: '#e0a454', filter: 'drop-shadow(0 6px 18px rgba(224,164,84,.35))' }}><DharmaWheel strokeWidth={5} /></div>
-      <div style={{ color: '#c47f36', fontSize: 'clamp(48px,8vw,96px)', fontWeight: 900, lineHeight: 1 }}>
-        404
-      </div>
-      <div style={{ color: '#5a3a22', fontSize: 16, letterSpacing: 2 }}>
-        Trang không tồn tại
-      </div>
-      <div style={{ color: '#8c7a6b', fontSize: 13 }}>
-        Đường dẫn bạn tìm kiếm không được tìm thấy.
-      </div>
-      <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Button
-          onClick={() => navigate(-1)}
-          style={{ borderRadius: 10 }}
-        >
-          ← Quay lại
-        </Button>
-        <Button
-          type="primary"
-          onClick={() => navigate('/')}
-          style={{ borderRadius: 10 }}
-        >
-          Về trang chủ
-        </Button>
+      <div style={{ position: 'fixed', top: 14, right: 14, zIndex: 2 }}><LangToggle /></div>
+      <div style={{
+        minHeight: '100%',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 20, padding: '56px 24px 32px', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 72, color: '#e0a454', filter: 'drop-shadow(0 6px 18px rgba(224,164,84,.35))' }}><DharmaWheel strokeWidth={5} /></div>
+        <div style={{ color: '#c47f36', fontSize: 'clamp(48px,8vw,96px)', fontWeight: 900, lineHeight: 1 }}>404</div>
+        <h1 style={{ margin: 0, color: '#5a3a22', fontSize: 17, fontWeight: 700, letterSpacing: 1 }}>{t.common.notFoundTitle}</h1>
+        <p style={{ margin: 0, color: '#6f5e50', fontSize: 14 }}>{t.common.notFoundBody}</p>
+        <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Button size="large" onClick={() => navigate(-1)} style={{ borderRadius: 10 }}>← {t.common.back}</Button>
+          <Button size="large" type="primary" onClick={() => navigate(home)} style={{ borderRadius: 10 }}>
+            {user ? t.common.notFoundToApp : t.layout.goHome}
+          </Button>
+        </div>
       </div>
     </div>
   );

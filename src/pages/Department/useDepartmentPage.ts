@@ -29,7 +29,7 @@ export const getDeptTheme = (code = ''): DeptTheme => {
 export function useDepartmentPage() {
   const { t } = useLanguage() as any;
   const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { isAdmin, hasRole } = useAuth();
   const canEdit = isAdmin() || hasRole('truotri');
 

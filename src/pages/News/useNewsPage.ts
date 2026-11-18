@@ -14,6 +14,7 @@ export function useNewsPage() {
   const [posts, setPosts] = useState<any>({ event: [], news: [], article: [] });
   const [pendingPosts, setPendingPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [activeTab, setActiveTab] = useState('article');
   const [modalOpen, setModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<any>(null);
@@ -34,7 +35,10 @@ export function useNewsPage() {
         api.get('/posts?type=article&limit=50'),
       ])) as any[];
       setPosts({ event: ev.data.data, news: nw.data.data, article: ar.data.data });
+      setLoadFailed(false);
     } catch {
+      // The feed shows an error state with Retry (instead of "no posts yet")
+      setLoadFailed(true);
       message.error(tRef.current.news.loadError);
     } finally {
       setLoading(false);
@@ -134,6 +138,7 @@ export function useNewsPage() {
     pendingPosts,
     freshPendingIds,
     loading,
+    loadFailed,
     activeTab,
     setActiveTab,
     modalOpen,

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export function useDonationPage() {
   const [data, setData]           = useState<any[]>([]);
@@ -22,6 +23,12 @@ export function useDonationPage() {
   });
 
   const { isAdmin, hasRole } = useAuth() as any;
+  const { t } = useLanguage() as any;
+
+  // Search waits 300ms after the last keystroke; stale responses are ignored
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => { const id = setTimeout(() => setDebouncedSearch(search), 300); return () => clearTimeout(id); }, [search]);
+  const reqId = useRef(0);
 
   const canManage = () => isAdmin() || hasRole('truotri') || hasRole('thuki') || hasRole('truongban');
 
@@ -45,20 +52,22 @@ export function useDonationPage() {
   }, [dateRange, fundFilter]);
 
   const fetchData = useCallback(async () => {
+    const id = ++reqId.current;
     setLoading(true);
     try {
-      const params: any = { page, limit: 10, search, fundId: fundFilter };
+      const params: any = { page, limit: 10, search: debouncedSearch, fundId: fundFilter };
       if (dateRange?.[0]) params.startDate = dayjs(dateRange[0]).format('YYYY-MM-DD');
       if (dateRange?.[1]) params.endDate   = dayjs(dateRange[1]).format('YYYY-MM-DD');
       const r: any = await api.get('/donations', { params });
+      if (id !== reqId.current) return;
       setData(r.data.data);
       setTotal(r.data.total);
     } catch {
-      message.error('Không thể tải dữ liệu');
+      if (id === reqId.current) message.error(t.common.loadError);
     } finally {
-      setLoading(false);
+      if (id === reqId.current) setLoading(false);
     }
-  }, [page, search, dateRange, fundFilter]);
+  }, [page, debouncedSearch, dateRange, fundFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
@@ -73,17 +82,17 @@ export function useDonationPage() {
       };
       if (editRecord) {
         await api.put(`/donations/${editRecord.id}`, payload);
-        message.success('Cập nhật thành công');
+        message.success(t.donation.updateSuccess);
       } else {
         await api.post('/donations', payload);
-        message.success('Đã ghi nhận cúng dường');
+        message.success(t.donation.addSuccess);
       }
       setModalOpen(false);
       setEditRecord(null);
       fetchData();
       fetchSummary();
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Có lỗi xảy ra');
+      message.error(err.response?.data?.message || t.common.error);
     } finally {
       setSaving(false);
     }
@@ -92,11 +101,11 @@ export function useDonationPage() {
   const handleDelete = async (id: any) => {
     try {
       await api.delete(`/donations/${id}`);
-      message.success('Đã xóa');
+      message.success(t.common.deleteSuccess);
       fetchData();
       fetchSummary();
     } catch {
-      message.error('Không thể xóa');
+      message.error(t.common.deleteError);
     }
   };
 

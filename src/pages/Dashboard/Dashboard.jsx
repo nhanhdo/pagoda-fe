@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Avatar, Tooltip, Result, Button } from 'antd';
+import { Avatar, Tooltip, Result, Button, Alert } from 'antd';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
   TeamOutlined, HeartOutlined, BookOutlined, CheckSquareOutlined,
@@ -56,7 +56,7 @@ function EmptyState({ icon, text, actionLabel, onAction }) {
     <div className="db-empty">
       <span className="db-empty__icon">{icon}</span>
       <span className="db-empty__text">{text}</span>
-      {actionLabel && (
+      {actionLabel && onAction && (
         <button type="button" className="db-link" onClick={onAction}>
           <PlusOutlined /> {actionLabel}
         </button>
@@ -126,6 +126,7 @@ function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
                 className="db-bd__arc"
                 style={{ transitionDelay: drawn ? '0s' : `${i * 0.12}s` }}
                 onMouseEnter={() => setActive(i)}
+                onClick={() => setActive(v => (v === i ? null : i))}
               />
             );
           })}
@@ -152,6 +153,14 @@ function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
             key={d.label}
             className={`db-bd__row${active === i ? ' is-active' : ''}${active != null && active !== i ? ' is-dim' : ''}`}
             onMouseEnter={() => setActive(i)}
+            // tap / keyboard: same highlight as hover (touch screens have no hover)
+            tabIndex={0}
+            aria-pressed={active === i}
+            role="button"
+            onClick={() => setActive(v => (v === i ? null : i))}
+            onFocus={() => setActive(i)}
+            onBlur={() => setActive(null)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive(v => (v === i ? null : i)); } }}
             style={{ '--c': d.color }}
           >
             <span className="db-bd__swatch" />
@@ -171,7 +180,7 @@ function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
 }
 
 export default function Dashboard() {
-  const { stats, dutyToday, upcomingEvents, loading, error, reload, displayName } = useDashboard();
+  const { stats, dutyToday, upcomingEvents, loading, error, partialError, reload, displayName } = useDashboard();
   const { user } = useAuth();
   const role = user?.role;
   const { t, lang } = useLanguage();
@@ -198,7 +207,7 @@ export default function Dashboard() {
   const name = displayName ? displayName.charAt(0).toUpperCase() + displayName.slice(1) : '';
   const lunar = solarToLunar(now.getDate(), now.getMonth() + 1, now.getFullYear());
   const todayKey = dayjs(now).format('YYYY-MM-DD');
-  const holidays = getBuddhistHolidays(now.getFullYear()).get(todayKey);
+  const holidays = getBuddhistHolidays(now.getFullYear(), lang).get(todayKey);
   const dateLocale = lang === 'en' ? 'en-US' : 'vi-VN';
 
   const p = stats?.personnel || {};
@@ -217,6 +226,8 @@ export default function Dashboard() {
     { label: d.createCourse, icon: <BookOutlined />,         path: '/app/training',          tone: 'teal',     roles: ['admin', 'truotri', 'thuki'] },
     { label: d.postNews,     icon: <FileTextOutlined />,     path: '/app/news',              tone: 'lavender' },
   ].filter(a => !a.roles || a.roles.includes(role));
+  // Empty-state shortcuts follow the same permissions as the quick actions
+  const createAction = (path) => (quickActions.some(a => a.path === path) ? () => navigate(`${path}?create=1`) : undefined);
 
   const breakdown = [
     { label: d.tangNi,         value: p.tangNi ?? 0,         color: ACCENT.amber.c },
@@ -228,7 +239,7 @@ export default function Dashboard() {
   const breakdownTotal = breakdown.reduce((s, x) => s + x.value, 0);
 
   const todayStart = dayjs().startOf('day');
-  const holidayMaps = [now.getFullYear(), now.getFullYear() + 1].map(y => getBuddhistHolidays(y));
+  const holidayMaps = [now.getFullYear(), now.getFullYear() + 1].map(y => getBuddhistHolidays(y, lang));
   const upcomingHolidays = [];
   for (let i = 0; i <= 60 && upcomingHolidays.length < 5; i++) {
     const day = todayStart.add(i, 'day');
@@ -250,6 +261,15 @@ export default function Dashboard() {
 
   return (
     <div className="db-root">
+      {partialError && (
+        <Alert
+          type="warning"
+          showIcon
+          message={d.partialLoadError}
+          action={<Button size="small" onClick={reload}>{t.common.retry}</Button>}
+          style={{ marginBottom: 16, borderRadius: 12 }}
+        />
+      )}
       {/* ── Hero ── */}
       <section className="db-hero welcome-anim">
         <div className="db-hero__main">
@@ -286,7 +306,7 @@ export default function Dashboard() {
         <div className="db-lunar" aria-label={d.lunarLabel}>
           <div className="db-lunar__label">{d.lunarLabel}</div>
           <div className="db-lunar__day">{String(lunar.day).padStart(2, '0')}</div>
-          <div className="db-lunar__month">{d.lunarMonth} {lunar.month}{lunar.leap ? ' (nhuận)' : ''}</div>
+          <div className="db-lunar__month">{d.lunarMonth} {lunar.month}{lunar.leap ? ` (${d.leapMonth})` : ''}</div>
           <div className="db-lunar__year">{lunar.yearName}</div>
         </div>
       </section>
@@ -317,7 +337,7 @@ export default function Dashboard() {
             action={viewAll('/app/duty-schedule')}
           >
             {dutyToday.length === 0 ? (
-              <EmptyState icon={<ScheduleOutlined />} text={d.noDutyToday} actionLabel={d.createDuty} onAction={() => navigate('/app/duty-schedule')} />
+              <EmptyState icon={<ScheduleOutlined />} text={d.noDutyToday} actionLabel={d.createDuty} onAction={createAction('/app/duty-schedule')} />
             ) : (
               <>
               <ul className="db-duty">
@@ -358,7 +378,7 @@ export default function Dashboard() {
               action={viewAll('/app/news?tab=event')}
             >
               {upcomingEvents.length === 0 ? (
-                <EmptyState icon={<CalendarOutlined />} text={d.noUpcomingEvents} actionLabel={d.postNews} onAction={() => navigate('/app/news')} />
+                <EmptyState icon={<CalendarOutlined />} text={d.noUpcomingEvents} actionLabel={d.postNews} onAction={createAction('/app/news')} />
               ) : (
                 <div className="db-events">
                   {upcomingEvents.slice(0, 4).map(ev => {
@@ -366,7 +386,7 @@ export default function Dashboard() {
                     const diff = day ? day.startOf('day').diff(dayjs().startOf('day'), 'day') : null;
                     const isToday = diff === 0;
                     return (
-                      <button type="button" key={ev.id} className={`db-event${isToday ? ' is-today' : ''}`} onClick={() => navigate('/app/news?tab=event')}>
+                      <button type="button" key={ev.id} className={`db-event${isToday ? ' is-today' : ''}`} onClick={() => navigate(`/app/news?post=${ev.id}`)}>
                         <div className="db-event__tile">
                           <span>{day ? day.toDate().toLocaleDateString(dateLocale, { month: 'short' }) : ''}</span>
                           <strong>{day ? day.format('DD') : '—'}</strong>
@@ -424,7 +444,7 @@ export default function Dashboard() {
 
         <SectionCard className="db-card--fill" icon={<PieChartOutlined />} title={d.personnelBreakdown}>
           {breakdownTotal === 0 ? (
-            <EmptyState icon={<TeamOutlined />} text={d.noData} actionLabel={d.addPersonnel} onAction={() => navigate('/app/personnel')} />
+            <EmptyState icon={<TeamOutlined />} text={d.noData} actionLabel={d.addPersonnel} onAction={createAction('/app/personnel')} />
           ) : (
             <Breakdown data={breakdown} total={breakdownTotal} totalLabel={t.common.total} />
           )}

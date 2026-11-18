@@ -2,8 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import NotFoundPage from './pages/NotFound/NotFoundPage';
-import RippleEffect from './components/RippleEffect/RippleEffect';
-import CustomCursor from './components/CustomCursor/CustomCursor';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/Layout/MainLayout';
 import LotusEmpty from './components/LotusEmpty/LotusEmpty';
@@ -106,8 +104,6 @@ export default function App() {
     <ConfigProvider renderEmpty={(componentName) => <LotusEmpty compact={!['Table', 'List'].includes(componentName)} />}>
       <BrowserRouter>
         <AuthProvider>
-          <CustomCursor />
-          <RippleEffect />
           <AppRoutes />
         </AuthProvider>
       </BrowserRouter>

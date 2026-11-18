@@ -109,11 +109,11 @@ export default function DutyCalendar({
       <div className="dc-toolbar">
         <div className="dc-nav">
           <Tooltip title={D.prevMonth}>
-            <Button className="dc-nav__btn" icon={<LeftOutlined />} onClick={() => goMonth(month.subtract(1, 'month'))} />
+            <Button aria-label={D.prevMonth} className="dc-nav__btn" icon={<LeftOutlined />} onClick={() => goMonth(month.subtract(1, 'month'))} />
           </Tooltip>
           <h3 className="dc-nav__title">{monthTitle}</h3>
           <Tooltip title={D.nextMonth}>
-            <Button className="dc-nav__btn" icon={<RightOutlined />} onClick={() => goMonth(month.add(1, 'month'))} />
+            <Button aria-label={D.nextMonth} className="dc-nav__btn" icon={<RightOutlined />} onClick={() => goMonth(month.add(1, 'month'))} />
           </Tooltip>
           {!month.isSame(dayjs(), 'month') && (
             <Button className="dc-today-btn" onClick={() => goMonth(dayjs())}>{D.today}</Button>
@@ -309,11 +309,11 @@ export default function DutyCalendar({
                         {canManage && (
                           <span className="dc-item__actions">
                             <Tooltip title={t.common.edit}>
-                              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(d)} />
+                              <Button aria-label={t.common.edit} type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(d)} />
                             </Tooltip>
                             <Popconfirm title={D.confirmDelete} onConfirm={() => onDelete(d.id)} okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
                               <Tooltip title={t.common.delete}>
-                                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                                <Button aria-label={t.common.delete} type="text" size="small" danger icon={<DeleteOutlined />} />
                               </Tooltip>
                             </Popconfirm>
                           </span>

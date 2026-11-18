@@ -75,7 +75,7 @@ function DeptCard({ dept, canEdit, onOpen, onEdit, onDelete, t }) {
                 type="text"
                 className="dept-card__more"
                 icon={<EllipsisOutlined style={{ fontSize: 18 }} />}
-                aria-label="actions"
+                aria-label={t.department.cardActions}
               />
             </Dropdown>
           </span>
@@ -174,7 +174,8 @@ export default function DepartmentPage() {
     }
   };
 
-  if (loading) return <PageSpinner />;
+  // Full-page spinner only for the very first load; later refreshes keep the page in place
+  if (loading && !data.length) return <PageSpinner />;
 
   const drawerTheme = drawerDept ? getDeptTheme(drawerDept.code) : null;
 
@@ -259,7 +260,6 @@ export default function DepartmentPage() {
               {drawerDept.description && <p className="dept-drawer__desc">{drawerDept.description}</p>}
               {canEdit && (
                 <Button size="small" icon={<EditOutlined />} onClick={() => { const d = drawerDept; setDrawerDept(null); openModal(d); }} style={{ marginTop: 12 }}>
-          <HiddenSubmit />
                   {t.common.edit}
                 </Button>
               )}
@@ -315,7 +315,7 @@ export default function DepartmentPage() {
         confirmLoading={saving}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false} style={{ marginTop: 12 }}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: 12 }}>
           <HiddenSubmit />
           <Form.Item name="name" label={t.department.colName} rules={[{ ...R.required(t.department.colName.toLowerCase()), whitespace: true }]}>
             <Input placeholder={t.department.namePlaceholder} autoFocus />

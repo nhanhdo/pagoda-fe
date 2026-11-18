@@ -21,6 +21,8 @@ const vi = {
     library: 'Thư viện Phật & Bồ Tát',
   },
   common: {
+    loadError: 'Không thể tải dữ liệu', deleteError: 'Không thể xóa',
+    notFoundTitle: 'Trang không tồn tại', notFoundBody: 'Đường dẫn bạn tìm kiếm không được tìm thấy.', notFoundToApp: 'Về trang tổng quan',
     cropTitle: 'Căn chỉnh ảnh đại diện', cropHint: 'Kéo ảnh để đưa khuôn mặt vào giữa vòng tròn. Dùng thanh trượt hoặc con lăn chuột để phóng to.', cropZoom: 'Thu phóng', cropReset: 'Đặt lại', cropApply: 'Dùng ảnh này', cropAdjust: 'Căn chỉnh lại', cropLoadError: 'Không xử lý được ảnh này',
     exportExcel: 'Xuất Excel',
     retry: 'Thử lại',
@@ -47,6 +49,7 @@ const vi = {
   },
   userMenu: { profile: 'Thông tin cá nhân', changePassword: 'Đổi mật khẩu', logout: 'Đăng xuất' },
   dashboard: {
+    leapMonth: 'nhuận', partialLoadError: 'Một phần dữ liệu chưa tải được. Các mục khác vẫn hiển thị bình thường.',
     loadError: 'Không thể tải bảng điều khiển', loadErrorHint: 'Kiểm tra kết nối mạng rồi thử lại.',
     welcome: 'Xin chào',
     totalPersonnel: 'Tổng nhân sự', followers: 'Phật tử & TNV',
@@ -67,6 +70,9 @@ const vi = {
     upcomingHolidays: 'Ngày lễ sắp tới', noHolidays: 'Không có ngày lễ nào trong 60 ngày tới', lunarShort: 'ÂL',
   },
   login: {
+    brandSubtitle: 'Hệ thống quản lý', brandQuote: 'Tâm bình thì thế giới bình, tâm an thì vạn sự an', signInHint: 'Vui lòng đăng nhập để tiếp tục', footerChant: 'Nam Mô A Di Đà Phật',
+    homeTitleA: 'Chùa', homeTitleB: 'Tân Thành', homeLead: 'Nơi an lạc, nơi tu tập và kết nối thiện duyên. Hệ thống quản lý giúp đại chúng theo dõi lịch trực, khóa tu, Phật sự và công đức một cách trang nghiêm, minh bạch.',
+    homeEnter: 'Vào hệ thống', homeAudience: 'Dành cho chư Tăng Ni & ban điều hành', homeYear: 'Năm {y}', homeUpcoming: 'Sắp tới',
     signIn: 'Đăng nhập', usernamePlaceholder: 'Nhập tên đăng nhập', passwordPlaceholder: 'Nhập mật khẩu', idleLoggedOut: 'Phiên làm việc đã hết hạn do không hoạt động. Vui lòng đăng nhập lại.',
     pagodaName: 'Chùa Tân Thành',
     systemSubtitle: 'HỆ THỐNG QUẢN LÝ NHÂN SỰ',
@@ -167,6 +173,7 @@ const vi = {
     },
   },
   department: {
+    cardActions: 'Thao tác với ban',
     updateSuccess: 'Cập nhật thành công', addSuccess: 'Thêm ban thành công', loadError: 'Không thể tải danh sách ban', deleteError: 'Không thể xóa ban', codeFormat: 'Mã chỉ gồm chữ, số, “_” hoặc “-”', namePlaceholder: 'VD: Ban Hộ Tự',
     title: 'Ban/Đơn vị', addNew: 'Thêm ban', addTitle: 'Thêm ban/đơn vị', editTitle: 'Sửa ban/đơn vị',
     colCode: 'Mã ban', colName: 'Tên ban', colMembers: 'Số thành viên',
@@ -235,6 +242,7 @@ const vi = {
     cannotUpdateStatus: 'Không thể cập nhật trạng thái',
   },
   training: {
+    seatsLeft: 'Còn {n} chỗ trống',
     loadError: 'Không thể tải danh sách khóa học', updateSuccess: 'Cập nhật thành công', addSuccess: 'Thêm khóa học thành công', deleteSuccess: 'Đã xóa khóa học', deleteError: 'Không thể xóa khóa học', participantsAdded: 'Đã thêm học viên', removeParticipantError: 'Không thể xóa học viên',
     title: 'Đào tạo - Giới đàn', addNew: 'Thêm khóa học', addTitle: 'Thêm khóa học', editTitle: 'Sửa khóa học',
     colName: 'Tên khóa học', colTime: 'Thời gian', colLocation: 'Địa điểm', colStudents: 'Học viên',
@@ -262,6 +270,7 @@ const vi = {
     emptyFiltered: 'Không có khóa học khớp bộ lọc', emptyFilteredHint: 'Thử đổi từ khóa, loại hoặc trạng thái.',
   },
   buddhistFollower: {
+    updateSuccess: 'Cập nhật thành công', addSuccess: 'Thêm thành công',
     title: 'Phật tử & TNV', addNew: 'Thêm Phật tử/TNV', addTitle: 'Thêm Phật tử / TNV', editTitle: 'Sửa thông tin',
     colName: 'Họ tên / Pháp danh', colType: 'Loại', colArea: 'Khu vực',
     searchPlaceholder: 'Tìm tên, pháp danh...', allTypes: 'Tất cả loại', totalLabel: 'người',
@@ -349,6 +358,7 @@ const vi = {
     colFund: 'Quỹ', fieldFund: 'Quỹ', allFunds: 'Tất cả quỹ', colReceipt: 'Số phiếu', printReceipt: 'In phiếu thu', printThanks: 'In thư cảm tạ',
   },
   backup: {
+    refreshList: 'Làm mới danh sách',
     title: 'Sao lưu dữ liệu', subtitle: 'Bảo vệ toàn bộ dữ liệu của chùa — tải về, lưu lên cloud và khôi phục khi cần',
     lastBackup: 'Bản sao lưu gần nhất', noBackupYet: 'Chưa có bản sao lưu trên cloud', noBackupHint: 'Hãy tải về hoặc lưu lên cloud ngay',
     manualTitle: 'Sao lưu thủ công', manualText: 'Tải toàn bộ dữ liệu (nhân sự, lịch trực, phật tử, cúng dường, bài viết, tài khoản…) thành một file JSON. Nên lưu file ở nơi an toàn, ví dụ Google Drive của chùa.',
@@ -588,6 +598,7 @@ const vi = {
     emptyFiltered: 'Không có mục nào khớp bộ lọc', emptyFilteredHint: 'Thử đổi từ khóa, loại hoặc năm.',
   },
   library: {
+    loadErrorHint: 'Kiểm tra kết nối mạng rồi thử lại.',
     tab_bio: 'Tiểu sử', tab_vows: 'Đại nguyện', tab_mantra: 'Thần chú', meaning: 'Ý nghĩa', manage: 'Quản lý',
     emptyBio: 'Chưa có tiểu sử', emptyVows: 'Chưa có đại nguyện', emptyMantra: 'Chưa có thần chú',
     chant: 'Trì chú', chantTap: 'Chạm để đếm', chantRoundDone: 'Viên mãn một tràng 108', chantRounds: 'Tràng hạt', chantTotal: 'Tổng số biến',
@@ -622,6 +633,7 @@ const vi = {
     imageHint: 'Ảnh vuông hoặc dọc, tối đa 8MB', imageInvalid: 'Chỉ chấp nhận tệp ảnh', imageTooLarge: 'Ảnh vượt quá 8MB',
   },
   news: {
+    loadErrorHint: 'Kiểm tra kết nối mạng rồi thử lại.',
     reply: 'Trả lời', replyPlaceholder: 'Trả lời {name}...', replyingTo: 'Đang trả lời {name}', viewMoreReplies: 'Xem thêm {n} phản hồi', hideReplies: 'Ẩn bớt phản hồi', moreComments: 'Xem thêm {n} bình luận',
     commentsLoading: 'Đang tải bình luận…', noComments: 'Chưa có bình luận nào.', commentPlaceholder: 'Viết bình luận...', sendComment: 'Gửi bình luận',
     deleteCommentConfirm: 'Xóa bình luận này?', anonymous: 'Ẩn danh', commentSendError: 'Không thể gửi bình luận', commentDeleteError: 'Không thể xóa bình luận',
@@ -732,6 +744,7 @@ const vi = {
     passwordMismatch: 'Mật khẩu xác nhận không khớp',
   },
   layout: {
+    mainNav: 'Điều hướng chính',
     repliedToYou: 'đã trả lời bình luận của bạn',
     goHome: 'Về trang chủ', expandMenu: 'Mở rộng menu', collapseMenu: 'Thu gọn menu',
     notifications: 'Thông báo',
@@ -793,6 +806,8 @@ const en: typeof vi = {
     library: 'Buddhas & Bodhisattvas',
   },
   common: {
+    loadError: 'Could not load data', deleteError: 'Could not delete',
+    notFoundTitle: 'Page not found', notFoundBody: 'The link you followed could not be found.', notFoundToApp: 'Go to dashboard',
     cropTitle: 'Adjust profile photo', cropHint: 'Drag the photo to centre the face in the circle. Use the slider or mouse wheel to zoom.', cropZoom: 'Zoom', cropReset: 'Reset', cropApply: 'Use this photo', cropAdjust: 'Re-adjust', cropLoadError: 'Could not process this image',
     exportExcel: 'Export Excel',
     retry: 'Retry',
@@ -819,6 +834,7 @@ const en: typeof vi = {
   },
   userMenu: { profile: 'My Profile', changePassword: 'Change Password', logout: 'Log Out' },
   dashboard: {
+    leapMonth: 'leap', partialLoadError: 'Some data could not be loaded. Everything else is shown as usual.',
     loadError: 'Could not load the dashboard', loadErrorHint: 'Check your connection and try again.',
     welcome: 'Welcome',
     totalPersonnel: 'Total Personnel', followers: 'Followers & Volunteers',
@@ -839,6 +855,9 @@ const en: typeof vi = {
     upcomingHolidays: 'Upcoming holy days', noHolidays: 'No holy days in the next 60 days', lunarShort: 'Lunar',
   },
   login: {
+    brandSubtitle: 'Management system', brandQuote: 'When the mind is at peace, the world is at peace', signInHint: 'Please sign in to continue', footerChant: 'Namo Amitabha Buddha',
+    homeTitleA: 'Tân Thành', homeTitleB: 'Pagoda', homeLead: 'A place of peace, practice and good connections. The management system helps the community follow duty rosters, retreats, Dharma activities and merit in a dignified, transparent way.',
+    homeEnter: 'Enter the system', homeAudience: 'For the Sangha & the management board', homeYear: 'Year {y}', homeUpcoming: 'Coming up',
     signIn: 'Sign in', usernamePlaceholder: 'Enter your username', passwordPlaceholder: 'Enter your password', idleLoggedOut: 'Your session expired due to inactivity. Please sign in again.',
     pagodaName: 'Tan Thanh Pagoda',
     systemSubtitle: 'PERSONNEL MANAGEMENT SYSTEM',
@@ -939,6 +958,7 @@ const en: typeof vi = {
     },
   },
   department: {
+    cardActions: 'Department actions',
     updateSuccess: 'Updated successfully', addSuccess: 'Department added', loadError: 'Could not load departments', deleteError: 'Could not delete department', codeFormat: 'Code may contain letters, digits, “_” or “-”', namePlaceholder: 'e.g. Temple Guard Board',
     title: 'Departments', addNew: 'Add Department', addTitle: 'Add Department', editTitle: 'Edit Department',
     colCode: 'Dept Code', colName: 'Department Name', colMembers: 'Members',
@@ -1007,6 +1027,7 @@ const en: typeof vi = {
     cannotUpdateStatus: 'Cannot update status',
   },
   training: {
+    seatsLeft: '{n} seats left',
     loadError: 'Could not load courses', updateSuccess: 'Updated successfully', addSuccess: 'Course added', deleteSuccess: 'Course deleted', deleteError: 'Could not delete course', participantsAdded: 'Participants added', removeParticipantError: 'Could not remove participant',
     title: 'Training', addNew: 'Add Course', addTitle: 'Add Course', editTitle: 'Edit Course',
     colName: 'Course Name', colTime: 'Duration', colLocation: 'Location', colStudents: 'Participants',
@@ -1034,6 +1055,7 @@ const en: typeof vi = {
     emptyFiltered: 'No courses match the filters', emptyFilteredHint: 'Try another keyword, type or status.',
   },
   buddhistFollower: {
+    updateSuccess: 'Updated successfully', addSuccess: 'Added successfully',
     title: 'Followers & Volunteers', addNew: 'Add Follower/Volunteer', addTitle: 'Add Follower / Volunteer', editTitle: 'Edit Info',
     colName: 'Full Name / Dharma Name', colType: 'Type', colArea: 'Area',
     searchPlaceholder: 'Search name, dharma name...', allTypes: 'All types', totalLabel: 'people',
@@ -1121,6 +1143,7 @@ const en: typeof vi = {
     colFund: 'Fund', fieldFund: 'Fund', allFunds: 'All funds', colReceipt: 'Receipt', printReceipt: 'Print receipt', printThanks: 'Print thank-you letter',
   },
   backup: {
+    refreshList: 'Refresh list',
     title: 'Data Backup', subtitle: 'Protect all pagoda data — download, keep copies in the cloud and restore when needed',
     lastBackup: 'Latest backup', noBackupYet: 'No cloud backup yet', noBackupHint: 'Download one or save to the cloud now',
     manualTitle: 'Manual backup', manualText: 'Download all data (personnel, duty schedules, followers, donations, posts, accounts…) as a single JSON file. Keep it somewhere safe, e.g. the pagoda’s Google Drive.',
@@ -1360,6 +1383,7 @@ const en: typeof vi = {
     emptyFiltered: 'No records match the filters', emptyFilteredHint: 'Try another keyword, type or year.',
   },
   library: {
+    loadErrorHint: 'Check your connection and try again.',
     tab_bio: 'Biography', tab_vows: 'Great vows', tab_mantra: 'Mantra', meaning: 'Meaning', manage: 'Manage',
     emptyBio: 'No biography yet', emptyVows: 'No vows yet', emptyMantra: 'No mantra yet',
     chant: 'Recite', chantTap: 'Tap to count', chantRoundDone: 'A full mala of 108', chantRounds: 'Malas', chantTotal: 'Total recitations',
@@ -1394,6 +1418,7 @@ const en: typeof vi = {
     imageHint: 'Square or portrait image, max 8MB', imageInvalid: 'Only image files are allowed', imageTooLarge: 'Image exceeds 8MB',
   },
   news: {
+    loadErrorHint: 'Check your connection and try again.',
     reply: 'Reply', replyPlaceholder: 'Reply to {name}...', replyingTo: 'Replying to {name}', viewMoreReplies: 'View {n} more replies', hideReplies: 'Hide replies', moreComments: 'View {n} more comments',
     commentsLoading: 'Loading comments…', noComments: 'No comments yet.', commentPlaceholder: 'Write a comment...', sendComment: 'Send comment',
     deleteCommentConfirm: 'Delete this comment?', anonymous: 'Anonymous', commentSendError: 'Could not send comment', commentDeleteError: 'Could not delete comment',
@@ -1504,6 +1529,7 @@ const en: typeof vi = {
     passwordMismatch: 'Passwords do not match',
   },
   layout: {
+    mainNav: 'Main navigation',
     repliedToYou: 'replied to your comment',
     goHome: 'Go to home', expandMenu: 'Expand menu', collapseMenu: 'Collapse menu',
     notifications: 'Notifications',

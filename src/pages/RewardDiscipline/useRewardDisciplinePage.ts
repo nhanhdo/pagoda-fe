@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export const rewardSubTypes = ['giấy_khen', 'công_đức_xuất_sắc', 'bằng_khen'];
 export const disciplineSubTypes = ['khiển_trách', 'cảnh_cáo', 'tạm_đình_chỉ', 'đình_chỉ'];
 
 export function useRewardDisciplinePage() {
+  const { t } = useLanguage() as any;
   // All records are loaded once (the API is unpaginated) so stats, counts and filters cover everything
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ export function useRewardDisciplinePage() {
       const resp: any = await api.get('/reward-disciplines');
       setData(resp.data || []);
     } catch {
-      message.error('Không thể tải dữ liệu');
+      message.error(t.common.loadError);
     } finally {
       setLoading(false);
     }
@@ -42,10 +44,10 @@ export function useRewardDisciplinePage() {
   const handleDelete = async (id: any) => {
     try {
       await api.delete(`/reward-disciplines/${id}`);
-      message.success('Đã xóa');
+      message.success(t.common.deleteSuccess);
       fetchData();
     } catch {
-      message.error('Không thể xóa');
+      message.error(t.common.deleteError);
     }
   };
 

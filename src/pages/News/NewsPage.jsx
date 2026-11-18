@@ -23,6 +23,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { solarToLunar, getBuddhistHolidays, getSolarTerm, getHoangDaoHours, getTruc } from '../../utils/lunarCalendar';
 import './NewsPage.css';
 import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { guardedClose, rules } from '../../utils/formGuard';
 
 const MAX_IMAGE_MB = 10;
@@ -31,7 +32,6 @@ const shortMonth = (d, lang) => (lang === 'en' ? dayjs(d).locale('en').format('M
 const AVATAR_TONE = { background: '#fbf1e4', color: '#a2652a' };
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -691,7 +691,8 @@ function LoadMore({ shown, total, onMore }) {
   );
 }
 
-function FeedTab({ posts, loading, canEdit, onEdit, onDelete, emptyIcon, emptyText, resetKey, focusPostId }) {
+function FeedTab({ posts, loading, loadFailed, onRetry, canEdit, onEdit, onDelete, emptyIcon, emptyText, resetKey, focusPostId }) {
+  const { t } = useLanguage();
   const [limit, setLimit] = useState(FEED_PAGE);
   useEffect(() => { setLimit(FEED_PAGE); }, [resetKey]);
   // Make sure a post opened from a notification is within the visible page
@@ -701,6 +702,14 @@ function FeedTab({ posts, loading, canEdit, onEdit, onDelete, emptyIcon, emptyTe
     if (idx >= 0) setLimit(l => Math.max(l, Math.ceil((idx + 1) / FEED_PAGE) * FEED_PAGE));
   }, [focusPostId, posts]);
   if (loading) return <PageSpinner />;
+  if (loadFailed && posts.length === 0) {
+    return (
+      <div className="news-load-error">
+        <LotusEmpty description={t.news.loadError} hint={t.news.loadErrorHint} />
+        <Button onClick={onRetry}>{t.common.retry}</Button>
+      </div>
+    );
+  }
   if (posts.length === 0) return <NewsEmpty icon={emptyIcon} text={emptyText} />;
   return (
     <div>
@@ -739,8 +748,14 @@ function PendingList({ posts, onApprove, onReject, emptyText, focusPostId, focus
 }
 
 /* ─── Van Nien Calendar ──────────────────────────────────── */
+// Palette for the calendar (was leftover antd defaults)
+const CAL = {
+  ram: '#c4545d', good: '#e0a23e', bad: '#cdbfae', text: '#5a4636',
+  major: '#b8432f', minor: '#3f8461', event: '#3f7fb5', eventBg: '#e9f1fb',
+};
+
 function EventCalendarView({ events, canEdit, onDblClickDate }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const CL = t.news.cal;
   const [calYear, setCalYear] = React.useState(dayjs().year());
   const [selectedDate, setSelectedDate] = React.useState(dayjs());
@@ -754,7 +769,7 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
     }
   });
 
-  const holidays = React.useMemo(() => getBuddhistHolidays(calYear), [calYear]);
+  const holidays = React.useMemo(() => getBuddhistHolidays(calYear, lang), [calYear, lang]);
 
   const sel      = selectedDate;
   const selLunar = solarToLunar(sel.date(), sel.month() + 1, sel.year());
@@ -775,34 +790,47 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
     const isRam   = lunar.day === 15;
     const isMung1 = lunar.day === 1;
     const truc    = getTruc(lunar.day, lunar.month, lunar.year);
-    const dotColor = isRam || isMung1 ? '#c0392b' : truc.hoangDao ? '#e67e22' : '#bbb';
-    const lunarColor = isRam || isMung1 ? '#c0392b' : '#555';
+    const dotColor = isRam || isMung1 ? CAL.ram : truc.hoangDao ? CAL.good : CAL.bad;
+    const lunarColor = isRam || isMung1 ? CAL.ram : CAL.text;
 
     return (
       <div
+        className="ncal-cell"
         style={{ minHeight: 0, paddingTop: 1, position: 'relative', height: '100%' }}
         onDoubleClick={canEdit ? (e) => { e.stopPropagation(); onDblClickDate(date); } : undefined}
         title={canEdit ? CL.dblClickHint : undefined}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0 }}>
-          <span style={{ fontSize: 10, color: lunarColor, fontWeight: isRam || isMung1 ? 700 : 400, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', minWidth: 0 }}>
+          <span className="ncal-lunar" style={{ fontSize: 10, color: lunarColor, fontWeight: isRam || isMung1 ? 700 : 400, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', minWidth: 0 }}>
             {lunar.day}/{lunar.month}{lunar.leap ? '*' : ''}
           </span>
           <span style={{ flexShrink: 0, marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: dotColor }} />
         </div>
+        {/* Phones: compact coloured marks instead of tiny text */}
+        {(holiday || evs.length > 0) && (
+          <div className="ncal-marks" aria-hidden>
+            {holiday && <i style={{ background: holiday.major ? CAL.major : CAL.minor }} />}
+            {evs.length > 0 && <i style={{ background: CAL.event }} />}
+          </div>
+        )}
         {holiday && (
-          <div style={{ fontSize: 9, color: holiday.major ? '#cf1322' : '#389e0d', fontWeight: 600, lineHeight: 1.2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+          <div className="ncal-text" style={{ fontSize: 9, color: holiday.major ? CAL.major : CAL.minor, fontWeight: 600, lineHeight: 1.2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
             {holiday.major ? '★' : '▲'} {holiday.names[0]}
           </div>
         )}
         {evs.slice(0, 1).map(e => (
-          <div key={e.id} style={{ fontSize: 9, color: '#1890ff', background: '#e6f4ff', borderRadius: 2, padding: '0 3px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+          <div key={e.id} className="ncal-text" style={{ fontSize: 9, color: CAL.event, background: CAL.eventBg, borderRadius: 2, padding: '0 3px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
             {e.title}
           </div>
         ))}
-        {evs.length > 1 && <div style={{ fontSize: 9, color: '#7a6a5c' }}>+{evs.length - 1}</div>}
+        {evs.length > 1 && <div className="ncal-text" style={{ fontSize: 9, color: '#6f5e50' }}>+{evs.length - 1}</div>}
         {canEdit && (
-          <div className="cal-add-hint">+</div>
+          <button
+            type="button"
+            className="cal-add-hint"
+            aria-label={CL.addEventFor.replace('{d}', date.format('DD/MM'))}
+            onClick={(e) => { e.stopPropagation(); onDblClickDate(date); }}
+          >+</button>
         )}
       </div>
     );
@@ -845,7 +873,7 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
             { label: CL.day,   value: selLunar.dayCanChi },
             { label: CL.term,  value: selTiKhi },
             { label: CL.truc,  value: selTruc.name, color: selTruc.hoangDao ? '#c2620a' : '#7a6a5c',
-              badge: selTruc.hoangDao ? { text: CL.hoangDao, bg: '#fff7e6', color: '#d46b08' } : { text: CL.hacDao, bg: '#f5f5f5', color: '#7a6a5c' }
+              badge: selTruc.hoangDao ? { text: CL.hoangDao, bg: '#fff7e6', color: '#a8561c' } : { text: CL.hacDao, bg: '#f2ede6', color: '#6f5e50' }
             },
           ].map(r => (
             <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -857,10 +885,10 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
 
         {/* Giờ Hoàng Đạo */}
         <div style={{ background: '#fffaf4', border: '1px solid #f5e6cc', borderRadius: 12, padding: '10px 14px' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#e67e22', marginBottom: 8 }}>☀ {CL.hoangDaoHours}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#a8561c', marginBottom: 8 }}>☀ {CL.hoangDaoHours}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
             {selHDHours.map(h => (
-              <div key={h.chi} style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 6, padding: '2px 8px', fontSize: 11, color: '#d46b08', fontWeight: 600, textAlign: 'center' }}>
+              <div key={h.chi} style={{ background: '#fff7e6', border: '1px solid #f3d9ae', borderRadius: 6, padding: '2px 8px', fontSize: 11, color: '#a8561c', fontWeight: 600, textAlign: 'center' }}>
                 <div>{h.chi}</div>
                 <div style={{ fontSize: 10, color: '#7a6a5c', fontWeight: 400 }}>{h.time}</div>
               </div>
@@ -873,13 +901,13 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
           <div style={{ background: '#fff', border: '1px solid #f0e8df', borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#b06f2c', marginBottom: 2 }}>📅 {CL.thisDay}</div>
             {selHoliday?.names.map((n, i) => (
-              <div key={i} style={{ fontSize: 12, color: selHoliday.major ? '#cf1322' : '#389e0d', fontWeight: 600 }}>
+              <div key={i} style={{ fontSize: 12, color: selHoliday.major ? CAL.major : CAL.minor, fontWeight: 600 }}>
                 {selHoliday.major ? '★' : '▲'} {n}
               </div>
             ))}
             {selEvents.map(e => (
               <Tooltip key={e.id} title={e.title}>
-                <div style={{ fontSize: 12, color: '#1890ff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 12, color: CAL.event, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   <CalendarOutlined style={{ marginRight: 4 }} />{e.title}
                 </div>
               </Tooltip>
@@ -894,20 +922,20 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
         )}
 
         {/* Legend */}
-        <div style={{ background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ background: '#fcf9f4', border: '1px solid #ece1d1', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: '#7a6a5c', marginBottom: 2, letterSpacing: 0.5, textTransform: 'uppercase' }}>{CL.legend}</div>
           {[
-            { dot: '#e67e22', label: CL.goodDay },
-            { dot: '#bbb',    label: CL.badDay },
-            { dot: '#c0392b', label: t.news.calendarLunar },
+            { dot: CAL.good, label: CL.goodDay },
+            { dot: CAL.bad,  label: CL.badDay },
+            { dot: CAL.ram,  label: t.news.calendarLunar },
           ].map(l => (
             <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
-              {DOT(l.dot)}<span style={{ color: '#555' }}>{l.label}</span>
+              {DOT(l.dot)}<span style={{ color: CAL.text }}>{l.label}</span>
             </div>
           ))}
-          <div style={{ fontSize: 12, color: '#cf1322' }}>★ {t.news.calendarMajorHoliday}</div>
-          <div style={{ fontSize: 12, color: '#389e0d' }}>▲ {t.news.calendarHoliday}</div>
-          <div style={{ fontSize: 12, color: '#1677ff' }}><CalendarOutlined /> {t.news.calendarTempleEvent}</div>
+          <div style={{ fontSize: 12, color: CAL.major }}>★ {t.news.calendarMajorHoliday}</div>
+          <div style={{ fontSize: 12, color: CAL.minor }}>▲ {t.news.calendarHoliday}</div>
+          <div style={{ fontSize: 12, color: CAL.event }}><CalendarOutlined /> {t.news.calendarTempleEvent}</div>
         </div>
       </div>
 
@@ -918,7 +946,11 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
             value={selectedDate}
             cellRender={(date, info) => info.type === 'date' ? cellRender(date, info) : null}
             onPanelChange={(val) => { setCalYear(val.year()); }}
-            onSelect={(date) => setSelectedDate(dayjs(date.valueOf()))}
+            onSelect={(date, info) => {
+              const d = dayjs(date.valueOf());
+              if (canEdit && info?.source === 'date' && d.isSame(selectedDate, 'day')) onDblClickDate(d);
+              setSelectedDate(d);
+            }}
           />
         </div>
       </div>
@@ -934,7 +966,7 @@ export default function NewsPage() {
   const [calPrefillDate, setCalPrefillDate] = useState(null);
   const [calModalOpen, setCalModalOpen] = useState(false);
   const {
-    posts, pendingPosts, freshPendingIds, loading, activeTab, setActiveTab,
+    posts, pendingPosts, freshPendingIds, loading, loadFailed, activeTab, setActiveTab,
     modalOpen, setModalOpen,
     editRecord, canEdit, canPost, canApprove,
     fetchAll, fetchPending, openCreate, openEdit, handleDelete,
@@ -1003,7 +1035,7 @@ export default function NewsPage() {
     : null;
 
   const feed = (type, icon, emptyText) => (
-    <FeedTab posts={getDisplayPosts(type)} loading={loading} canEdit={canEdit} onEdit={openEdit} onDelete={handleDelete} emptyIcon={icon} emptyText={emptyText} resetKey={`${activeFilter}|${searchText}`} focusPostId={focusPostId} />
+    <FeedTab posts={getDisplayPosts(type)} loading={loading} loadFailed={loadFailed} onRetry={fetchAll} canEdit={canEdit} onEdit={openEdit} onDelete={handleDelete} emptyIcon={icon} emptyText={emptyText} resetKey={`${activeFilter}|${searchText}`} focusPostId={focusPostId} />
   );
 
   const tabs = [
@@ -1017,7 +1049,7 @@ export default function NewsPage() {
       content: (
         <EventCalendarView
           events={posts.event}
-          canEdit={canEdit}
+          canEdit={canPost}
           onDblClickDate={(date) => { setCalPrefillDate(date); setCalModalOpen(true); }}
         />
       ) },
@@ -1138,7 +1170,7 @@ export default function NewsPage() {
                 </div>
                 <div className="news-widget-list">
                   {upcomingEvents.map(ev => (
-                    <div key={ev.id} className="news-widget-item">
+                    <button type="button" key={ev.id} className="news-widget-item" onClick={() => navigate(`/app/news?post=${ev.id}`)}>
                       <div className="news-widget-date">
                         <strong>{dayjs(ev.eventDate).format('DD')}</strong>
                         <span>{shortMonth(ev.eventDate, lang)}</span>
@@ -1149,7 +1181,7 @@ export default function NewsPage() {
                           <div className="news-widget-item__sub"><EnvironmentOutlined style={{ marginRight: 4 }} />{ev.eventLocation}</div>
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1164,13 +1196,13 @@ export default function NewsPage() {
                   {pinnedPosts.map(p => {
                     const cfg = TYPE_CFG[p.type] || TYPE_CFG.article;
                     return (
-                      <div key={p.id} className="news-widget-item">
+                      <button type="button" key={p.id} className="news-widget-item" onClick={() => navigate(`/app/news?post=${p.id}`)}>
                         <span className="news-widget-dot" style={{ background: cfg.color }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="news-widget-item__title">{p.title}</div>
                           <div className="news-widget-item__sub" style={{ color: cfg.color }}>{typeLabels[p.type]}</div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

@@ -27,7 +27,7 @@ button.wa-stat.is-active { border-color: var(--st); box-shadow: 0 0 0 3px var(--
   grid-auto-flow: column;
   grid-auto-columns: minmax(230px, 1fr);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;      /* every column as tall as the tallest one */
   overflow-x: auto;
   padding-bottom: 8px;
   min-height: 320px;
@@ -43,7 +43,9 @@ button.wa-stat.is-active { border-color: var(--st); box-shadow: 0 0 0 3px var(--
   flex-direction: column;
   gap: 8px;
   transition: background .18s, border-color .18s;
+  min-height: 260px;
   max-height: max(420px, calc(100vh - 320px));
+  max-height: max(420px, calc(100dvh - 320px));
   overflow-y: auto;
   scroll-snap-align: start;
 }
@@ -63,8 +65,11 @@ button.wa-stat.is-active { border-color: var(--st); box-shadow: 0 0 0 3px var(--
   background: var(--tone-soft); color: var(--tone); font-size: 12px; font-weight: 700;
 }
 .kanban-col__empty {
-  text-align: center; padding: 22px 0; color: #bfae99; font-size: 12px;
-  border-radius: 12px; border: 1px dashed #eadcc6;
+  /* fills the rest of the column so empty columns line up and stay a large drop target */
+  flex: 1; min-height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 22px 0; color: #9a8877; font-size: 12.5px;
+  border-radius: 12px; border: 1px dashed #e3d3bc;
 }
 
 /* ── Kanban card ── */

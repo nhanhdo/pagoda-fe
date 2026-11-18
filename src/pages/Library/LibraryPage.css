@@ -201,7 +201,7 @@
 /* Thần chú */
 .lib-mantra2 { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 18px 8px 8px; }
 .lib-mantra2__text { margin: 0; font-size: clamp(20px, 3.2vw, 26px); font-weight: 800; color: #2a211a; line-height: 1.35; max-width: 640px; }
-.lib-mantra2__phonetic { margin: 14px 0 0; font-size: 16px; color: #b8894a; line-height: 1.55; max-width: 620px; }
+.lib-mantra2__phonetic { margin: 14px 0 0; font-size: 16px; color: #95692e; line-height: 1.55; max-width: 620px; }
 .lib-mantra2__rule { display: block; width: 110px; height: 1px; background: #e8dccb; margin: 26px 0 22px; }
 .lib-mantra2__label { font-size: 13px; font-weight: 700; letter-spacing: .18em; color: #7a5a24; text-transform: uppercase; }
 .lib-mantra2__meaning { margin: 10px 0 0; font-size: 16px; color: #3e342c; line-height: 1.65; max-width: 600px; }
@@ -220,7 +220,7 @@
 .lib-chant-modal .ant-modal-content { border-radius: 28px; padding: 28px 24px 22px; }
 .lib-chant { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
 .lib-chant__name { font-size: 18px; font-weight: 800; color: #2a211a; }
-.lib-chant__mantra { margin: 0 0 10px; font-size: 13.5px; color: #b8894a; line-height: 1.5; max-width: 340px; }
+.lib-chant__mantra { margin: 0 0 10px; font-size: 13.5px; color: #95692e; line-height: 1.5; max-width: 340px; }
 .lib-chant__dial {
   position: relative; appearance: none; border: 0; cursor: pointer; font: inherit;
   width: 236px; height: 236px; border-radius: 50%;
@@ -236,7 +236,7 @@
 .lib-chant__track { fill: none; stroke: rgba(210, 170, 110, .25); stroke-width: 8; }
 .lib-chant__progress { fill: none; stroke: #d29a4a; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .25s ease; }
 .lib-chant__count { font-size: 64px; font-weight: 800; color: #6b3f15; line-height: 1; font-variant-numeric: tabular-nums; animation: lib-pop .22s ease-out; }
-.lib-chant__of { font-size: 13px; color: #b8894a; margin-top: 2px; }
+.lib-chant__of { font-size: 13px; color: #95692e; margin-top: 2px; }
 .lib-chant__hint { font-size: 12px; color: #8c7a6b; margin-top: 8px; }
 .lib-chant__dial.is-round { animation: lib-glow 1.6s ease-out; }
 .lib-chant__dial.is-round .lib-chant__hint { color: #a8561c; font-weight: 700; }
@@ -277,6 +277,11 @@
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 575px) {
+  /* 3–4 filter options with counts don't fit: scroll sideways instead of being clipped */
+  .lib-toolbar .ant-segmented { max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .lib-toolbar .ant-segmented::-webkit-scrollbar { display: none; }
+  .lib-toolbar .ant-segmented-group { flex-wrap: nowrap; }
+  .lib-toolbar .ant-segmented-item { flex-shrink: 0; }
   .lib-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .lib-card { border-radius: 18px; }
   .lib-card__foot { min-height: 74px; padding: 12px 10px 14px; }
