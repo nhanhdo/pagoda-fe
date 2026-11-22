@@ -70,6 +70,7 @@ const vi = {
     upcomingHolidays: 'Ngày lễ sắp tới', noHolidays: 'Không có ngày lễ nào trong 60 ngày tới', lunarShort: 'ÂL',
   },
   login: {
+    lunarCalendar: 'Âm lịch', lunarMonth: 'Tháng', lunarYear: 'Năm', lunarLeap: 'nhuận',
     brandSubtitle: 'Hệ thống quản lý', brandQuote: 'Tâm bình thì thế giới bình, tâm an thì vạn sự an', signInHint: 'Vui lòng đăng nhập để tiếp tục', footerChant: 'Nam Mô A Di Đà Phật',
     homeTitleA: 'Chùa', homeTitleB: 'Tân Thành', homeLead: 'Nơi an lạc, nơi tu tập và kết nối thiện duyên. Hệ thống quản lý giúp đại chúng theo dõi lịch trực, khóa tu, Phật sự và công đức một cách trang nghiêm, minh bạch.',
     homeEnter: 'Vào hệ thống', homeAudience: 'Dành cho chư Tăng Ni & ban điều hành', homeYear: 'Năm {y}', homeUpcoming: 'Sắp tới',
@@ -855,6 +856,7 @@ const en: typeof vi = {
     upcomingHolidays: 'Upcoming holy days', noHolidays: 'No holy days in the next 60 days', lunarShort: 'Lunar',
   },
   login: {
+    lunarCalendar: 'Lunar date', lunarMonth: 'Month', lunarYear: 'Year of', lunarLeap: '(leap)',
     brandSubtitle: 'Management system', brandQuote: 'When the mind is at peace, the world is at peace', signInHint: 'Please sign in to continue', footerChant: 'Namo Amitabha Buddha',
     homeTitleA: 'Tân Thành', homeTitleB: 'Pagoda', homeLead: 'A place of peace, practice and good connections. The management system helps the community follow duty rosters, retreats, Dharma activities and merit in a dignified, transparent way.',
     homeEnter: 'Enter the system', homeAudience: 'For the Sangha & the management board', homeYear: 'Year {y}', homeUpcoming: 'Coming up',

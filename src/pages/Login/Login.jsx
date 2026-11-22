@@ -3,12 +3,43 @@ import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
-import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
+import { solarToLunar } from '../../utils/lunarCalendar';
 import LangToggle from '../../components/LangToggle/LangToggle';
+import PagodaSeal from './PagodaSeal';
 import './Login.css';
 
+const pagodaTimeZone = 'Asia/Ho_Chi_Minh';
+const pagodaDate = new Intl.DateTimeFormat('en-GB', { timeZone: pagodaTimeZone });
+
+function LunarDate({ lang, labels }) {
+  const today = new Date();
+  const [day, month, year] = pagodaDate.format(today).split('/').map(Number);
+  const lunar = solarToLunar(day, month, year);
+  const solarLabel = new Intl.DateTimeFormat(lang === 'vi' ? 'vi-VN' : 'en-GB', {
+    timeZone: pagodaTimeZone,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+  }).format(today);
+
+  return (
+    <div className="lg-lunar">
+      <div className="lg-lunar-tile">
+        <span>{labels.lunarCalendar}</span>
+        <strong>{lunar.day}</strong>
+        <small>{labels.lunarMonth} {lunar.month}{lunar.leap ? ` ${labels.lunarLeap}` : ''}</small>
+      </div>
+      <div className="lg-lunar-caption">
+        <strong>{labels.lunarYear} {lunar.yearName}</strong>
+        <div>{solarLabel}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function Login() {
-  const { t }              = useLanguage();
+  const { t, lang }              = useLanguage();
   const { login, loading } = useAuth();
   const [error, setError]  = useState('');
   useEffect(() => {
@@ -33,17 +64,18 @@ export default function Login() {
 
           {/* ── Brand panel ── */}
           <div className="lg-brand">
-            <div className="lg-buddha">
-              <img src="/adida.PNG" alt="" />
-            </div>
+            <header className="lg-brand-header">
+              <img src="/logochua.jpg" alt="" width="40" height="40" />
+              <div>
+                <p className="lg-sub">{t.login.brandSubtitle}</p>
+                <h1 className="lg-title">{t.login.pagodaName}</h1>
+              </div>
+            </header>
 
-            <div>
-              <h1 className="lg-title">{t.login.pagodaName}</h1>
-              <p className="lg-sub">{t.login.brandSubtitle}</p>
-              <p className="lg-quote">“{t.login.brandQuote}”</p>
-            </div>
+            <PagodaSeal inscription={`${t.login.pagodaName} · ${t.login.footerChant} · `} />
 
-            <div className="lg-orn" aria-hidden="true"><i /><DharmaWheel /><i /></div>
+            <p className="lg-quote">“{t.login.brandQuote}”</p>
+            <LunarDate lang={lang} labels={t.login} />
           </div>
 
           {/* ── Form panel ── */}

@@ -30,7 +30,7 @@
 
 .lg-card {
   display: grid;
-  grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(20px, 4vw, 56px);
   width: 100%;
   max-width: 1000px;
@@ -43,28 +43,106 @@
 .lg-brand {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  padding: 40px 24px;
-  text-align: center;
+  padding: clamp(24px, 3.7vw, 42px);
   border-radius: 26px;
   box-shadow: var(--lg-inset);
 }
 
-.lg-buddha,
-.lg-head-icon {
+.lg-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lg-brand-header img {
+  flex: none;
+  border: 1px solid #cba775;
+  border-radius: 11px;
+  box-shadow: 3px 4px 8px #bdab943d;
+}
+
+.lg-seal {
+  position: relative;
+  align-self: center;
+  width: min(100%, 290px);
+  aspect-ratio: 1;
+  margin: 14px 0;
+}
+
+.lg-seal-scene {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.lg-seal-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lg-seal-ring circle {
+  fill: none;
+  stroke: #c9a47f;
+  stroke-opacity: .52;
+  stroke-width: 1.5;
+}
+
+.lg-seal-ring text {
+  fill: #925623;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lg-seal-inscription {
+    transform-origin: 160px 160px;
+    animation: lg-seal-rotate 36s linear infinite;
+  }
+}
+
+@keyframes lg-seal-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lg-seal-disc {
+  display: grid;
+  place-items: center;
+  width: 55%;
+  aspect-ratio: 1;
+  border: 16px solid var(--lg-surface);
   border-radius: 50%;
   background: var(--lg-surface);
-  box-shadow: var(--lg-raised);
+  box-shadow: 12px 14px 28px #c9b494, -10px -10px 24px #fff9f0, var(--lg-inset);
 }
 
-.lg-buddha {
-  width: clamp(128px, 17vw, 204px);
-  margin-bottom: 28px;
-  padding: 10px;
+.lg-seal-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 24%;
+  background: linear-gradient(150deg, #d38d39, #a15b20);
+  color: #fff8e8;
+  font: 600 clamp(24px, 4vw, 44px)/1 "PingFang SC", "Microsoft YaHei", sans-serif;
+  box-shadow: 0 5px 9px #703a2550;
 }
 
-.lg-buddha img,
+.lg-seal-mark::after {
+  position: absolute;
+  inset: 8%;
+  border: 1.5px solid #ffefcebb;
+  border-radius: 22%;
+  content: '';
+}
+
 .lg-head-icon img {
   display: block;
   width: 100%;
@@ -73,12 +151,12 @@
   border-radius: 50%;
 }
 
-.lg-buddha img {
-  object-fit: cover;
-  object-position: center 18%;
+.lg-head-icon {
+  border-radius: 50%;
+  background: var(--lg-surface);
+  box-shadow: var(--lg-raised);
 }
 
-.lg-title,
 .lg-head h2 {
   margin: 0;
   color: var(--lg-ink);
@@ -87,22 +165,60 @@
   line-height: 1.18;
 }
 
-.lg-sub {
-  margin: 10px 0 0;
-  color: var(--lg-accent);
-  font-size: 11px;
+.lg-title,
+.lg-quote {
+  margin: 0;
+  color: #593619;
+  font-family: Georgia, serif;
   font-weight: 700;
-  letter-spacing: .2em;
+}
+
+.lg-title {
+  font-size: 22px;
+}
+
+.lg-sub,
+.lg-lunar-tile span {
+  margin: 0;
+  color: var(--lg-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
   text-transform: uppercase;
 }
 
 .lg-quote {
-  max-width: 255px;
-  margin: 26px auto 0;
+  font-size: clamp(22px, 2.5vw, 33px);
+  line-height: 1.23;
+  text-wrap: pretty;
+}
+
+.lg-lunar {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 24px;
   color: var(--lg-muted);
-  font-size: 14px;
-  font-style: italic;
-  line-height: 1.7;
+  font-size: 13px;
+}
+
+.lg-lunar-tile {
+  display: grid;
+  min-width: 76px;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 5px 6px 13px #dacbb7, -5px -5px 12px #fff8ee;
+}
+
+.lg-lunar-tile strong {
+  font: 700 26px/1 Georgia, serif;
+  color: #593619;
+}
+
+.lg-lunar-caption strong {
+  color: #593619;
 }
 
 .lg-orn {
@@ -118,10 +234,6 @@
   height: 1px;
   background: currentColor;
   opacity: .4;
-}
-
-.lg-brand .lg-orn {
-  margin-top: 26px;
 }
 
 .lg-form {
@@ -280,31 +392,21 @@
   }
 
   .lg-brand {
-    flex-direction: row;
-    gap: 14px;
-    padding: 16px 12px;
+    padding: 18px;
     border-radius: 20px;
-    text-align: left;
   }
 
-  .lg-buddha {
-    flex: 0 0 62px;
-    margin: 0;
-    padding: 5px;
+  .lg-seal {
+    width: min(100%, 170px);
+    margin: 8px 0;
   }
 
-  .lg-title {
-    font-size: 21px;
+  .lg-quote {
+    font-size: 20px;
   }
 
-  .lg-sub {
-    margin-top: 5px;
-    letter-spacing: .12em;
-  }
-
-  .lg-quote,
-  .lg-brand .lg-orn {
-    display: none;
+  .lg-lunar {
+    margin-top: 16px;
   }
 
   .lg-form {
