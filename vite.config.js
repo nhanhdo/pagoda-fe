@@ -1,5 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import vercel from './vercel.json';
+
+const productionHeaders = Object.fromEntries(
+  vercel.headers[0].headers.map(({ key, value }) => [key, value]),
+);
 
 export default defineConfig({
   plugins: [react()],
@@ -15,6 +20,9 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  preview: {
+    headers: productionHeaders,
   },
   build: {
     chunkSizeWarningLimit: 600,

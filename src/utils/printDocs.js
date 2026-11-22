@@ -1,4 +1,4 @@
-// Printable finance documents (Phiếu thu, Thư cảm tạ, Phiếu chi) rendered into a hidden iframe.
+// Printable finance and ceremony documents.
 import { amountInWords } from './vnNumberWords';
 
 const PAGODA = 'Chùa Tân Thành';
@@ -63,10 +63,11 @@ const isMobilePrint = () => {
 };
 
 function printHtml(title, body, extraCss = '') {
-  const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><style>${BASE_CSS}${extraCss}</style></head><body>${body}</body></html>`;
+  const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><style>${BASE_CSS}${extraCss}</style></head><body>${body}</body></html>`;
   if (isMobilePrint()) {
     const win = window.open('', '_blank');
     if (win) {
+      win.opener = null;
       win.document.open();
       win.document.write(html);
       win.document.close();
@@ -106,7 +107,7 @@ export function printReceipt(d) {
       <div class="no">Số: <strong>${esc(d.receiptNo || '—')}</strong></div>
     </div>
     <h1>PHIẾU THU</h1>
-    <div class="date">${longDate(d.donationDate)}</div>
+    <div class="date">${esc(longDate(d.donationDate))}</div>
     <table class="f">
       <tr><td class="k">Người cúng dường:</td><td class="v">${esc(donorOf(d))}</td></tr>
       <tr><td class="k">Số tiền:</td><td class="v amount">${vnd(d.amount)}</td></tr>
@@ -159,7 +160,7 @@ export function printThankYou(d) {
       phước huệ song tu, vạn sự cát tường như ý.</p>
     <div class="end">
       <div>Số phiếu thu: ${esc(d.receiptNo || '—')}</div>
-      <div class="sig">${PAGODA}, ${longDate(d.donationDate)}<br/><b>TRỤ TRÌ</b><div class="space"></div></div>
+      <div class="sig">${PAGODA}, ${esc(longDate(d.donationDate))}<br/><b>TRỤ TRÌ</b><div class="space"></div></div>
     </div>
     <div class="namo">NAM MÔ A DI ĐÀ PHẬT</div>
   </div>`;
@@ -175,7 +176,7 @@ export function printExpenseVoucher(e, labels = {}) {
       <div class="no">Số: <strong>${esc(e.code || '—')}</strong></div>
     </div>
     <h1>PHIẾU CHI</h1>
-    <div class="date">${longDate(e.expenseDate)}</div>
+    <div class="date">${esc(longDate(e.expenseDate))}</div>
     <table class="f">
       <tr><td class="k">Người nhận tiền:</td><td class="v">${esc(e.payee || '')}</td></tr>
       <tr><td class="k">Nội dung chi:</td><td class="v">${esc(e.description || '')}</td></tr>
@@ -184,7 +185,7 @@ export function printExpenseVoucher(e, labels = {}) {
       <tr><td class="k">Số tiền:</td><td class="v amount">${vnd(e.amount)}</td></tr>
       <tr><td class="k">Bằng chữ:</td><td class="v words">${esc(amountInWords(e.amount))}</td></tr>
       <tr><td class="k">Hình thức:</td><td class="v">${esc(METHODS[e.paymentMethod] || '')}</td></tr>
-      <tr><td class="k">Người duyệt:</td><td class="v">${esc(person(e.approver))}${e.approvedAt ? ` — ${dmy(e.approvedAt)}` : ''}</td></tr>
+      <tr><td class="k">Người duyệt:</td><td class="v">${esc(person(e.approver))}${e.approvedAt ? ` — ${esc(dmy(e.approvedAt))}` : ''}</td></tr>
     </table>
     <div class="sign">
       <div><b>Người lập phiếu</b><i>(Ký, ghi rõ họ tên)</i><div class="space"></div>${esc(person(e.creator))}</div>

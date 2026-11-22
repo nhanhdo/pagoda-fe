@@ -14,6 +14,18 @@ import './BackupPage.css';
 
 const CONFIRM_PHRASE = 'KHOI PHUC';
 
+function backupDownloadUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+
+  try {
+    const url = new URL(value, window.location.href);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
 const fmtBytes = (b = 0) => (b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 export default function BackupPage() {
@@ -191,6 +203,7 @@ export default function BackupPage() {
           <ul className="bk-list">
             {copies.map(c => {
               const kind = c.kind === 'before-restore' ? 'safety' : (c.kind || 'auto');
+              const downloadUrl = backupDownloadUrl(c.url);
               return (
                 <li key={c.publicId} className="bk-list__row">
                   <span className={`bk-kind bk-kind--${kind}`}>{B.kinds[kind]}</span>
@@ -198,7 +211,9 @@ export default function BackupPage() {
                     <strong>{dayjs(c.createdAt).format('DD/MM/YYYY HH:mm')}</strong>
                     <span>{dayjs(c.createdAt).fromNow()} · {fmtBytes(c.bytes)}</span>
                   </div>
-                  <Button size="small" icon={<DownloadOutlined />} href={c.url} target="_blank" rel="noreferrer">{B.downloadShort}</Button>
+                  {downloadUrl && (
+                    <Button size="small" icon={<DownloadOutlined />} href={downloadUrl} target="_blank" rel="noopener noreferrer">{B.downloadShort}</Button>
+                  )}
                 </li>
               );
             })}
