@@ -71,6 +71,7 @@
 }
 
 .lg-seal-scene {
+  container-type: inline-size;
   position: absolute;
   inset: 0;
   display: grid;
@@ -116,7 +117,7 @@
   place-items: center;
   width: 55%;
   aspect-ratio: 1;
-  border: 16px solid var(--lg-surface);
+  border: 5cqw solid var(--lg-surface);
   border-radius: 50%;
   background: var(--lg-surface);
   box-shadow: 12px 14px 28px #c9b494, -10px -10px 24px #fff9f0, var(--lg-inset);
@@ -131,7 +132,7 @@
   border-radius: 24%;
   background: linear-gradient(150deg, #d38d39, #a15b20);
   color: #fff8e8;
-  font: 600 clamp(24px, 4vw, 44px)/1 "PingFang SC", "Microsoft YaHei", sans-serif;
+  font: 600 15cqw/1 "PingFang SC", "Microsoft YaHei", sans-serif;
   box-shadow: 0 5px 9px #703a2550;
 }
 
@@ -271,6 +272,14 @@
   font-weight: 700;
 }
 
+.lg-root .lg-field {
+  margin-bottom: 16px;
+}
+
+.lg-root .lg-field-last {
+  margin-bottom: 26px;
+}
+
 .lg-root .lg-input.ant-input-affix-wrapper {
   min-height: 50px;
   padding-inline: 14px;
@@ -378,48 +387,141 @@
   margin-bottom: 6px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
+  .lg-root .lg-lang {
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+  }
+
   .lg-center {
-    padding: 62px 16px 24px;
+    padding: calc(62px + env(safe-area-inset-top, 0px))
+      calc(12px + env(safe-area-inset-right, 0px))
+      calc(20px + env(safe-area-inset-bottom, 0px))
+      calc(12px + env(safe-area-inset-left, 0px));
   }
 
   .lg-card {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
     max-width: 460px;
-    padding: 12px;
-    border-radius: 28px;
+    padding: 10px;
+    border-radius: 24px;
+  }
+
+  .lg-brand {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 17px;
+  }
+
+  .lg-brand-header {
+    gap: 8px;
+  }
+
+  .lg-brand-header img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .lg-title {
+    font-size: clamp(17px, 5vw, 22px);
+    line-height: 1.15;
+  }
+
+  .lg-sub {
+    font-size: 9px;
+    letter-spacing: .1em;
+  }
+
+  .lg-seal {
+    width: clamp(68px, 22vw, 92px);
+    margin: 0;
+  }
+
+  .lg-seal-disc {
+    box-shadow: 6px 7px 16px #c9b494, -6px -6px 14px #fff9f0, var(--lg-inset);
+  }
+
+  .lg-quote,
+  .lg-lunar,
+  .lg-head-icon {
+    display: none;
+  }
+
+  .lg-form {
+    padding: 20px clamp(6px, 3vw, 18px) 10px;
+  }
+
+  .lg-head {
+    margin-bottom: 18px;
+  }
+
+  .lg-head p {
+    margin-top: 5px;
+  }
+
+  .lg-root .lg-field {
+    margin-bottom: 12px;
+  }
+
+  .lg-root .lg-field-last {
+    margin-bottom: 18px;
+  }
+
+  .lg-root .lg-input .ant-input {
+    font-size: 16px;
+  }
+
+  .lg-root .lg-input .ant-input-password-icon {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    margin-inline-end: -8px;
+  }
+
+  .lg-forgot {
+    min-height: 44px;
+    margin-top: 8px;
+  }
+
+  .lg-foot {
+    margin-top: 8px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 950px) and (max-height: 500px) {
+  .lg-center {
+    padding: 56px 20px 20px;
   }
 
   .lg-brand {
     padding: 18px;
-    border-radius: 20px;
   }
 
   .lg-seal {
-    width: min(100%, 170px);
+    width: min(100%, 150px);
     margin: 8px 0;
   }
 
-  .lg-quote {
-    font-size: 20px;
-  }
-
-  .lg-lunar {
-    margin-top: 16px;
+  .lg-quote,
+  .lg-lunar,
+  .lg-head-icon {
+    display: none;
   }
 
   .lg-form {
-    padding: 24px clamp(8px, 4vw, 22px) 14px;
+    padding-block: 8px;
   }
 
   .lg-head {
-    margin-bottom: 22px;
+    margin-bottom: 14px;
   }
 
-  .lg-head-icon {
-    width: 62px;
-    margin-bottom: 14px;
-    padding: 6px;
+  .lg-root .lg-field {
+    margin-bottom: 12px;
   }
 }

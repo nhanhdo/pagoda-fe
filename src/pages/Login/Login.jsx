@@ -99,16 +99,16 @@ export default function Login() {
                 <Form.Item
                   name="username"
                   label={<span className="lg-label">{t.login.usernameLabel}</span>}
-                  style={{ marginBottom: 16 }}
+                  className="lg-field"
                   rules={[{ required: true, message: t.login.usernameRequired }]}
                 >
-                  <Input className="lg-input" prefix={<UserOutlined />} placeholder={t.login.usernamePlaceholder} autoComplete="username" />
+                  <Input className="lg-input" prefix={<UserOutlined />} placeholder={t.login.usernamePlaceholder} autoComplete="username" autoCapitalize="none" spellCheck={false} />
                 </Form.Item>
 
                 <Form.Item
                   name="password"
                   label={<span className="lg-label">{t.login.passwordLabel}</span>}
-                  style={{ marginBottom: 26 }}
+                  className="lg-field lg-field-last"
                   rules={[{ required: true, message: t.login.passwordRequired }]}
                 >
                   <Input.Password className="lg-input" prefix={<LockOutlined />} placeholder={t.login.passwordPlaceholder} autoComplete="current-password" />
