@@ -1,24 +1,33 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
-import dayjs from 'dayjs';
-import { LoginOutlined, StarFilled, StarOutlined, CalendarOutlined, ArrowRightOutlined, MoonOutlined } from '@ant-design/icons';
-import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
-import ShaderCanvas from '../../components/ShaderCanvas/ShaderCanvas';
-import { HALO_FRAG, POND_FRAG } from './homeShaders';
-import LangToggle from '../../components/LangToggle/LangToggle';
-import { useLanguage } from '../../i18n/LanguageContext';
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import DharmaWheel from "../../components/DharmaWheel/DharmaWheel";
+import dayjs from "dayjs";
+import {
+  LoginOutlined,
+  StarFilled,
+  StarOutlined,
+  CalendarOutlined,
+  ArrowRightOutlined,
+  MoonOutlined,
+} from "@ant-design/icons";
+import { solarToLunar, getBuddhistHolidays } from "../../utils/lunarCalendar";
+import ShaderCanvas from "../../components/ShaderCanvas/ShaderCanvas";
+import { HALO_FRAG, POND_FRAG } from "./homeShaders";
+import LangToggle from "../../components/LangToggle/LangToggle";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 // Phones get one WebGL scene (the halo); the pond falls back to its CSS gradient
 function usePhone() {
-  const q = '(max-width: 720px)';
-  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(q).matches);
+  const q = "(max-width: 720px)";
+  const [phone, setPhone] = useState(
+    () => typeof window !== "undefined" && !!window.matchMedia?.(q).matches,
+  );
   useEffect(() => {
     const mq = window.matchMedia?.(q);
     if (!mq) return undefined;
     const on = () => setPhone(mq.matches);
-    mq.addEventListener?.('change', on);
-    return () => mq.removeEventListener?.('change', on);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
   }, []);
   return phone;
 }
@@ -26,186 +35,426 @@ function usePhone() {
 /* ── Canvas: petals ─────────────────────────────────────── */
 function usePetals(ref) {
   useEffect(() => {
-    const c = ref.current; if (!c) return undefined;
+    const c = ref.current;
+    if (!c) return undefined;
     // Decorative only: skip for reduced-motion users; lighter on touch devices
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const coarse = !!window.matchMedia?.('(pointer: coarse)').matches;
-    const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+      return undefined;
+    const coarse = !!window.matchMedia?.("(pointer: coarse)").matches;
+    const resize = () => {
+      c.width = innerWidth;
+      c.height = innerHeight;
+    };
     resize();
-    const ctx = c.getContext('2d');
-    const palette = ['255,150,185', '255,175,200', '255,195,215', '255,160,170', '250,200,150'];
+    const ctx = c.getContext("2d");
+    const palette = [
+      "255,150,185",
+      "255,175,200",
+      "255,195,215",
+      "255,160,170",
+      "250,200,150",
+    ];
     class P {
-      constructor(init) { this.reset(init); }
+      constructor(init) {
+        this.reset(init);
+      }
       reset(init) {
-        this.x  = Math.random() * c.width;
-        this.y  = init ? Math.random() * c.height : -14;
-        this.s  = 3 + Math.random() * 5;
+        this.x = Math.random() * c.width;
+        this.y = init ? Math.random() * c.height : -14;
+        this.s = 3 + Math.random() * 5;
         this.vy = 0.45 + Math.random() * 1.0;
-        this.a  = Math.random() * Math.PI * 2;
+        this.a = Math.random() * Math.PI * 2;
         this.rv = (Math.random() - 0.5) * 0.04;
         this.ph = Math.random() * Math.PI * 2;
         this.fr = 0.38 + Math.random() * 0.5;
         const op = 0.45 + Math.random() * 0.45;
-        this.c  = `rgba(${palette[~~(Math.random() * palette.length)]},${op})`;
+        this.c = `rgba(${palette[~~(Math.random() * palette.length)]},${op})`;
       }
       tick(t, k = 1) {
-        this.y += this.vy * k; this.x += Math.sin(t*this.fr+this.ph)*0.42; this.a += this.rv;
-        if (this.y > c.height+16) this.reset();
+        this.y += this.vy * k;
+        this.x += Math.sin(t * this.fr + this.ph) * 0.42;
+        this.a += this.rv;
+        if (this.y > c.height + 16) this.reset();
       }
       draw() {
-        ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.a);
-        ctx.fillStyle=this.c; const s=this.s;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.a);
+        ctx.fillStyle = this.c;
+        const s = this.s;
         ctx.beginPath();
-        ctx.moveTo(0,-s); ctx.bezierCurveTo(s*.75,-s*.35,s*.75,s*.35,0,s);
-        ctx.bezierCurveTo(-s*.75,s*.35,-s*.75,-s*.35,0,-s);
-        ctx.fill(); ctx.restore();
+        ctx.moveTo(0, -s);
+        ctx.bezierCurveTo(s * 0.75, -s * 0.35, s * 0.75, s * 0.35, 0, s);
+        ctx.bezierCurveTo(-s * 0.75, s * 0.35, -s * 0.75, -s * 0.35, 0, -s);
+        ctx.fill();
+        ctx.restore();
       }
     }
-    const ps = Array.from({ length: coarse ? (innerWidth < 640 ? 20 : 40) : 80 }, () => new P(true));
+    const ps = Array.from(
+      { length: coarse ? (innerWidth < 640 ? 20 : 40) : 80 },
+      () => new P(true),
+    );
     const frameMs = coarse ? 1000 / 30 : 0; // ~30fps on touch devices
-    let t = 0, id, last = 0;
+    let t = 0,
+      id,
+      last = 0;
     const go = (now = 0) => {
       id = requestAnimationFrame(go);
       if (frameMs && now - last < frameMs) return;
       const step = frameMs && last ? (now - last) / 16.67 : 1;
       last = now;
       ctx.clearRect(0, 0, c.width, c.height);
-      t += .013 * step;
-      ps.forEach(p => { p.tick(t, step); p.draw(); });
+      t += 0.013 * step;
+      ps.forEach((p) => {
+        p.tick(t, step);
+        p.draw();
+      });
     };
-    const onVis = () => { cancelAnimationFrame(id); if (!document.hidden) { last = 0; go(); } };
+    const onVis = () => {
+      cancelAnimationFrame(id);
+      if (!document.hidden) {
+        last = 0;
+        go();
+      }
+    };
     go();
-    window.addEventListener('resize',resize);
-    document.addEventListener('visibilitychange',onVis);
-    return ()=>{ cancelAnimationFrame(id); window.removeEventListener('resize',resize); document.removeEventListener('visibilitychange',onVis); };
-  },[]);
+    window.addEventListener("resize", resize);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelAnimationFrame(id);
+      window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
 }
 
 /* ── Cloud ──────────────────────────────────────────────── */
 function Cloud({ width = 220, opacity = 0.9 }) {
   return (
-    <svg viewBox="0 0 220 80" width={width} height={typeof width === 'number' ? width * 80 / 220 : undefined} style={{ display:'block', opacity, filter:'drop-shadow(0 6px 10px rgba(150,130,180,0.12))' }}>
-      <ellipse cx="60"  cy="52" rx="48" ry="24" fill="#fff"/>
-      <ellipse cx="105" cy="38" rx="44" ry="32" fill="#fff"/>
-      <ellipse cx="150" cy="48" rx="46" ry="26" fill="#fff"/>
-      <ellipse cx="185" cy="58" rx="30" ry="16" fill="#fff"/>
-      <ellipse cx="110" cy="62" rx="90" ry="16" fill="#fdf7ff"/>
+    <svg
+      viewBox="0 0 220 80"
+      width={width}
+      height={typeof width === "number" ? (width * 80) / 220 : undefined}
+      style={{
+        display: "block",
+        opacity,
+        filter: "drop-shadow(0 6px 10px rgba(150,130,180,0.12))",
+      }}
+    >
+      <ellipse cx="60" cy="52" rx="48" ry="24" fill="#fff" />
+      <ellipse cx="105" cy="38" rx="44" ry="32" fill="#fff" />
+      <ellipse cx="150" cy="48" rx="46" ry="26" fill="#fff" />
+      <ellipse cx="185" cy="58" rx="30" ry="16" fill="#fff" />
+      <ellipse cx="110" cy="62" rx="90" ry="16" fill="#fdf7ff" />
     </svg>
   );
 }
 
 /* ── Temple — 3-tier pagoda in daylight ─────────────────── */
 function Temple() {
-  const wall = ['#f6e8cf', '#f2e1c2', '#eed9b6'];
-  const col = '#a83a24';
-  const roof = ['#a2332a', '#ac372c', '#b63e30'];
-  const soffit = '#6e231b';
-  const gold = '#e2a93c';
-  const win = '#f2c66c';
+  const wall = ["#f6e8cf", "#f2e1c2", "#eed9b6"];
+  const col = "#a83a24";
+  const roof = ["#a2332a", "#ac372c", "#b63e30"];
+  const soffit = "#6e231b";
+  const gold = "#e2a93c";
+  const win = "#f2c66c";
   return (
-    <svg viewBox="0 0 720 500" style={{ width:'100%', height:'auto', display:'block' }}>
+    <svg
+      viewBox="0 0 720 500"
+      style={{ width: "100%", height: "auto", display: "block" }}
+    >
       <defs>
         <filter id="tGlw">
-          <feGaussianBlur stdDeviation="2.5" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          <feGaussianBlur stdDeviation="2.5" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
         </filter>
-        <filter id="tSoft"><feGaussianBlur stdDeviation="10"/></filter>
+        <filter id="tSoft">
+          <feGaussianBlur stdDeviation="10" />
+        </filter>
       </defs>
 
       {/* Ground shadow */}
-      <ellipse cx="360" cy="474" rx="320" ry="18" fill="rgba(110,80,40,.22)" filter="url(#tSoft)"/>
+      <ellipse
+        cx="360"
+        cy="474"
+        rx="320"
+        ry="18"
+        fill="rgba(110,80,40,.22)"
+        filter="url(#tSoft)"
+      />
 
       {/* Foundation */}
-      <rect x="50"  y="448" width="620" height="20" rx="3" fill="#d4bf9a"/>
-      <rect x="80"  y="432" width="560" height="18" rx="3" fill="#dfcca8"/>
-      <rect x="110" y="418" width="500" height="16" rx="2" fill="#e8d7b6"/>
-      <rect x="296" y="452" width="128" height="8"  rx="1" fill="#c6ae86"/>
-      <rect x="316" y="460" width="88"  height="8"  rx="1" fill="#bba27a"/>
+      <rect x="50" y="448" width="620" height="20" rx="3" fill="#d4bf9a" />
+      <rect x="80" y="432" width="560" height="18" rx="3" fill="#dfcca8" />
+      <rect x="110" y="418" width="500" height="16" rx="2" fill="#e8d7b6" />
+      <rect x="296" y="452" width="128" height="8" rx="1" fill="#c6ae86" />
+      <rect x="316" y="460" width="88" height="8" rx="1" fill="#bba27a" />
 
       {/* Tier 1 — main hall */}
-      <rect x="130" y="294" width="460" height="126" rx="3" fill={wall[0]}/>
-      {[148,208,278,360,442,512,562].map((x,i)=>(
-        <rect key={i} x={x} y="294" width="11" height="126" rx="4" fill={col}/>
+      <rect x="130" y="294" width="460" height="126" rx="3" fill={wall[0]} />
+      {[148, 208, 278, 360, 442, 512, 562].map((x, i) => (
+        <rect key={i} x={x} y="294" width="11" height="126" rx="4" fill={col} />
       ))}
-      {[[162,310,55,70],[232,307,62,74],[426,307,62,74],[503,310,55,70]].map(([x,y,w,h],i)=>(
+      {[
+        [162, 310, 55, 70],
+        [232, 307, 62, 74],
+        [426, 307, 62, 74],
+        [503, 310, 55, 70],
+      ].map(([x, y, w, h], i) => (
         <g key={i}>
-          <rect x={x} y={y} width={w} height={h} rx="4" fill={win} opacity="0.55"/>
-          <rect x={x} y={y} width={w} height={h} rx="4" fill="none" stroke="#8f3a1e" strokeWidth="2" opacity="0.7"/>
-          <line x1={x+w/2} y1={y} x2={x+w/2} y2={y+h} stroke="#8f3a1e" strokeWidth="1.2" opacity="0.5"/>
+          <rect
+            x={x}
+            y={y}
+            width={w}
+            height={h}
+            rx="4"
+            fill={win}
+            opacity="0.55"
+          />
+          <rect
+            x={x}
+            y={y}
+            width={w}
+            height={h}
+            rx="4"
+            fill="none"
+            stroke="#8f3a1e"
+            strokeWidth="2"
+            opacity="0.7"
+          />
+          <line
+            x1={x + w / 2}
+            y1={y}
+            x2={x + w / 2}
+            y2={y + h}
+            stroke="#8f3a1e"
+            strokeWidth="1.2"
+            opacity="0.5"
+          />
         </g>
       ))}
-      <rect x="316" y="302" width="88" height="118" rx="5" fill="#b5562e"/>
-      <rect x="324" y="310" width="30" height="110" rx="3" fill="#8f3a1e"/>
-      <rect x="366" y="310" width="30" height="110" rx="3" fill="#8f3a1e"/>
-      <circle cx="350" cy="365" r="2.5" fill={gold}/>
-      <circle cx="370" cy="365" r="2.5" fill={gold}/>
-      <rect x="316" y="302" width="88" height="118" rx="5" fill="none" stroke={gold} strokeWidth="2" opacity="0.8"/>
+      <rect x="316" y="302" width="88" height="118" rx="5" fill="#b5562e" />
+      <rect x="324" y="310" width="30" height="110" rx="3" fill="#8f3a1e" />
+      <rect x="366" y="310" width="30" height="110" rx="3" fill="#8f3a1e" />
+      <circle cx="350" cy="365" r="2.5" fill={gold} />
+      <circle cx="370" cy="365" r="2.5" fill={gold} />
+      <rect
+        x="316"
+        y="302"
+        width="88"
+        height="118"
+        rx="5"
+        fill="none"
+        stroke={gold}
+        strokeWidth="2"
+        opacity="0.8"
+      />
 
       {/* First roof */}
-      <path d="M 38,300 Q 200,318 360,322 Q 520,318 682,300 L 648,256 Q 490,272 360,276 Q 230,272 72,256 Z" fill={roof[0]}/>
-      <path d="M 72,256 Q 230,272 360,276 Q 490,272 648,256 L 638,268 Q 478,284 360,288 Q 242,284 82,268 Z" fill={soffit} opacity="0.75"/>
-      <path d="M 38,300 Q 18,286 10,264 Q 22,270 42,284 Z" fill={roof[1]}/>
-      <path d="M 682,300 Q 702,286 710,264 Q 698,270 678,284 Z" fill={roof[1]}/>
-      <path d="M 72,256 Q 230,246 360,244 Q 490,246 648,256" fill="none" stroke={gold} strokeWidth="3"/>
-      <path d="M 38,300 Q 200,318 360,322 Q 520,318 682,300" fill="none" stroke={gold} strokeWidth="2" opacity="0.7"/>
-      {[140,195,255,315,360,405,465,525,580].map((x,i)=>(
-        <line key={i} x1={x} y1="258" x2={x+15} y2="296" stroke={soffit} strokeWidth="1.2" opacity="0.35"/>
+      <path
+        d="M 38,300 Q 200,318 360,322 Q 520,318 682,300 L 648,256 Q 490,272 360,276 Q 230,272 72,256 Z"
+        fill={roof[0]}
+      />
+      <path
+        d="M 72,256 Q 230,272 360,276 Q 490,272 648,256 L 638,268 Q 478,284 360,288 Q 242,284 82,268 Z"
+        fill={soffit}
+        opacity="0.75"
+      />
+      <path d="M 38,300 Q 18,286 10,264 Q 22,270 42,284 Z" fill={roof[1]} />
+      <path
+        d="M 682,300 Q 702,286 710,264 Q 698,270 678,284 Z"
+        fill={roof[1]}
+      />
+      <path
+        d="M 72,256 Q 230,246 360,244 Q 490,246 648,256"
+        fill="none"
+        stroke={gold}
+        strokeWidth="3"
+      />
+      <path
+        d="M 38,300 Q 200,318 360,322 Q 520,318 682,300"
+        fill="none"
+        stroke={gold}
+        strokeWidth="2"
+        opacity="0.7"
+      />
+      {[140, 195, 255, 315, 360, 405, 465, 525, 580].map((x, i) => (
+        <line
+          key={i}
+          x1={x}
+          y1="258"
+          x2={x + 15}
+          y2="296"
+          stroke={soffit}
+          strokeWidth="1.2"
+          opacity="0.35"
+        />
       ))}
-      {[190, 360, 530].map((x,i)=>(
+      {[190, 360, 530].map((x, i) => (
         <g key={i}>
-          <line x1={x} y1="290" x2={x} y2="300" stroke="#8f3a1e" strokeWidth="1.5"/>
-          <ellipse cx={x} cy="310" rx="7"  ry="10" fill="#d63a2a"/>
-          <ellipse cx={x} cy="301" rx="8"  ry="3"  fill={gold}/>
-          <ellipse cx={x} cy="320" rx="6"  ry="2.5" fill={gold}/>
-          <ellipse cx={x} cy="310" rx="3"  ry="5.5" fill="#ffe08a" opacity="0.9"/>
+          <line
+            x1={x}
+            y1="290"
+            x2={x}
+            y2="300"
+            stroke="#8f3a1e"
+            strokeWidth="1.5"
+          />
+          <ellipse cx={x} cy="310" rx="7" ry="10" fill="#d63a2a" />
+          <ellipse cx={x} cy="301" rx="8" ry="3" fill={gold} />
+          <ellipse cx={x} cy="320" rx="6" ry="2.5" fill={gold} />
+          <ellipse
+            cx={x}
+            cy="310"
+            rx="3"
+            ry="5.5"
+            fill="#ffe08a"
+            opacity="0.9"
+          />
         </g>
       ))}
 
       {/* Tier 2 */}
-      <rect x="210" y="210" width="300" height="86" rx="3" fill={wall[1]}/>
-      {[222,278,360,442,488].map((x,i)=>(
-        <rect key={i} x={x} y="210" width="9" height="86" rx="3" fill={col}/>
+      <rect x="210" y="210" width="300" height="86" rx="3" fill={wall[1]} />
+      {[222, 278, 360, 442, 488].map((x, i) => (
+        <rect key={i} x={x} y="210" width="9" height="86" rx="3" fill={col} />
       ))}
-      <rect x="236" y="224" width="36" height="52" rx="3" fill={win} opacity="0.55" stroke="#8f3a1e" strokeWidth="1.5"/>
-      <rect x="300" y="222" width="54" height="56" rx="3" fill={win} opacity="0.55" stroke="#8f3a1e" strokeWidth="1.5"/>
-      <rect x="370" y="222" width="54" height="56" rx="3" fill={win} opacity="0.55" stroke="#8f3a1e" strokeWidth="1.5"/>
-      <rect x="448" y="224" width="36" height="52" rx="3" fill={win} opacity="0.55" stroke="#8f3a1e" strokeWidth="1.5"/>
+      <rect
+        x="236"
+        y="224"
+        width="36"
+        height="52"
+        rx="3"
+        fill={win}
+        opacity="0.55"
+        stroke="#8f3a1e"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="300"
+        y="222"
+        width="54"
+        height="56"
+        rx="3"
+        fill={win}
+        opacity="0.55"
+        stroke="#8f3a1e"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="370"
+        y="222"
+        width="54"
+        height="56"
+        rx="3"
+        fill={win}
+        opacity="0.55"
+        stroke="#8f3a1e"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="448"
+        y="224"
+        width="36"
+        height="52"
+        rx="3"
+        fill={win}
+        opacity="0.55"
+        stroke="#8f3a1e"
+        strokeWidth="1.5"
+      />
 
       {/* Second roof */}
-      <path d="M 118,212 Q 240,228 360,232 Q 480,228 602,212 L 572,172 Q 450,186 360,190 Q 270,186 148,172 Z" fill={roof[1]}/>
-      <path d="M 148,172 Q 270,186 360,190 Q 450,186 572,172 L 562,182 Q 440,196 360,200 Q 280,196 158,182 Z" fill={soffit} opacity="0.7"/>
-      <path d="M 118,212 Q 98,200 88,182 Q 102,188 120,200 Z" fill={roof[2]}/>
-      <path d="M 602,212 Q 622,200 632,182 Q 618,188 600,200 Z" fill={roof[2]}/>
-      <path d="M 148,172 Q 270,162 360,160 Q 450,162 572,172" fill="none" stroke={gold} strokeWidth="2.5"/>
-      <path d="M 118,212 Q 240,228 360,232 Q 480,228 602,212" fill="none" stroke={gold} strokeWidth="1.8" opacity="0.7"/>
+      <path
+        d="M 118,212 Q 240,228 360,232 Q 480,228 602,212 L 572,172 Q 450,186 360,190 Q 270,186 148,172 Z"
+        fill={roof[1]}
+      />
+      <path
+        d="M 148,172 Q 270,186 360,190 Q 450,186 572,172 L 562,182 Q 440,196 360,200 Q 280,196 158,182 Z"
+        fill={soffit}
+        opacity="0.7"
+      />
+      <path d="M 118,212 Q 98,200 88,182 Q 102,188 120,200 Z" fill={roof[2]} />
+      <path
+        d="M 602,212 Q 622,200 632,182 Q 618,188 600,200 Z"
+        fill={roof[2]}
+      />
+      <path
+        d="M 148,172 Q 270,162 360,160 Q 450,162 572,172"
+        fill="none"
+        stroke={gold}
+        strokeWidth="2.5"
+      />
+      <path
+        d="M 118,212 Q 240,228 360,232 Q 480,228 602,212"
+        fill="none"
+        stroke={gold}
+        strokeWidth="1.8"
+        opacity="0.7"
+      />
 
       {/* Tier 3 */}
-      <rect x="278" y="122" width="164" height="88" rx="3" fill={wall[2]}/>
-      {[288,360,432].map((x,i)=>(
-        <rect key={i} x={x} y="122" width="9" height="88" rx="3" fill={col}/>
+      <rect x="278" y="122" width="164" height="88" rx="3" fill={wall[2]} />
+      {[288, 360, 432].map((x, i) => (
+        <rect key={i} x={x} y="122" width="9" height="88" rx="3" fill={col} />
       ))}
-      <rect x="302" y="134" width="44" height="56" rx="3" fill={win} opacity="0.6" stroke="#8f3a1e" strokeWidth="1.5"/>
-      <rect x="374" y="134" width="44" height="56" rx="3" fill={win} opacity="0.6" stroke="#8f3a1e" strokeWidth="1.5"/>
+      <rect
+        x="302"
+        y="134"
+        width="44"
+        height="56"
+        rx="3"
+        fill={win}
+        opacity="0.6"
+        stroke="#8f3a1e"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="374"
+        y="134"
+        width="44"
+        height="56"
+        rx="3"
+        fill={win}
+        opacity="0.6"
+        stroke="#8f3a1e"
+        strokeWidth="1.5"
+      />
 
       {/* Third roof */}
-      <path d="M 190,124 Q 275,138 360,142 Q 445,138 530,124 L 508,90 Q 422,103 360,107 Q 298,103 212,90 Z" fill={roof[2]}/>
-      <path d="M 212,90 Q 298,103 360,107 Q 422,103 508,90 L 499,100 Q 413,113 360,117 Q 307,113 221,100 Z" fill={soffit} opacity="0.65"/>
-      <path d="M 190,124 Q 172,114 162,98 Q 176,104 194,116 Z" fill="#c24636"/>
-      <path d="M 530,124 Q 548,114 558,98 Q 544,104 526,116 Z" fill="#c24636"/>
-      <path d="M 212,90 Q 298,80 360,78 Q 422,80 508,90" fill="none" stroke={gold} strokeWidth="2.2"/>
+      <path
+        d="M 190,124 Q 275,138 360,142 Q 445,138 530,124 L 508,90 Q 422,103 360,107 Q 298,103 212,90 Z"
+        fill={roof[2]}
+      />
+      <path
+        d="M 212,90 Q 298,103 360,107 Q 422,103 508,90 L 499,100 Q 413,113 360,117 Q 307,113 221,100 Z"
+        fill={soffit}
+        opacity="0.65"
+      />
+      <path d="M 190,124 Q 172,114 162,98 Q 176,104 194,116 Z" fill="#c24636" />
+      <path d="M 530,124 Q 548,114 558,98 Q 544,104 526,116 Z" fill="#c24636" />
+      <path
+        d="M 212,90 Q 298,80 360,78 Q 422,80 508,90"
+        fill="none"
+        stroke={gold}
+        strokeWidth="2.2"
+      />
 
       {/* Spire */}
-      <rect x="336" y="52" width="48" height="36" rx="3" fill="#a83a24"/>
-      <rect x="328" y="46" width="64" height="12" rx="4" fill="#8f3a1e"/>
-      <ellipse cx="360" cy="46" rx="32" ry="6" fill={gold}/>
-      <line x1="360" y1="4" x2="360" y2="46" stroke={gold} strokeWidth="3.5"/>
-      <ellipse cx="360" cy="40" rx="11" ry="4"   fill={gold}/>
-      <ellipse cx="360" cy="33" rx="8.5" ry="3.2" fill={gold}/>
-      <ellipse cx="360" cy="27" rx="7"   ry="2.8" fill={gold}/>
-      <ellipse cx="360" cy="22" rx="5.5" ry="2.4" fill={gold}/>
-      <ellipse cx="360" cy="17" rx="4"   ry="2"   fill={gold}/>
-      <circle cx="360" cy="10" r="7" fill="#f5c451" filter="url(#tGlw)"/>
-      <polygon points="360,1 356.5,10 363.5,10" fill="#f5c451"/>
+      <rect x="336" y="52" width="48" height="36" rx="3" fill="#a83a24" />
+      <rect x="328" y="46" width="64" height="12" rx="4" fill="#8f3a1e" />
+      <ellipse cx="360" cy="46" rx="32" ry="6" fill={gold} />
+      <line x1="360" y1="4" x2="360" y2="46" stroke={gold} strokeWidth="3.5" />
+      <ellipse cx="360" cy="40" rx="11" ry="4" fill={gold} />
+      <ellipse cx="360" cy="33" rx="8.5" ry="3.2" fill={gold} />
+      <ellipse cx="360" cy="27" rx="7" ry="2.8" fill={gold} />
+      <ellipse cx="360" cy="22" rx="5.5" ry="2.4" fill={gold} />
+      <ellipse cx="360" cy="17" rx="4" ry="2" fill={gold} />
+      <circle cx="360" cy="10" r="7" fill="#f5c451" filter="url(#tGlw)" />
+      <polygon points="360,1 356.5,10 363.5,10" fill="#f5c451" />
     </svg>
   );
 }
@@ -221,11 +470,15 @@ function useNow() {
 }
 
 function nextHolyDay(from, lang) {
-  const start = dayjs(from).startOf('day');
-  const maps = [start.year(), start.year() + 1].map(y => getBuddhistHolidays(y, lang));
+  const start = dayjs(from).startOf("day");
+  const maps = [start.year(), start.year() + 1].map((y) =>
+    getBuddhistHolidays(y, lang),
+  );
   for (let i = 0; i <= 60; i++) {
-    const d = start.add(i, 'day');
-    const hit = maps[d.year() === start.year() ? 0 : 1].get(d.format('YYYY-MM-DD'));
+    const d = start.add(i, "day");
+    const hit = maps[d.year() === start.year() ? 0 : 1].get(
+      d.format("YYYY-MM-DD"),
+    );
     if (hit) return { date: d, diff: i, name: hit.names[0], major: hit.major };
   }
   return null;
@@ -367,11 +620,19 @@ const CSS = `
 
 function LotusFlower({ size = 34 }) {
   return (
-    <svg viewBox="0 0 64 48" width={size} height={size * 0.75} aria-hidden="true">
+    <svg
+      viewBox="0 0 64 48"
+      width={size}
+      height={size * 0.75}
+      aria-hidden="true"
+    >
       <ellipse cx="32" cy="42" rx="26" ry="5" fill="#7fb79a" opacity=".85" />
       {[-55, 55, -28, 28, 0].map((a, i) => (
         <g key={a} transform={`rotate(${a} 32 40)`}>
-          <path d="M32 12 C38 20 38 31 32 40 C26 31 26 20 32 12 Z" fill={i < 2 ? '#f9c7d3' : i < 4 ? '#f4a6b8' : '#ee8fa6'} />
+          <path
+            d="M32 12 C38 20 38 31 32 40 C26 31 26 20 32 12 Z"
+            fill={i < 2 ? "#f9c7d3" : i < 4 ? "#f4a6b8" : "#ee8fa6"}
+          />
         </g>
       ))}
       <circle cx="32" cy="36" r="2.4" fill="#f6d36b" />
@@ -389,10 +650,14 @@ export default function HomePage() {
   const phone = usePhone();
   usePetals(petalsRef);
 
-  const lunar = solarToLunar(now.getDate(), now.getMonth() + 1, now.getFullYear());
+  const lunar = solarToLunar(
+    now.getDate(),
+    now.getMonth() + 1,
+    now.getFullYear(),
+  );
   const holy = nextHolyDay(now, lang);
-  const two = (n) => String(n).padStart(2, '0');
-  const goLogin = () => navigate('/login');
+  const two = (n) => String(n).padStart(2, "0");
+  const goLogin = () => navigate("/login");
 
   return (
     <div className="hp">
@@ -401,7 +666,9 @@ export default function HomePage() {
 
       <header className="hp__top">
         <div className="hp__brand">
-          <span className="hp__logo"><img src="/adida.PNG" alt="" /></span>
+          <span className="hp__logo">
+            <img src="/logochua.jpg" alt="" />
+          </span>
           <span>
             <div className="hp__name">{L.pagodaName}</div>
             <div className="hp__sub">{L.brandSubtitle}</div>
@@ -418,8 +685,13 @@ export default function HomePage() {
       <main className="hp__main">
         {/* Text */}
         <section className="hp__text">
-          <span className="hp__eyebrow"><DharmaWheel /> {L.footerChant}</span>
-          <h1 className="hp__title">{L.homeTitleA}<span>{L.homeTitleB}</span></h1>
+          <span className="hp__eyebrow">
+            <DharmaWheel /> {L.footerChant}
+          </span>
+          <h1 className="hp__title">
+            {L.homeTitleA}
+            <span>{L.homeTitleB}</span>
+          </h1>
           <p className="hp__lead">{L.homeLead}</p>
           <div className="hp__actions">
             <button type="button" className="hp__cta" onClick={goLogin}>
@@ -430,19 +702,52 @@ export default function HomePage() {
 
           <div className="hp__facts">
             <div className="hp__fact">
-              <div className="hp__fact-label"><CalendarOutlined /> {D.today}</div>
-              <div className="hp__fact-value">{two(now.getDate())}/{two(now.getMonth() + 1)}/{now.getFullYear()}</div>
-              <div className="hp__fact-sub">{now.toLocaleDateString(lang === 'en' ? 'en-US' : 'vi-VN', { weekday: 'long' })} · <span className="hp__mono">{two(now.getHours())}:{two(now.getMinutes())}</span></div>
+              <div className="hp__fact-label">
+                <CalendarOutlined /> {D.today}
+              </div>
+              <div className="hp__fact-value">
+                {two(now.getDate())}/{two(now.getMonth() + 1)}/
+                {now.getFullYear()}
+              </div>
+              <div className="hp__fact-sub">
+                {now.toLocaleDateString(lang === "en" ? "en-US" : "vi-VN", {
+                  weekday: "long",
+                })}{" "}
+                ·{" "}
+                <span className="hp__mono">
+                  {two(now.getHours())}:{two(now.getMinutes())}
+                </span>
+              </div>
             </div>
             <div className="hp__fact">
-              <div className="hp__fact-label"><MoonOutlined /> {D.lunarLabel}</div>
-              <div className="hp__fact-value">{lunar.day}/{lunar.month}{lunar.leap ? '*' : ''}</div>
-              <div className="hp__fact-sub">{L.homeYear.replace('{y}', lunar.yearName)}</div>
+              <div className="hp__fact-label">
+                <MoonOutlined /> {D.lunarLabel}
+              </div>
+              <div className="hp__fact-value">
+                {lunar.day}/{lunar.month}
+                {lunar.leap ? "*" : ""}
+              </div>
+              <div className="hp__fact-sub">
+                {L.homeYear.replace("{y}", lunar.yearName)}
+              </div>
             </div>
             <div className="hp__fact hp__fact--holy">
-              <div className="hp__fact-label">{holy?.major ? <StarFilled style={{ color: '#e0a83a' }} /> : <StarOutlined />} {L.homeUpcoming}</div>
-              <div className="hp__fact-value">{holy ? holy.name : '—'}</div>
-              {holy && <div className="hp__fact-sub">{holy.diff === 0 ? D.today : `${D.inDays.replace('{n}', holy.diff)} · ${holy.date.format('DD/MM')}`}</div>}
+              <div className="hp__fact-label">
+                {holy?.major ? (
+                  <StarFilled style={{ color: "#e0a83a" }} />
+                ) : (
+                  <StarOutlined />
+                )}{" "}
+                {L.homeUpcoming}
+              </div>
+              <div className="hp__fact-value">{holy ? holy.name : "—"}</div>
+              {holy && (
+                <div className="hp__fact-sub">
+                  {holy.diff === 0
+                    ? D.today
+                    : `${D.inDays.replace("{n}", holy.diff)} · ${holy.date.format("DD/MM")}`}
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -451,47 +756,108 @@ export default function HomePage() {
         <section className="hp__arch-wrap" aria-hidden="true">
           <div className="hp__arch-glow" />
           <div className="hp__arch">
-            <div className="hp__cloud" style={{ top: '14%', width: '46%', animation: 'hpCloud 70s linear -20s infinite' }}><Cloud width="100%" opacity={.9} /></div>
-            <div className="hp__cloud" style={{ top: '30%', width: '34%', animation: 'hpCloud 90s linear -60s infinite' }}><Cloud width="100%" opacity={.75} /></div>
+            <div
+              className="hp__cloud"
+              style={{
+                top: "14%",
+                width: "46%",
+                animation: "hpCloud 70s linear -20s infinite",
+              }}
+            >
+              <Cloud width="100%" opacity={0.9} />
+            </div>
+            <div
+              className="hp__cloud"
+              style={{
+                top: "30%",
+                width: "34%",
+                animation: "hpCloud 90s linear -60s infinite",
+              }}
+            >
+              <Cloud width="100%" opacity={0.75} />
+            </div>
 
             <div className="hp__sun">
               <div className="hp__sun-gl">
                 <ShaderCanvas
                   fragment={HALO_FRAG}
-                  fallback={(
+                  fallback={
                     <>
                       <span className="hp__sun-rays" />
                       <span className="hp__sun-rainbow" />
                       <span className="hp__sun-core" />
                     </>
-                  )}
+                  }
                 />
               </div>
-              <div className="hp__buddha"><img src="/adida.PNG" alt="" /></div>
+              <div className="hp__buddha">
+                <img src="/adida.PNG" alt="" />
+              </div>
             </div>
 
             <div className="hp__hills">
-              <svg viewBox="0 0 400 160" preserveAspectRatio="none" style={{ bottom: '24%', height: '72%' }}>
-                <path fill="rgba(196,198,236,.7)" d="M0,120 Q60,70 120,92 Q180,48 250,80 Q320,52 400,86 L400,160 L0,160 Z" />
+              <svg
+                viewBox="0 0 400 160"
+                preserveAspectRatio="none"
+                style={{ bottom: "24%", height: "72%" }}
+              >
+                <path
+                  fill="rgba(196,198,236,.7)"
+                  d="M0,120 Q60,70 120,92 Q180,48 250,80 Q320,52 400,86 L400,160 L0,160 Z"
+                />
               </svg>
-              <svg viewBox="0 0 400 160" preserveAspectRatio="none" style={{ bottom: '20%', height: '56%' }}>
-                <path fill="rgba(160,190,196,.7)" d="M0,130 Q70,96 140,114 Q210,86 280,110 Q340,94 400,112 L400,160 L0,160 Z" />
+              <svg
+                viewBox="0 0 400 160"
+                preserveAspectRatio="none"
+                style={{ bottom: "20%", height: "56%" }}
+              >
+                <path
+                  fill="rgba(160,190,196,.7)"
+                  d="M0,130 Q70,96 140,114 Q210,86 280,110 Q340,94 400,112 L400,160 L0,160 Z"
+                />
               </svg>
-              <svg viewBox="0 0 400 160" preserveAspectRatio="none" style={{ bottom: '16%', height: '40%' }}>
-                <path fill="rgba(170,206,160,.85)" d="M0,140 Q90,116 200,126 Q300,114 400,132 L400,160 L0,160 Z" />
+              <svg
+                viewBox="0 0 400 160"
+                preserveAspectRatio="none"
+                style={{ bottom: "16%", height: "40%" }}
+              >
+                <path
+                  fill="rgba(170,206,160,.85)"
+                  d="M0,140 Q90,116 200,126 Q300,114 400,132 L400,160 L0,160 Z"
+                />
               </svg>
             </div>
 
-            <div className="hp__temple"><Temple /></div>
+            <div className="hp__temple">
+              <Temple />
+            </div>
 
             <div className="hp__pond">
-              {phone
-                ? <span className="hp__pond-fallback" />
-                : <ShaderCanvas fragment={POND_FRAG} fps={40} fallback={<span className="hp__pond-fallback" />} />}
+              {phone ? (
+                <span className="hp__pond-fallback" />
+              ) : (
+                <ShaderCanvas
+                  fragment={POND_FRAG}
+                  fps={40}
+                  fallback={<span className="hp__pond-fallback" />}
+                />
+              )}
             </div>
-            <div className="hp__lotus" style={{ left: '10%', bottom: '5%' }}><LotusFlower size={38} /></div>
-            <div className="hp__lotus" style={{ right: '12%', bottom: '8%', animationDelay: '1.4s' }}><LotusFlower size={30} /></div>
-            <div className="hp__lotus" style={{ left: '44%', bottom: '2%', animationDelay: '.7s' }}><LotusFlower size={26} /></div>
+            <div className="hp__lotus" style={{ left: "10%", bottom: "5%" }}>
+              <LotusFlower size={38} />
+            </div>
+            <div
+              className="hp__lotus"
+              style={{ right: "12%", bottom: "8%", animationDelay: "1.4s" }}
+            >
+              <LotusFlower size={30} />
+            </div>
+            <div
+              className="hp__lotus"
+              style={{ left: "44%", bottom: "2%", animationDelay: ".7s" }}
+            >
+              <LotusFlower size={26} />
+            </div>
           </div>
         </section>
       </main>
