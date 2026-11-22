@@ -1087,13 +1087,13 @@ body {
   initial-value: 0deg;
 }
 :is(.pp-hero__btn, .bf-hero__btn, .tr-hero__btn, .um-hero__btn, .dept-add-btn, .dn-btn, .rd-btn,
-    .fin-btn, .cer-btn, .dc-agenda__add, .lg-btn, .news-add-btn, .glow-btn).ant-btn-primary {
+    .fin-btn, .cer-btn, .dc-agenda__add, .news-add-btn, .glow-btn).ant-btn-primary {
   --glow-fill: #c47f36;
   border: 2px solid transparent !important;
   transition: box-shadow .35s ease, transform .2s ease, background-color .2s ease !important;
 }
 :is(.pp-hero__btn, .bf-hero__btn, .tr-hero__btn, .um-hero__btn, .dept-add-btn, .dn-btn, .rd-btn,
-    .fin-btn, .cer-btn, .dc-agenda__add, .lg-btn, .news-add-btn, .glow-btn).ant-btn-primary:not(:disabled):is(:hover, :focus-visible) {
+    .fin-btn, .cer-btn, .dc-agenda__add, .news-add-btn, .glow-btn).ant-btn-primary:not(:disabled):is(:hover, :focus-visible) {
   --glow-fill: #b8732d;
   /* Fill on the padding box, spinning conic gradient shows through the transparent border */
   background:
@@ -1112,7 +1112,7 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   :is(.pp-hero__btn, .bf-hero__btn, .tr-hero__btn, .um-hero__btn, .dept-add-btn, .dn-btn, .rd-btn,
-      .fin-btn, .cer-btn, .dc-agenda__add, .lg-btn, .news-add-btn, .glow-btn).ant-btn-primary:not(:disabled):is(:hover, :focus-visible) {
+      .fin-btn, .cer-btn, .dc-agenda__add, .news-add-btn, .glow-btn).ant-btn-primary:not(:disabled):is(:hover, :focus-visible) {
     animation: none;
     box-shadow: -4px -2px 14px rgba(66,133,244,.35), 4px 2px 14px rgba(251,188,5,.3);
   }
