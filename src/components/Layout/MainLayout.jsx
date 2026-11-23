@@ -718,10 +718,14 @@ export default function MainLayout() {
     </div>
   );
 
+  const sidebarWidth = 240;
+  const collapsedSidebarWidth = 80;
+  const visibleSidebarWidth = isMobile ? 0 : collapsed ? collapsedSidebarWidth : sidebarWidth;
+
   return (
     <Layout className="app-shell" style={{ overflow: 'hidden' }}>
       {!isMobile && (
-        <Sider trigger={null} collapsible collapsed={collapsed} width={240}
+        <Sider trigger={null} collapsible collapsed={collapsed} width={sidebarWidth} collapsedWidth={collapsedSidebarWidth}
           style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #ece1d1', position: 'relative', overflow: 'hidden' }}>
           {sidebarContent}
         </Sider>
@@ -771,7 +775,7 @@ export default function MainLayout() {
 
           {currentPage && !isPhone && (
             <div className="hdr-page-pill" style={{
-              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+              position: 'absolute', left: `calc((100% - ${visibleSidebarWidth}px) / 2)`, transform: 'translateX(-50%)',
               display: 'flex', alignItems: 'center', gap: 7,
               background: 'linear-gradient(135deg, #fff8ee 0%, #fcefdc 100%)',
               border: '1px solid #f0dfc6',
