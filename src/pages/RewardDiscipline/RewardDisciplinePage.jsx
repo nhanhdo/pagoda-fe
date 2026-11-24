@@ -16,7 +16,6 @@ import { useRewardDisciplinePage, rewardSubTypes, disciplineSubTypes } from './u
 import { useLanguage } from '../../i18n/LanguageContext';
 import { initializeForm, guardedClose } from '../../utils/formGuard';
 import './RewardDisciplinePage.css';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { Option } = Select;
 
@@ -143,7 +142,6 @@ export default function RewardDisciplinePage() {
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: R.colPerson,
       key: 'person',
       width: 230,
@@ -223,7 +221,7 @@ export default function RewardDisciplinePage() {
     },
     {
       title: '',
-      key: 'actions', fixed: PIN_RIGHT,
+      key: 'actions',
       width: 96,
       align: 'right',
       render: (_, r) => canEdit && (

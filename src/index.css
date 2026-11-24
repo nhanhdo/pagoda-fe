@@ -1235,6 +1235,8 @@ body {
   padding-block: 8px !important;
 }
 .app-route .tbl-pill { white-space: normal; }
+.app-route .personnel-table .tbl-pill { white-space: nowrap; }
+.app-route .personnel-table .tbl-pill--wrap { white-space: normal; overflow-wrap: anywhere; }
 .app-route .tbl-pill__dot { flex: 0 0 6px; }
 .app-route :is(.fin-kpi__value,.fin-fund__value,.dn-stat__value,.db-kpi__value) {
   font-variant-numeric: tabular-nums; overflow-wrap: anywhere;

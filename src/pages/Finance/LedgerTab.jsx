@@ -57,7 +57,7 @@ export default function LedgerTab({ F, funds, refreshKey }) {
   };
 
   const columns = [
-    { title: F.colDate, dataIndex: 'date', width: 110, render: (v) => <span className="tbl-mono">{dayjs(v).format('DD/MM/YYYY')}</span> },
+    { title: F.colDate, dataIndex: 'date', width: 180, render: (v) => <span className="tbl-mono">{dayjs(v).format('DD/MM/YYYY')}</span> },
     { title: F.colCode, dataIndex: 'code', width: 120, render: (v) => <span className="tbl-mono fin-muted-code">{v || '—'}</span> },
     {
       title: F.colParty, key: 'party', width: 260,

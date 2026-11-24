@@ -15,7 +15,6 @@ import { useBuddhistFollowerPage } from './useBuddhistFollowerPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { initializeForm, guardedClose, rules } from '../../utils/formGuard';
 import './BuddhistFollowerPage.css';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { Option } = Select;
 
@@ -218,10 +217,9 @@ export default function BuddhistFollowerPage() {
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: B.colName,
       key: 'name',
-      width: 260,
+      width: 246,
       render: (_, r) => {
         const tone = TYPE_TONE[r.type] || TYPE_TONE['phật_tử'];
         return (
@@ -242,15 +240,15 @@ export default function BuddhistFollowerPage() {
     {
       title: B.colType,
       dataIndex: 'type',
-      width: 150,
+      width: 160,
       render: (v) => <Pill tone={TYPE_TONE[v] || TYPE_TONE['phật_tử']}>{B.types[TYPE_KEY[v]] || v}</Pill>,
     },
-    { title: B.colArea, dataIndex: 'region', width: 130, render: (v) => v || <span className="tbl-muted">—</span> },
-    { title: B.colPhone, dataIndex: 'phone', width: 130, render: (v) => v ? <span className="tbl-mono">{v}</span> : <span className="tbl-muted">—</span> },
+    { title: B.colArea, dataIndex: 'region', width: 104, render: (v) => v || <span className="tbl-muted">—</span> },
+    { title: B.colPhone, dataIndex: 'phone', width: 126, render: (v) => v ? <span className="tbl-mono">{v}</span> : <span className="tbl-muted">—</span> },
     {
       title: B.colServiceHours,
       dataIndex: 'publicServiceHours',
-      width: 190,
+      width: 160,
       sorter: (a, b) => (a.publicServiceHours || 0) - (b.publicServiceHours || 0),
       render: (v) => {
         if (!v) return <span className="tbl-muted">—</span>;
@@ -271,13 +269,13 @@ export default function BuddhistFollowerPage() {
     {
       title: t.common.status,
       dataIndex: 'status',
-      width: 150,
+      width: 160,
       render: (v) => <Pill dot tone={STATUS_TONE[v] || STATUS_TONE['đã_rời']}>{B.statuses[v] || v?.replace(/_/g, ' ')}</Pill>,
     },
     {
       title: '',
-      key: 'actions', fixed: PIN_RIGHT,
-      width: 96,
+      key: 'actions',
+      width: 104,
       align: 'right',
       render: (_, r) => canManage() && (
         <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
@@ -466,9 +464,10 @@ export default function BuddhistFollowerPage() {
             current: page, total, pageSize: 10, onChange: setPage,
             showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${B.totalLabel}`,
           }}
-          scroll={{ x: 'max-content' }}
-          className="personnel-table"
+          scroll={{ x: 1104 }}
+          className="personnel-table bf-table"
           expandable={{
+            columnWidth: 44,
             expandedRowRender: (record) => (
               <MeritPanel person={record} ranking={summary.ranking} totalHours={summary.totalHours} t={t} />
             ),

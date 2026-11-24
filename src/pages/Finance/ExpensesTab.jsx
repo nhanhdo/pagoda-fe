@@ -14,7 +14,6 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { printExpenseVoucher } from '../../utils/printDocs';
 import { guardedClose, initializeForm } from '../../utils/formGuard';
 import { vnd, compactVnd, STATUS_TONE, CATEGORY_COLOR, softOf, personName, presetRanges, ymd, QUICK_AMOUNTS } from './financeShared';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { RangePicker } = DatePicker;
 const METHOD_ICON = { 'tiền_mặt': <WalletOutlined />, 'chuyển_khoản': <BankOutlined />, 'khác': <EllipsisOutlined /> };
@@ -158,7 +157,6 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: F.colCode, dataIndex: 'code', width: 130,
       render: (v, r) => (
         <div className="fin-code">
@@ -178,10 +176,10 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       ),
     },
     {
-      title: F.colFund, key: 'fund', width: 140,
+      title: F.colFund, key: 'fund', width: 180,
       render: (_, r) => {
         const color = r.fund?.color || '#c47f36';
-        return <span className="tbl-pill" style={{ color, background: softOf(color) }}>{r.fund?.name}</span>;
+        return <span className="tbl-pill tbl-pill--wrap" style={{ color, background: softOf(color) }}>{r.fund?.name}</span>;
       },
     },
     {
@@ -214,7 +212,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       },
     },
     {
-      title: '', key: 'actions', fixed: PIN_RIGHT, width: 170, align: 'right',
+      title: '', key: 'actions', width: 170, align: 'right',
       render: (_, r) => {
         const pending = r.status === 'chờ_duyệt';
         const mine = r.createdBy === user?.id;

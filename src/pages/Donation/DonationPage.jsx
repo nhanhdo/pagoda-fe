@@ -20,7 +20,6 @@ import api from '../../api/axios';
 import { printReceipt, printThankYou } from '../../utils/printDocs';
 import { initializeForm, guardedClose, rules } from '../../utils/formGuard';
 import './DonationPage.css';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { RangePicker } = DatePicker;
 
@@ -141,7 +140,6 @@ export default function DonationPage() {
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: D.colDate,
       dataIndex: 'donationDate',
       width: 130,
@@ -206,10 +204,10 @@ export default function DonationPage() {
     {
       title: D.colFund,
       key: 'fund',
-      width: 130,
+      width: 180,
       render: (_, r) => {
         const color = r.fund?.color || '#c47f36';
-        return r.fund ? <span className="tbl-pill" style={{ color, background: `${color}1f` }}>{r.fund.name}</span> : <span className="tbl-muted">—</span>;
+        return r.fund ? <span className="tbl-pill tbl-pill--wrap" style={{ color, background: `${color}1f` }}>{r.fund.name}</span> : <span className="tbl-muted">—</span>;
       },
     },
     {
@@ -223,7 +221,7 @@ export default function DonationPage() {
     {
       title: D.colMethod,
       dataIndex: 'paymentMethod',
-      width: 150,
+      width: 164,
       render: (v) => {
         const m = METHOD[v] || METHOD['khác'];
         return <span className="tbl-pill" style={{ color: m.c, background: m.s }}>{m.icon}{D.methods[v] || v}</span>;
@@ -237,7 +235,7 @@ export default function DonationPage() {
     },
     {
       title: '',
-      key: 'actions', fixed: PIN_RIGHT,
+      key: 'actions',
       width: 170,
       align: 'right',
       render: (_, r) => (

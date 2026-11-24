@@ -13,7 +13,6 @@ import { printReceipt, printSoList } from '../../utils/printDocs';
 import { KIND_TONE, lunarLabel, displayName, QUICK_OFFERINGS, emptyEntry, daysUntil, fetchFollowersCached, slotLabel, entryHasData } from './ceremonyShared';
 import { initializeForm, guardedClose } from '../../utils/formGuard';
 import { vnd, compactVnd, softOf } from '../Finance/financeShared';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const METHODS = ['tiền_mặt', 'chuyển_khoản', 'khác'];
 
@@ -270,7 +269,6 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: C.cols.registrant, key: 'registrant', width: 260,
       render: (_, r) => {
         const tone = KIND_TONE[r.kind];
@@ -305,12 +303,12 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
       render: (_, r) => (Number(r.offeringAmount) > 0 ? (
         <div className="cer-offer">
           <span className="tbl-mono cer-offer__amount">{vnd(r.offeringAmount)}</span>
-          {r.fund && <span className="tbl-pill" style={{ color: r.fund.color, background: softOf(r.fund.color) }}>{r.fund.name}</span>}
+          {r.fund && <span className="tbl-pill tbl-pill--wrap" style={{ color: r.fund.color, background: softOf(r.fund.color) }}>{r.fund.name}</span>}
         </div>
       ) : <span className="tbl-muted">—</span>),
     },
     {
-      title: '', key: 'actions', fixed: PIN_RIGHT, width: 130, align: 'right',
+      title: '', key: 'actions', width: 130, align: 'right',
       render: (_, r) => (
         <div className="personnel-action-group" onClick={(e) => e.stopPropagation()}>
           {r.donation && <Tooltip title={C.printReceipt}><Button aria-label={C.printReceipt} type="text" icon={<PrinterOutlined />} onClick={() => printRegReceipt(r)} /></Tooltip>}

@@ -19,7 +19,6 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { initializeForm, guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { HiddenSubmit } from '../Personnel/PersonnelForm';
 import './TrainingPage.css';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 const { Option } = Select;
 
@@ -137,7 +136,6 @@ export default function TrainingPage() {
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: T.colName,
       dataIndex: 'name',
       width: 300,
@@ -225,7 +223,7 @@ export default function TrainingPage() {
     },
     {
       title: '',
-      key: 'actions', fixed: PIN_RIGHT,
+      key: 'actions',
       width: 130,
       align: 'right',
       render: (_, r) => canManage() && (

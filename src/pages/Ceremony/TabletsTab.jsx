@@ -10,7 +10,6 @@ import api from '../../api/axios';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { STATUS_TONE, displayName, fetchFollowersCached } from './ceremonyShared';
 import { initializeForm, guardedClose } from '../../utils/formGuard';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 function TabletModal({ C, t, open, record, preset, areas, followers, onClose, onSaved }) {
   const [form] = Form.useForm();
@@ -194,7 +193,6 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: C.cols.spirit, key: 'spirit', width: 260,
       render: (_, r) => (
         <div className="person-cell">
@@ -215,7 +213,7 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
     { title: C.cols.worshipper, key: 'w', width: 200, render: (_, r) => (r.worshipperName ? <span>{r.worshipperName}{r.worshipperPhone && <span className="tbl-muted"> · {r.worshipperPhone}</span>}</span> : <span className="tbl-muted">—</span>) },
     { title: C.cols.status, dataIndex: 'status', width: 140, render: (v) => <span className="tbl-pill" style={{ color: STATUS_TONE[v].c, background: STATUS_TONE[v].s }}><span className="tbl-pill__dot" />{C.statuses[v]}</span> },
     {
-      title: '', key: 'actions', fixed: PIN_RIGHT, width: 96, align: 'right',
+      title: '', key: 'actions', width: 96, align: 'right',
       render: (_, r) => (
         <div className="personnel-action-group">
           {canWrite && <Tooltip title={t.common.edit}><Button aria-label={t.common.edit} type="text" icon={<EditOutlined />} onClick={() => setModal({ open: true, record: r, preset: null })} /></Tooltip>}

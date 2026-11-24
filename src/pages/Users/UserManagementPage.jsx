@@ -20,7 +20,6 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { initializeForm, guardedClose } from '../../utils/formGuard';
 import './UserManagementPage.css';
-import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 dayjs.extend(relativeTime);
 
@@ -289,7 +288,6 @@ export default function UserManagementPage() {
 
   const columns = [
     {
-      fixed: pinLeft(),
       title: U.colAccount,
       key: 'account',
       width: 300,
@@ -353,7 +351,7 @@ export default function UserManagementPage() {
     },
     ...(admin ? [{
       title: '',
-      key: 'actions', fixed: PIN_RIGHT,
+      key: 'actions',
       width: 160,
       align: 'right',
       render: (_, r) => {
