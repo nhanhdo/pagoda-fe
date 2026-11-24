@@ -258,6 +258,7 @@ export function printSoList(ceremony, registrations, kind) {
     @page {
       size: A4 portrait;
       margin: 16mm 18mm 18mm;
+      @top-center { content: ""; }
       @bottom-center {
         content: "Trang " counter(page) " / " counter(pages);
         font: 9pt 'Times New Roman', 'Noto Serif', serif;
