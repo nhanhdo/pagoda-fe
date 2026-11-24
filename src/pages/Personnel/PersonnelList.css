@@ -73,9 +73,10 @@
 .personnel-feedback { margin: 0 14px 14px; animation: personnel-fade var(--personnel-change) ease both; }
 .personnel-empty { display: grid; justify-items: center; padding-bottom: 16px; }
 .personnel-pagination { padding: 10px 14px 14px; justify-content: flex-end; }
+.personnel-page .personnel-table { margin: 0 14px 12px; }
 .personnel-page .personnel-table .ant-table {
-  border: 0 !important;
-  border-radius: 0 0 var(--radius-card) var(--radius-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 10px !important;
   box-shadow: none;
 }
 .personnel-page .personnel-table .ant-table-container { border-radius: 0 !important; }
@@ -100,12 +101,6 @@
 .personnel-page .person-cell__sub { flex-wrap: wrap; gap: 0 5px; white-space: normal; overflow-wrap: anywhere; }
 .personnel-badge.tbl-pill { border-radius: 6px; padding: 2px 8px; color: #4b3c31; white-space: normal; }
 .personnel-badge .tbl-pill__dot { flex: 0 0 6px; }
-.personnel-role { display: grid; justify-items: start; gap: 3px; line-height: 1.3; overflow-wrap: anywhere; }
-.personnel-phone { color: #65564a; font-variant-numeric: tabular-nums; }
-.personnel-page .personnel-table .personnel-badge--status {
-  padding-inline: 0;
-  background: transparent !important;
-}
 .personnel-page .personnel-table .personnel-action-group { gap: 1px; }
 .personnel-page .personnel-table .ant-table-thead > tr > th:last-child,
 .personnel-page .personnel-table .ant-table-tbody > tr > td:last-child { padding-inline: 12px !important; }
@@ -181,6 +176,7 @@
   .personnel-export.ant-btn { font-size: 12px; padding-inline: 8px; }
   .personnel-card-grid { padding-inline: 9px; }
   .personnel-results { padding-inline: 9px; }
+  .personnel-page .personnel-table { margin-inline: 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .personnel-enter, .personnel-view, .personnel-feedback, .personnel-results span, .personnel-card,
