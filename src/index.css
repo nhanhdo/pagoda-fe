@@ -1169,7 +1169,9 @@ body {
   --ui-enter: 320ms;
   --ui-ease: cubic-bezier(.22, 1, .36, 1);
   --ui-primary: #93521c;
-  --ui-primary-hover: #793f16;
+  --ui-button-fill: #edb461;
+  --ui-button-hover: #e3a34b;
+  --ui-button-ink: #422a17;
   --ui-focus: #8b501e;
   --ui-surface: #fffdf9;
 }
@@ -1255,10 +1257,13 @@ body {
 .ant-btn-primary:not(:disabled):not(.ant-btn-dangerous),
 .ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):hover,
 :is(.pp-hero__btn,.bf-hero__btn,.tr-hero__btn,.um-hero__btn,.dept-add-btn,.dn-btn,.rd-btn,.fin-btn,.cer-btn,.dc-agenda__add,.news-add-btn,.glow-btn).ant-btn-primary:not(:disabled):is(:hover,:focus-visible) {
-  background: var(--ui-primary) !important; border-color: transparent; color: #fff;
+  background: var(--ui-button-fill) !important; border-color: transparent; color: var(--ui-button-ink);
   box-shadow: none; animation: none; transform: none;
 }
-.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):hover { background: var(--ui-primary-hover) !important; }
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):hover,
+:is(.pp-hero__btn,.bf-hero__btn,.tr-hero__btn,.um-hero__btn,.dept-add-btn,.dn-btn,.rd-btn,.fin-btn,.cer-btn,.dc-agenda__add,.news-add-btn,.glow-btn).ant-btn-primary:not(:disabled):hover {
+  background: var(--ui-button-hover) !important;
+}
 .app-shell :is(.ant-btn,.sb-item,.hdr-toggle,.hdr-icon-btn):active:not(:disabled) { transform: scale(.97); }
 .app-shell :is(.ant-btn,.hdr-toggle,.hdr-icon-btn) {
   transition: color var(--ui-fast), background-color var(--ui-fast), border-color var(--ui-fast), transform var(--ui-fast);
@@ -1278,7 +1283,6 @@ body {
 .app-route :is(.dept-grid > *, .news-feed-content .post-card, .cmt-thread, .dc-agenda__list > li) { animation: none; }
 .m-fade-in, .dc-root, .comment-section { animation-duration: var(--ui-state); }
 
-.lg-root .lg-btn.ant-btn { background: var(--ui-primary) !important; box-shadow: none; }
 .not-found { height: 100dvh; overflow-y: auto; background: #f9f2e7; }
 .not-found__body { animation: m-rise var(--ui-enter) var(--ui-ease) backwards; }
 

@@ -326,16 +326,8 @@
   height: 50px;
   border: 0;
   border-radius: 14px;
-  background: linear-gradient(145deg, #a96130, #8b481f);
-  color: #fff;
   font-size: 15px;
   font-weight: 700;
-  box-shadow: 6px 6px 14px #d1bba3, -6px -6px 14px #fff8ef;
-}
-
-.lg-root .lg-btn.ant-btn:not(:disabled):hover {
-  background: #8b481f;
-  color: #fff;
 }
 
 .lg-root .lg-btn.ant-btn:not(:disabled):active {

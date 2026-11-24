@@ -30,12 +30,9 @@
   min-height: 40px;
   padding-inline: 15px;
   border-radius: 9px;
-  background: var(--personnel-accent);
-  border-color: var(--personnel-accent);
   box-shadow: none;
   font-weight: 650;
 }
-.personnel-page .personnel-primary.ant-btn:hover { background: #783f12 !important; border-color: #783f12; }
 .personnel-surface { min-width: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); }
 .personnel-toolbar {
   display: flex;

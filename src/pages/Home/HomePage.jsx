@@ -532,9 +532,9 @@ const CSS = `
   .hp__lead{margin:0;max-width:460px;font-size:clamp(14px,1.25vw,17px);line-height:1.7;color:#7a604c;animation:hpRise .6s ease both .25s}
   .hp__actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:clamp(22px,3.5vh,34px);animation:hpRise .6s ease both .35s}
   .hp__cta{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 32px;border:none;border-radius:999px;cursor:pointer;
-    background:var(--ui-primary);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;
+    background:var(--ui-button-fill);color:var(--ui-button-ink);font-size:15px;font-weight:800;letter-spacing:.06em;
     box-shadow:0 14px 30px rgba(176,106,36,.32);transition:transform .2s ease,box-shadow .2s ease,filter .2s ease}
-  .hp__cta:hover{transform:translateY(-2px);filter:brightness(1.05);box-shadow:0 18px 36px rgba(176,106,36,.4)}
+  .hp__cta:hover{background:var(--ui-button-hover);transform:translateY(-2px);filter:brightness(1.05);box-shadow:0 18px 36px rgba(176,106,36,.4)}
   .hp__cta:focus-visible{outline:3px solid #6b3410;outline-offset:4px}
   .hp__cta .anticon{font-size:16px;transition:transform .2s ease}
   .hp__cta:hover .anticon{transform:translateX(3px)}
