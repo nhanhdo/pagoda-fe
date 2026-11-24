@@ -1340,7 +1340,6 @@ body {
 .app-route .kanban-col { scroll-snap-align: start; border-radius: 10px; min-width: 0; }
 .app-route .kanban-card { box-shadow: none; }
 .app-route .kanban-card__actions { opacity: 1; }
-.app-route .dn-total { background: #814917; box-shadow: none; border-radius: 12px; }
 .app-route .fin-fund { background: var(--ui-surface); box-shadow: none; border-radius: 10px; }
 .app-route .fin-fund.is-selected { box-shadow: 0 0 0 1px var(--ui-primary); }
 .app-route .fin-chart g[tabindex]:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
