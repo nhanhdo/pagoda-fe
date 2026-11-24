@@ -22,7 +22,7 @@ import './PersonnelList.css';
 // Only restore the matching history entry when returning from a personnel profile.
 let listReturn;
 
-function PersonIdentity({ record, link, onOpen }) {
+function PersonIdentity({ record, link, onOpen, phoneLabel }) {
   const tone = toneOf(record.type);
   return (
     <div className="person-cell">
@@ -32,11 +32,17 @@ function PersonIdentity({ record, link, onOpen }) {
       </Avatar>
       <div className="person-cell__text">
         <Link className="person-cell__name" {...link} onClick={onOpen}>{record.fullName}</Link>
-        {(record.dharmName || record.code) && (
+        {(record.dharmName || record.code || (phoneLabel && record.phone)) && (
           <div className="person-cell__sub">
             {record.dharmName && <span>{record.dharmName}</span>}
             {record.dharmName && record.code && <span aria-hidden="true">·</span>}
             {record.code && <span className="tbl-mono">{record.code}</span>}
+            {phoneLabel && record.phone && (
+              <a className="personnel-phone" href={`tel:${record.phone}`} aria-label={`${phoneLabel}: ${record.phone}`}>
+                {(record.dharmName || record.code) && <span aria-hidden="true">· </span>}
+                {record.phone}
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -167,16 +173,21 @@ export default function PersonnelList() {
     </div>
   );
 
-  const identity = (r) => <PersonIdentity record={r} link={detailLink(r)} onOpen={rememberList} />;
+  const identity = (r, phoneLabel) => <PersonIdentity record={r} link={detailLink(r)} onOpen={rememberList} phoneLabel={phoneLabel} />;
   const typeBadge = (r) => <PersonBadge value={r.type} labels={P.types} />;
   const statusBadge = (r) => <PersonBadge value={r.status} labels={P.statuses} status />;
   const columns = [
-    { title: P.colName, key: 'name', width: 256, render: (_, r) => identity(r) },
-    { title: P.colPosition, key: 'position', width: 148, render: (_, r) => positionLabel(t, r.position) || '—' },
+    { title: P.colName, key: 'name', width: 260, render: (_, r) => identity(r, P.colPhone) },
+    {
+      title: P.positionAndType, key: 'position', width: 174, render: (_, r) => (
+        <div className="personnel-role">
+          {r.position && <span>{positionLabel(t, r.position)}</span>}
+          {typeBadge(r)}
+        </div>
+      ),
+    },
     { title: t.common.status, key: 'status', width: 148, render: (_, r) => statusBadge(r) },
-    { title: P.colType, key: 'type', width: 148, render: (_, r) => typeBadge(r) },
-    { title: P.colPhone, dataIndex: 'phone', width: 130, render: (v) => <span className="tbl-mono">{v || '—'}</span> },
-    { title: t.common.actions, key: 'actions', width: 148, align: 'right', render: (_, r) => renderActions(r) },
+    { title: t.common.actions, key: 'actions', width: 160, align: 'right', render: (_, r) => renderActions(r) },
   ];
   const showData = data.length > 0 && !loadError;
 
@@ -235,7 +246,7 @@ export default function PersonnelList() {
                 <div key={viewMode} className="personnel-view">
                   {viewMode === 'table' ? (
                     <Table className="personnel-table" dataSource={data} columns={columns} rowKey="id"
-                      size="middle" pagination={false} scroll={{ x: 980 }}
+                      size="middle" pagination={false} scroll={{ x: 742 }}
                       onRow={(record) => ({ onClick: (event) => openRow(event, record) })} />
                   ) : (
                     <div className="personnel-card-grid">
