@@ -1266,6 +1266,22 @@ body {
 :is(.pp-hero__btn,.bf-hero__btn,.tr-hero__btn,.um-hero__btn,.dept-add-btn,.dn-btn,.rd-btn,.fin-btn,.cer-btn,.dc-agenda__add,.news-add-btn,.glow-btn).ant-btn-primary:not(:disabled):hover {
   background: var(--ui-button-hover) !important;
 }
+.ant-btn.excel-export:not(:disabled) {
+  color: #fff;
+  background: #217346;
+  border-color: #217346;
+}
+.ant-btn.excel-export:not(:disabled):hover,
+.ant-btn.excel-export:not(:disabled):focus-visible {
+  color: #fff !important;
+  background: #185b37;
+  border-color: #185b37 !important;
+}
+.ant-btn.excel-export:disabled {
+  color: #536c5d;
+  background: #e8f1eb;
+  border-color: #d6e5da;
+}
 .app-shell :is(.ant-btn,.sb-item,.hdr-toggle,.hdr-icon-btn):active:not(:disabled) { transform: scale(.97); }
 .app-shell :is(.ant-btn,.hdr-toggle,.hdr-icon-btn) {
   transition: color var(--ui-fast), background-color var(--ui-fast), border-color var(--ui-fast), transform var(--ui-fast);

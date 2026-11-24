@@ -338,9 +338,10 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
           </div>
         )}
         <div className="cer-print">
-          {allowed.includes('cầu_an') && <Button icon={<FileTextOutlined />} onClick={() => printList('cầu_an')}>{C.printAn}</Button>}
-          {allowed.includes('cầu_siêu') && <Button icon={<FileTextOutlined />} onClick={() => printList('cầu_siêu')}>{C.printSieu}</Button>}
+          {allowed.includes('cầu_an') && <Button icon={<FileTextOutlined />} aria-describedby="so-print-hint" onClick={() => printList('cầu_an')}>{C.printAn}</Button>}
+          {allowed.includes('cầu_siêu') && <Button icon={<FileTextOutlined />} aria-describedby="so-print-hint" onClick={() => printList('cầu_siêu')}>{C.printSieu}</Button>}
         </div>
+        {allowed.length > 0 && <p id="so-print-hint" className="cer-print-hint">{C.printListHint}</p>}
       </div>
 
       <div className="cer-toolbar">

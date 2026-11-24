@@ -215,7 +215,7 @@ export default function PersonnelList() {
                   { value: 'table', icon: <TableOutlined aria-hidden="true" />, label: P.tableView },
                   { value: 'card', icon: <AppstoreOutlined aria-hidden="true" />, label: P.cardView },
                 ]} />
-              <Button className="personnel-export" icon={<FileExcelOutlined aria-hidden="true" />} onClick={handleExport} disabled={!showData || loading}>
+              <Button className="personnel-export excel-export" icon={<FileExcelOutlined aria-hidden="true" />} onClick={handleExport} disabled={!showData || loading}>
                 {t.common.exportExcel}
               </Button>
             </div>

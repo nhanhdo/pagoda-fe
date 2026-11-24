@@ -300,7 +300,7 @@ export default function DutySchedulePage() {
             </>
           )}
           <div className="pp-toolbar__end">
-            <Button className="pp-tool-btn" icon={<FileExcelOutlined />} onClick={handleExport} disabled={!rows.length}>
+            <Button className="pp-tool-btn excel-export" icon={<FileExcelOutlined />} onClick={handleExport} disabled={!rows.length}>
               {t.common.exportExcel}
             </Button>
           </div>

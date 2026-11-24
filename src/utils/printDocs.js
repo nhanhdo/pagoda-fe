@@ -203,67 +203,113 @@ const lunarText = (day, month) => {
   return `${d} tháng ${LUNAR_MONTHS[month - 1]}`;
 };
 
-/** Sớ list for a ceremony: header, then every registration's names (cầu an or cầu siêu). */
+/** Printable A4 prayer list. Registration and entry order come from the API. */
 export function printSoList(ceremony, registrations, kind) {
   const isSieu = kind === 'cầu_siêu';
   const title = isSieu ? 'SỚ CẦU SIÊU' : 'SỚ CẦU AN';
-  const has = (v) => v !== null && v !== undefined && v !== '';
-  const lineFor = (e) => {
+  const has = (value) => value != null && String(value).trim() !== '';
+  const closing = '<div class="so-closing">NAM MÔ A DI ĐÀ PHẬT</div>';
+
+  const entryFor = (entry, number) => {
+    const details = [];
+    if (has(entry.dharmName)) details.push(`Pháp danh: ${esc(entry.dharmName)}`);
     if (isSieu) {
-      const parts = [`Hương linh <b>${esc(e.fullName)}</b>`];
-      if (has(e.deathYear)) parts.push(`mất năm ${esc(e.deathYear)}`);
-      if (has(e.deathLunarDay) && has(e.deathLunarMonth)) parts.push(`ngày ${esc(e.deathLunarDay)} tháng ${esc(e.deathLunarMonth)} ÂL`);
-      if (has(e.ageAtDeath)) parts.push(`hưởng thọ ${esc(e.ageAtDeath)} tuổi`);
-      return parts.join(', ');
+      if (has(entry.deathYear)) details.push(`mất năm ${esc(entry.deathYear)}`);
+      if (has(entry.deathLunarDay) && has(entry.deathLunarMonth)) {
+        details.push(`ngày ${esc(entry.deathLunarDay)} tháng ${esc(entry.deathLunarMonth)} ÂL`);
+      }
+      if (has(entry.ageAtDeath)) details.push(`hưởng thọ ${esc(entry.ageAtDeath)} tuổi`);
+    } else {
+      if (has(entry.birthYear)) details.push(`sinh năm ${esc(entry.birthYear)}`);
+      if (has(entry.address)) details.push(esc(entry.address));
     }
-    const parts = [`<b>${esc(e.fullName)}</b>`];
-    if (has(e.birthYear)) parts.push(`sinh năm ${esc(e.birthYear)}`);
-    if (e.address) parts.push(esc(e.address));
-    return parts.join(', ');
+    return `<div class="so-entry">
+      <span class="so-entry-number">${number}.</span>
+      <div>
+        ${isSieu ? 'Hương linh ' : ''}<strong>${esc(entry.fullName)}</strong>
+        ${details.length ? `<div class="so-details">${details.join(' · ')}</div>` : ''}
+      </div>
+    </div>`;
   };
-  const total = registrations.reduce((s, r) => s + (r.entries?.length || 0), 0);
-  const blocks = registrations.map((r, i) => `
-    <tr><td><section class="reg">
-      <div class="reg-head"><span class="idx">${i + 1}.</span> Gia chủ: <b>${esc(r.registrantName)}</b>${r.registrantAddress ? ` — ${esc(r.registrantAddress)}` : ''}<span class="code">${esc(r.code || '')}</span></div>
-      <ol>${(r.entries || []).map(e => `<li>${lineFor(e)}</li>`).join('')}</ol>
-    </section></td></tr>`).join('');
+
+  const total = registrations.reduce((sum, registration) => sum + (registration.entries?.length || 0), 0);
+  const groups = registrations.map((registration, index) => {
+    const entries = registration.entries || [];
+    const isLastGroup = index === registrations.length - 1;
+    const rows = entries.map((entry, entryIndex) => `<tr><td>
+      ${entryFor(entry, entryIndex + 1)}
+      ${isLastGroup && entryIndex === entries.length - 1 ? closing : ''}
+    </td></tr>`).join('');
+    // A table per registration repeats just its own heading on continuation pages.
+    return `<table class="so-group">
+      <thead><tr><th scope="col"><div class="so-group-heading">
+        <span class="so-group-number">${index + 1}.</span>
+        <div>
+          ${has(registration.registrantName) ? `Gia chủ: <strong>${esc(registration.registrantName)}</strong>` : ''}
+          ${has(registration.registrantAddress) ? `<div class="so-details">${esc(registration.registrantAddress)}</div>` : ''}
+        </div>
+        ${has(registration.code) ? `<span class="so-code">${esc(registration.code)}</span>` : ''}
+      </div></th></tr></thead>
+      <tbody>${rows || (isLastGroup ? `<tr><td>${closing}</td></tr>` : '')}</tbody>
+    </table>`;
+  }).join('');
+
   const css = `
-    @page { size: A4 portrait; margin: 16mm 18mm 18mm;
-      @bottom-center { content: "Trang " counter(page) " / " counter(pages); font-size: 9pt; color: #8a6a4a; } }
-    body { font-size: 13pt; line-height: 1.6; }
-    table.regs { width: 100%; border-collapse: collapse; }
-    table.regs td { padding: 0; vertical-align: top; }
-    table.regs tr { break-inside: avoid; page-break-inside: avoid; }
-    table.regs thead { display: table-header-group; }
-    .run { font-size: 9.5pt; color: #8a6a4a; text-align: left; font-weight: 400; padding: 0 0 6px; border-bottom: 1px solid #e6d6bb; }
-    .run b { color: #7a4a1e; letter-spacing: .06em; }
-    .so { max-width: 175mm; margin: 0 auto; }
-    .top { text-align: center; border-bottom: 2px solid #c9a46a; padding-bottom: 10px; margin-bottom: 14px; }
-    .top .org { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-    .top h1 { margin: 8px 0 4px; font-size: 22pt; color: #7a4a1e; letter-spacing: .08em; }
-    .top .when { font-style: italic; color: #4a3626; }
-    .meta { display: flex; justify-content: space-between; font-size: 11pt; color: #6b5444; margin-bottom: 10px; }
-    .reg { break-inside: avoid; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dotted #c9b28c; }
-    .reg-head { font-size: 12pt; color: #4a3626; }
-    .reg-head .idx { font-weight: 700; color: #7a4a1e; }
-    .reg-head .code { float: right; font-size: 10pt; color: #a8916f; }
-    ol { margin: 4px 0 0 24px; padding: 0; }
-    li { margin: 2px 0; }
-    .namo { text-align: center; margin-top: 18px; font-weight: 700; letter-spacing: .08em; color: #7a4a1e; }
+    @page {
+      size: A4 portrait;
+      margin: 16mm 18mm 18mm;
+      @bottom-center {
+        content: "Trang " counter(page) " / " counter(pages);
+        font: 9pt 'Times New Roman', 'Noto Serif', serif;
+        color: #403832;
+      }
+    }
+    body { background: #fff; font-size: 12.5pt; line-height: 1.4; color: #261d18; }
+    .so { overflow-wrap: anywhere; }
+    .so-head { text-align: center; padding-bottom: 4mm; border-bottom: 1px solid #745439; }
+    .so-org { margin: 0; font-size: 12pt; font-weight: bold; letter-spacing: .09em; }
+    .so-head h1 { margin: 1.5mm 0 2mm; font-size: 26pt; line-height: 1.15; color: #583d28; letter-spacing: .05em; }
+    .so-ceremony { margin: 0; font-weight: bold; }
+    .so-date { margin: 1mm 0 0; font-style: italic; }
+    .so-intro { break-inside: avoid; break-after: avoid; }
+    .so-meta { margin: 2.5mm 0 3mm; text-align: center; font-size: 11pt; color: #51453d; }
+    .so-empty { margin: 0 0 3mm; text-align: center; font-style: italic; }
+    .so-group { width: 100%; border-collapse: collapse; margin: 0 0 3mm; }
+    .so-group thead { display: table-header-group; break-inside: avoid; }
+    .so-group tr { break-inside: avoid; page-break-inside: avoid; }
+    .so-group th { padding: 2mm 0 1.5mm; border-top: 1px solid #a69a8e; text-align: left; font-weight: normal; }
+    .so-group td { padding: 0; vertical-align: top; }
+    .so-group-heading { display: grid; grid-template-columns: auto 1fr auto; gap: 2mm; }
+    .so-group-heading > div { min-width: 0; }
+    .so-group-number { font-weight: bold; }
+    .so-code { padding-top: .5mm; color: #51453d; font-size: 10pt; }
+    .so-entry { display: grid; grid-template-columns: 7mm minmax(0, 1fr); padding: 1mm 0 1mm 6mm; }
+    .so-entry-number { color: #51453d; font-variant-numeric: tabular-nums; }
+    .so-details { font-size: 12pt; color: #51453d; }
+    .so-closing { margin: 4mm 0 0; padding-top: 3mm; border-top: 1px solid #a69a8e;
+      text-align: center; font-weight: bold; letter-spacing: .05em; }
+    @media screen {
+      .so { max-width: 210mm; margin: 0 auto; padding: clamp(12px, 5vw, 16mm) clamp(12px, 5vw, 18mm); }
+    }
+    @media print {
+      .so { margin: 0; padding: 0; }
+    }
   `;
   const when = [lunarText(ceremony.lunarDay, ceremony.lunarMonth), ceremony.year ? `năm ${ceremony.year}` : '', ceremony.solarDate ? `(${longDate(ceremony.solarDate)})` : '']
     .filter(Boolean).join(' ');
+  const date = [when, ceremony.location].filter(has).map(esc).join(' · ');
   const body = `
-  <div class="so">
-    <div class="top">
-      <div class="org">${PAGODA}</div>
-      <h1>${title}</h1>
-      <div><b>${esc(ceremony.name)}</b></div>
-      <div class="when">${esc(when)}${ceremony.location ? ` · ${esc(ceremony.location)}` : ''}</div>
-    </div>
-    <div class="meta"><span>${registrations.length} gia chủ</span><span>${total} ${isSieu ? 'hương linh' : 'người được cầu an'}</span></div>
-    ${blocks ? `<table class="regs"><thead><tr><th class="run"><b>${title}</b> · ${esc(ceremony.name)}</th></tr></thead><tbody>${blocks}</tbody></table>` : '<p><i>Chưa có đăng ký.</i></p>'}
-    <div class="namo">NAM MÔ A DI ĐÀ PHẬT</div>
-  </div>`;
+    <main class="so">
+      <div class="so-intro">
+        <header class="so-head">
+          <p class="so-org">CHÙA TÂN THÀNH</p>
+          <h1>${title}</h1>
+          <p class="so-ceremony">${esc(ceremony.name)}</p>
+          ${date ? `<p class="so-date">${date}</p>` : ''}
+        </header>
+        <p class="so-meta">${registrations.length} gia chủ · ${total} ${isSieu ? 'hương linh' : 'người được cầu an'}</p>
+      </div>
+      ${groups || `<p class="so-empty">Chưa có đăng ký ${isSieu ? 'cầu siêu' : 'cầu an'}.</p>${closing}`}
+    </main>`;
   printHtml(`${title} – ${ceremony.name}`, body, css);
 }

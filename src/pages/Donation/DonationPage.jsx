@@ -277,7 +277,7 @@ export default function DonationPage() {
           </div>
         </div>
         <div className="dn-hero__actions">
-          <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport} disabled={total === 0} className="dn-btn">
+          <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport} disabled={total === 0} className="dn-btn excel-export">
             {D.exportExcel}
           </Button>
           {canManage() && (

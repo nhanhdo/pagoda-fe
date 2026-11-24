@@ -87,7 +87,7 @@ export default function LedgerTab({ F, funds, refreshKey }) {
           options={funds.map(f => ({ value: f.id, label: f.name }))} />
         <RangePicker className="fin-range" format="DD/MM/YYYY" value={range} onChange={(v) => { setRange(v); setPage(1); }}
           presets={presetRanges(F).map(p => ({ label: p.label, value: p.value }))} placeholder={[F.rangeFrom, F.rangeTo]} />
-        <Button icon={<DownloadOutlined />} loading={exporting} onClick={exportExcel} disabled={!data?.total} style={{ marginLeft: 'auto' }}>{F.exportExcel}</Button>
+        <Button className="excel-export" icon={<DownloadOutlined />} loading={exporting} onClick={exportExcel} disabled={!data?.total} style={{ marginLeft: 'auto' }}>{F.exportExcel}</Button>
       </div>
 
       {data && (
