@@ -1,5 +1,11 @@
 import { Modal } from 'antd';
 
+// Ant Design marks programmatically populated fields as touched.
+export function initializeForm(form, values) {
+  form.setFieldsValue(values);
+  form.setFields(form.getFieldsError().map(({ name }) => ({ name, touched: false })));
+}
+
 /**
  * Close a form modal, asking first if the user has typed anything.
  * Use with <Modal maskClosable={false} onCancel={() => guardedClose(form, close, t)} />.

@@ -5,7 +5,7 @@ import {
 import { WarningOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
-import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { HiddenSubmit } from '../Personnel/PersonnelForm';
 import { personOptionLabel } from '../Personnel/personnelShared';
 import { DUTY_TYPES, DUTY_STATUSES, SHIFT_HOURS } from './useDutySchedulePage';
@@ -41,7 +41,7 @@ export default function DutyFormModal({ open, record, defaultDate, personnel, t,
     if (!open) return;
     setConflicts([]);
     if (record) {
-      form.setFieldsValue({
+      initializeForm(form, {
         ...record,
         dutyDate: dayjs(record.dutyDate),
         startTime: toTime(record.startTime),
@@ -50,7 +50,7 @@ export default function DutyFormModal({ open, record, defaultDate, personnel, t,
       lastShift.current = record.shift;
     } else {
       form.resetFields();
-      form.setFieldsValue({ dutyDate: defaultDate || dayjs(), status: 'chờ', shift: 'sáng' });
+      initializeForm(form, { dutyDate: defaultDate || dayjs(), status: 'chờ', shift: 'sáng' });
       lastShift.current = null;
     }
   }, [open, record, defaultDate, form]);
@@ -64,7 +64,9 @@ export default function DutyFormModal({ open, record, defaultDate, personnel, t,
     const curEnd = cur.endTime?.format?.(TIME_FMT);
     const untouched = (!curStart && !curEnd) || (prev && curStart === prev[0] && curEnd === prev[1]);
     if (untouched && SHIFT_HOURS[shift]) {
-      form.setFieldsValue({ startTime: toTime(SHIFT_HOURS[shift][0]), endTime: toTime(SHIFT_HOURS[shift][1]) });
+      const hours = { startTime: toTime(SHIFT_HOURS[shift][0]), endTime: toTime(SHIFT_HOURS[shift][1]) };
+      if (lastShift.current) form.setFieldsValue(hours);
+      else initializeForm(form, hours);
       form.validateFields(['endTime']).catch(() => {});
     }
     lastShift.current = shift;

@@ -90,7 +90,7 @@ export default function FinancePage() {
         {tab === 'expenses' && (
           <ExpensesTab
             F={F} t={t} admin={admin} funds={activeFunds} allFunds={funds}
-            createSignal={createSignal} onChanged={changed} focusExpenseId={focusExpenseId} focusKey={location.key}
+            createSignal={createSignal} onCreateHandled={() => setCreateSignal(0)} onChanged={changed} focusExpenseId={focusExpenseId} focusKey={location.key}
           />
         )}
         {tab === 'ledger' && <LedgerTab F={F} funds={funds} refreshKey={refreshKey} />}

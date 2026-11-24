@@ -18,7 +18,7 @@ import api from '../../api/axios';
 import { useUserManagementPage, ROLE_CONFIG, ROLE_ORDER } from './useUserManagementPage';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { guardedClose } from '../../utils/formGuard';
+import { initializeForm, guardedClose } from '../../utils/formGuard';
 import './UserManagementPage.css';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
@@ -127,7 +127,7 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
   useEffect(() => {
     if (!open) return;
     if (editRecord) {
-      form.setFieldsValue({
+      initializeForm(form, {
         username: editRecord.username,
         role: editRecord.role,
         personnelId: editRecord.personnelId || undefined,
@@ -135,7 +135,7 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
       });
     } else {
       form.resetFields();
-      form.setFieldsValue({ role: 'user', isActive: true });
+      initializeForm(form, { role: 'user', isActive: true });
     }
   }, [open, editRecord, form]);
 

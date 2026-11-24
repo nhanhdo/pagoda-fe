@@ -12,7 +12,7 @@ import {
 import api from '../../api/axios';
 import { useDepartmentPage, getDeptTheme } from './useDepartmentPage';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { HiddenSubmit } from '../Personnel/PersonnelForm';
 import { positionLabel } from '../Personnel/personnelShared';
 import './DepartmentPage.css';
@@ -56,16 +56,14 @@ function DeptCard({ dept, canEdit, onOpen, onEdit, onDelete, t }) {
   return (
     <div
       className="dept-card"
-      role="button"
-      tabIndex={0}
       onClick={() => onOpen(dept)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(dept); } }}
       style={{ '--dept-accent': theme.accent, '--dept-soft': theme.soft, '--dept-tint': theme.tint }}
     >
       <div className="dept-card__head">
         <DeptIcon theme={theme} />
         <div className="dept-card__titles">
-          <div className="dept-card__name">{dept.name}</div>
+          <button type="button" className="dept-card__name dept-card__open"
+            onClick={(event) => { event.stopPropagation(); onOpen(dept); }}>{dept.name}</button>
           <div className="dept-card__code">{dept.code}</div>
         </div>
         {canEdit && (
@@ -138,7 +136,7 @@ export default function DepartmentPage() {
 
   const openModal = (record = null) => {
     setEditRecord(record);
-    if (record) form.setFieldsValue(record);
+    if (record) initializeForm(form, record);
     else form.resetFields();
     setModalOpen(true);
   };

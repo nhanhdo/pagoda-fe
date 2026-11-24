@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DatePicker, Select, Tooltip } from 'antd';
+import { Alert, Button, DatePicker, Select, Tooltip } from 'antd';
 import {
   RiseOutlined, FallOutlined, SwapOutlined, ClockCircleOutlined, CalendarOutlined,
 } from '@ant-design/icons';
@@ -21,14 +21,17 @@ function MonthlyChart({ data, F, lang }) {
   const y = (v) => (H - padB) * (1 - v / max);
   return (
     <div className="fin-chart">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={F.monthlyTitle}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="group" aria-label={F.monthlyTitle}>
         {[0.25, 0.5, 0.75, 1].map(p => (
           <line key={p} x1="0" x2={W} y1={(H - padB) * (1 - p)} y2={(H - padB) * (1 - p)} stroke="#f3ebdf" strokeWidth="1" />
         ))}
         {data.map((d, i) => {
           const x = padL + i * slot + gap;
           return (
-            <g key={d.month} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} style={{ cursor: 'default' }}>
+            <g key={d.month} tabIndex={0} role="img"
+              aria-label={`${d.month} · ${F.income}: ${vnd(d.income)} · ${F.expense}: ${vnd(d.expense)}`}
+              onFocus={() => setHover(i)} onBlur={() => setHover(null)}
+              onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
               <rect x={x - gap / 2} y="0" width={slot} height={H - padB} fill={hover === i ? '#fcf6ee' : 'transparent'} />
               <rect className="fin-chart__bar" x={x} y={y(d.income)} width={bw} height={(H - padB) - y(d.income)} rx="4" fill="#4f9a72" />
               <rect className="fin-chart__bar" x={x + bw + gap} y={y(d.expense)} width={bw} height={(H - padB) - y(d.expense)} rx="4" fill="#e5787f" />
@@ -54,23 +57,26 @@ function MonthlyChart({ data, F, lang }) {
 }
 
 export default function FinanceOverview({ F, funds, range, setRange, fundId, setFundId, refreshKey }) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState('thisMonth');
+  const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setFailed(false);
     const params = { fundId };
     if (range?.[0]) params.startDate = ymd(range[0]);
     if (range?.[1]) params.endDate = ymd(range[1]);
     api.get('/finance/report', { params })
       .then(({ data }) => { if (alive) setReport(data); })
-      .catch(() => {})
+      .catch(() => { if (alive) setFailed(true); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [range?.[0]?.valueOf(), range?.[1]?.valueOf(), fundId, refreshKey]);
+  }, [range?.[0]?.valueOf(), range?.[1]?.valueOf(), fundId, refreshKey, retry]);
 
   const presets = presetRanges(F);
   const pickPreset = (key) => {
@@ -89,6 +95,32 @@ export default function FinanceOverview({ F, funds, range, setRange, fundId, set
 
   return (
     <div className="fin-overview">
+      {/* Period filters */}
+      <div className="fin-toolbar section-anim section-d2">
+        <div className="fin-presets">
+          {[...presets.map(p => ({ key: p.key, label: p.label })), { key: 'allTime', label: F.presets.allTime }].map(p => (
+            <button key={p.key} type="button" className={`fin-chip${preset === p.key ? ' is-active' : ''}`} aria-pressed={preset === p.key} onClick={() => pickPreset(p.key)}>{p.label}</button>
+          ))}
+        </div>
+        <RangePicker
+          value={range}
+          onChange={(v) => { setRange(v); setPreset(null); }}
+          format="DD/MM/YYYY"
+          className="fin-range"
+          placeholder={[F.rangeFrom, F.rangeTo]}
+          allowClear
+        />
+        <Select
+          allowClear
+          className="fin-select"
+          aria-label={F.allFunds}
+          placeholder={F.allFunds}
+          value={fundId}
+          onChange={setFundId}
+          options={funds.map(f => ({ value: f.id, label: f.name }))}
+        />
+      </div>
+
       {/* Fund cards */}
       <section className="fin-funds section-anim section-d1">
         {funds.filter(f => f.isActive !== false).map(f => {
@@ -131,32 +163,11 @@ export default function FinanceOverview({ F, funds, range, setRange, fundId, set
         })}
       </section>
 
-      {/* Period filters */}
-      <div className="fin-toolbar section-anim section-d2">
-        <div className="fin-presets">
-          {[...presets.map(p => ({ key: p.key, label: p.label })), { key: 'allTime', label: F.presets.allTime }].map(p => (
-            <button key={p.key} type="button" className={`fin-chip${preset === p.key ? ' is-active' : ''}`} onClick={() => pickPreset(p.key)}>{p.label}</button>
-          ))}
-        </div>
-        <RangePicker
-          value={range}
-          onChange={(v) => { setRange(v); setPreset(null); }}
-          format="DD/MM/YYYY"
-          className="fin-range"
-          placeholder={[F.rangeFrom, F.rangeTo]}
-          allowClear
-        />
-        <Select
-          allowClear
-          className="fin-select"
-          placeholder={F.allFunds}
-          value={fundId}
-          onChange={setFundId}
-          options={funds.map(f => ({ value: f.id, label: f.name }))}
-        />
-      </div>
-
-      {loading && !report ? <div style={{ position: 'relative', minHeight: 260 }}><PageSpinner /></div> : report && (
+      {failed && (
+        <Alert type="error" showIcon message={t.common.loadError}
+          action={<Button onClick={() => setRetry(value => value + 1)}>{t.common.retry}</Button>} />
+      )}
+      {loading && !report ? <div style={{ position: 'relative', minHeight: 260 }}><PageSpinner /></div> : report && !failed && (
         <>
           {/* KPIs */}
           <div className="fin-kpis section-anim section-d2">

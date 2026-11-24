@@ -3,7 +3,7 @@ import { Modal, Form, Input, InputNumber, Radio, Upload, Button, Tabs, message }
 import { CameraOutlined, DeleteOutlined, PlusOutlined, MinusCircleOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { KINDS, figureImg, bioSectionsOf } from './libraryShared';
 import FigureArt from './FigureArt';
 
@@ -41,7 +41,7 @@ export default function FigureFormModal({ open, record, onClose, onSaved }) {
     setTab('info');
     setPreview(record?.image ? figureImg(record.image) : null);
     if (record) {
-      form.setFieldsValue({
+      initializeForm(form, {
         ...record,
         intro: record.intro || (record.bioSections?.length ? '' : record.description) || '',
         bioSections: bioSectionsOf(record, L),

@@ -14,3 +14,5 @@ npm-debug.log*
 
 # Local Vercel configuration
 .vercel/
+artifacts/
+demo/

@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import api from '../../api/axios';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { STATUS_TONE, displayName, fetchFollowersCached } from './ceremonyShared';
-import { guardedClose } from '../../utils/formGuard';
+import { initializeForm, guardedClose } from '../../utils/formGuard';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
 function TabletModal({ C, t, open, record, preset, areas, followers, onClose, onSaved }) {
@@ -19,8 +19,8 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
   useEffect(() => {
     if (!open) return;
     form.resetFields();
-    if (record) form.setFieldsValue({ ...record, installedDate: record.installedDate ? dayjs(record.installedDate) : null });
-    else form.setFieldsValue({ status: 'đang_thờ', installedDate: dayjs(), ...(preset || {}) });
+    if (record) initializeForm(form, { ...record, installedDate: record.installedDate ? dayjs(record.installedDate) : null });
+    else initializeForm(form, { status: 'đang_thờ', installedDate: dayjs(), ...(preset || {}) });
   }, [open, record, preset]);
 
   const submit = async (values) => {

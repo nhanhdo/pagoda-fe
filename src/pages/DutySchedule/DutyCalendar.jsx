@@ -64,7 +64,7 @@ export default function DutyCalendar({
   // On phones, tapping a shift brings the selected day's details into view
   const revealAgenda = () => {
     clearTimeout(revealTimer.current);
-    revealTimer.current = setTimeout(() => agendaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    revealTimer.current = setTimeout(() => agendaRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }), 60);
   };
   useEffect(() => () => clearTimeout(revealTimer.current), []);
   // A popover left open would point at nothing once the layout switches to phone mode
@@ -163,8 +163,6 @@ export default function DutyCalendar({
               return (
                 <div
                   key={key}
-                  role="button"
-                  tabIndex={0}
                   className={[
                     'dc-cell',
                     outside && 'is-outside',
@@ -174,15 +172,14 @@ export default function DutyCalendar({
                   ].filter(Boolean).join(' ')}
                   onClick={() => { setSelected(day); if (narrow && duties.length) revealAgenda(); }}
                   onDoubleClick={() => canManage && !outside && onAdd(day)}
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter' && e.key !== ' ') return;
-                    e.preventDefault();
-                    setSelected(day);
-                    if (narrow && duties.length) revealAgenda();
-                  }}
                 >
                   <div className="dc-cell__head">
-                    <span className="dc-cell__num">{day.date()}</span>
+                    <button type="button" className="dc-cell__num dc-day-button" aria-pressed={isSel}
+                      aria-label={day.toDate().toLocaleDateString(lang === 'en' ? 'en-GB' : 'vi-VN', {
+                        day: 'numeric', month: 'long', year: 'numeric',
+                      })}>
+                      {day.date()}
+                    </button>
                     <span className={`dc-cell__lunar${holyDay ? ' is-holy' : ''}`}>
                       {lunar.day === 1 ? `${lunar.day}/${lunar.month}` : lunar.day}
                     </span>
@@ -227,7 +224,10 @@ export default function DutyCalendar({
                           title={<span className="dc-pop__title">{D.shifts[d.shift] || d.shift} · {dayjs(d.dutyDate).format('DD/MM')}</span>}
                           content={renderDetails(d, () => setOpenId(null))}
                         >
-                          <div
+                          <button type="button"
+                            aria-expanded={openId === d.id}
+                            aria-label={`${personName(d)} · ${D.shifts[d.shift] || d.shift}`}
+                            onKeyDown={event => { if (event.key === 'Escape') setOpenId(null); }}
                             className="dc-event"
                             style={{ '--c': tone.c, '--s': tone.s, '--dot': tone.dot }}
                             onClick={(e) => { e.stopPropagation(); setSelected(day); }}
@@ -236,7 +236,7 @@ export default function DutyCalendar({
                             <span className="dc-event__dot" />
                             <span className="dc-event__name">{personName(d)}</span>
                             {d.startTime && <span className="dc-event__time">{d.startTime}</span>}
-                          </div>
+                          </button>
                         </Popover>
                       );
                     })}

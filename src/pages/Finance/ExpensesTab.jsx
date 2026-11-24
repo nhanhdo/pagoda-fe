@@ -12,7 +12,7 @@ import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { printExpenseVoucher } from '../../utils/printDocs';
-import { guardedClose } from '../../utils/formGuard';
+import { guardedClose, initializeForm } from '../../utils/formGuard';
 import { vnd, compactVnd, STATUS_TONE, CATEGORY_COLOR, softOf, personName, presetRanges, ymd, QUICK_AMOUNTS } from './financeShared';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
@@ -20,7 +20,7 @@ const { RangePicker } = DatePicker;
 const METHOD_ICON = { 'tiền_mặt': <WalletOutlined />, 'chuyển_khoản': <BankOutlined />, 'khác': <EllipsisOutlined /> };
 const PAGE = 10;
 
-export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal, onChanged, focusExpenseId, focusKey }) {
+export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal, onCreateHandled, onChanged, focusExpenseId, focusKey }) {
   const { user } = useAuth();
   const { lang } = useLanguage();
   const [form] = Form.useForm();
@@ -37,7 +37,6 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
   const watchFundId = Form.useWatch('fundId', form);
   const watchAmount = Form.useWatch('amount', form);
   const [focusId, setFocusId] = useState(focusExpenseId ? Number(focusExpenseId) : null);
-  const firstSignal = useRef(createSignal);
 
   // Typing waits 300ms before searching; a slower, older response never overwrites a newer one
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -85,13 +84,17 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
     setEditing(record || 'new');
     form.resetFields();
     if (record) {
-      form.setFieldsValue({ ...record, amount: Number(record.amount), expenseDate: dayjs(record.expenseDate) });
+      initializeForm(form, { ...record, amount: Number(record.amount), expenseDate: dayjs(record.expenseDate) });
     } else {
       const general = funds.find(f => f.code === 'QUY_CHUNG') || funds[0];
-      form.setFieldsValue({ fundId: general?.id, expenseDate: dayjs(), paymentMethod: 'tiền_mặt' });
+      initializeForm(form, { fundId: general?.id, expenseDate: dayjs(), paymentMethod: 'tiền_mặt' });
     }
   };
-  useEffect(() => { if (createSignal !== firstSignal.current) openForm(); }, [createSignal]);
+  useEffect(() => {
+    if (!createSignal) return;
+    openForm();
+    onCreateHandled();
+  }, [createSignal]);
 
   const save = async (values) => {
     setSaving(true);

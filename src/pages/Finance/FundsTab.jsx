@@ -3,7 +3,7 @@ import { Button, Modal, Form, Input, InputNumber, Switch, Popconfirm, Tooltip, m
 import { PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose } from '../../utils/formGuard';
+import { guardedClose, initializeForm } from '../../utils/formGuard';
 import { vnd, compactVnd, softOf } from './financeShared';
 
 const SWATCHES = ['#c47f36', '#4d8fc7', '#d9646c', '#4f9a72', '#8b6fc9', '#3a9483', '#d39a2c', '#b8893a'];
@@ -17,7 +17,7 @@ export default function FundsTab({ F, funds, onChanged }) {
   const open = (fund = null) => {
     setEditing(fund || 'new');
     form.resetFields();
-    form.setFieldsValue(fund
+    initializeForm(form, fund
       ? { ...fund, targetAmount: fund.targetAmount ? Number(fund.targetAmount) : null }
       : { color: SWATCHES[(funds.length) % SWATCHES.length], isActive: true });
   };

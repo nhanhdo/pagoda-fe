@@ -44,8 +44,8 @@ export const imgSrc = (p) => (!p ? null : p.startsWith('http') || p.startsWith('
 
 /**
  * Column pinning for list tables. The actions column is always pinned right so edit/delete stay
- * reachable on phones; the identity column is pinned left only when there is room for it (≥768px),
+ * reachable on phones; the identity column is pinned left only when there is room for it (≥1200px),
  * otherwise a 260px pinned name would leave no space for anything else on a 360px screen.
  */
-export const pinLeft = () => (typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches ? 'left' : undefined);
+export const pinLeft = () => (typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1200px)').matches ? 'left' : undefined);
 export const PIN_RIGHT = 'right';

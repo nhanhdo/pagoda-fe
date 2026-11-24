@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Input, Segmented } from 'antd';
 import { PlusOutlined, SearchOutlined, CalendarOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -9,13 +9,14 @@ import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import { useCreateParam } from '../../utils/useCreateParam';
-import { KIND_TONE, nextFeast, feastCountdown } from './libraryShared';
+import { KINDS, KIND_TONE, nextFeast, feastCountdown } from './libraryShared';
 import FigureArt from './FigureArt';
 import FigureFormModal from './FigureFormModal';
 import '../Personnel/peopleShared.css';
 import './LibraryPage.css';
 
 const SOON_DAYS = 30;
+let libraryReturn;
 
 export default function LibraryPage() {
   const { t } = useLanguage();
@@ -23,12 +24,22 @@ export default function LibraryPage() {
   const { hasRole } = useAuth();
   const canEdit = hasRole('admin', 'truotri', 'thuki');
   const navigate = useNavigate();
+  const location = useLocation();
+  const [params, setParams] = useSearchParams();
+  const root = useRef(null);
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [query, setQuery] = useState('');
-  const [kind, setKind] = useState('all');
+  const query = params.get('q') || '';
+  const selectedKind = params.get('kind');
+  const kind = KINDS.includes(selectedKind) ? selectedKind : 'all';
+  const updateFilter = (key, value) => {
+    const next = new URLSearchParams(params);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setParams(next, { replace: true });
+  };
   const [form, setForm] = useState({ open: false, record: null });
 
   const fetchData = useCallback(async () => {
@@ -47,7 +58,22 @@ export default function LibraryPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useCreateParam(() => setForm({ open: true, record: null }), canEdit);
 
-  const openDetail = (id) => navigate(`/app/library/${id}`);
+  const scrollContainer = () => root.current?.closest('.ant-layout-content');
+  const openDetail = (id) => {
+    libraryReturn = { key: location.key, top: scrollContainer()?.scrollTop ?? 0 };
+    navigate(`/app/library/${id}`, { state: { libraryList: true } });
+  };
+  useEffect(() => {
+    if (loading || failed || libraryReturn?.key !== location.key) return;
+    const saved = libraryReturn;
+    const frame = requestAnimationFrame(() => {
+      const scroll = scrollContainer();
+      if (!scroll || libraryReturn !== saved) return;
+      scroll.scrollTop = saved.top;
+      libraryReturn = undefined;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loading, failed, location.key]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -74,7 +100,7 @@ export default function LibraryPage() {
   if (loading) return <PageSpinner />;
 
   return (
-    <div className="pp-page lib-page">
+    <div className="pp-page lib-page" ref={root}>
       <section className="pp-hero lib-hero section-anim section-d0">
         <div className="pp-hero__main">
           <div className="pp-hero__icon"><DharmaWheel size={26} /></div>
@@ -108,14 +134,15 @@ export default function LibraryPage() {
         <Input
           className="lib-search"
           prefix={<SearchOutlined style={{ color: '#7a6a5c' }} />}
+          aria-label={L.searchPlaceholder}
           placeholder={L.searchPlaceholder}
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={e => updateFilter('q', e.target.value)}
           allowClear
         />
         <Segmented
           value={kind}
-          onChange={setKind}
+          onChange={value => updateFilter('kind', value === 'all' ? '' : value)}
           options={[
             { value: 'all', label: `${L.all} · ${counts.all}` },
             { value: 'phat', label: `${L.kinds.phat} · ${counts.phat}` },

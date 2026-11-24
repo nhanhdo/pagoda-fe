@@ -24,7 +24,7 @@ import { solarToLunar, getBuddhistHolidays, getSolarTerm, getHoangDaoHours, getT
 import './NewsPage.css';
 import DharmaWheel from '../../components/DharmaWheel/DharmaWheel';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
-import { guardedClose, rules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules } from '../../utils/formGuard';
 
 const MAX_IMAGE_MB = 10;
 // Short month for the date tile: "T11" in Vietnamese (dayjs 'MMM' gives "thg 11"), "Nov" in English
@@ -556,14 +556,14 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
     if (open) {
       if (editRecord) {
         const tm = editRecord.eventTime && /^\d{1,2}:\d{2}/.test(editRecord.eventTime) ? dayjs(`2000-01-01T${editRecord.eventTime.padStart(5, '0').slice(0, 5)}`) : undefined;
-        form.setFieldsValue({
+        initializeForm(form, {
           ...editRecord,
           eventDate: editRecord.eventDate ? dayjs(editRecord.eventDate) : undefined,
           eventTime: tm && tm.isValid() ? tm : undefined,
         });
       } else {
         form.resetFields();
-        form.setFieldsValue({
+        initializeForm(form, {
           type: prefillDate ? 'event' : defaultType,
           isPublished: true,
           ...(prefillDate ? { eventDate: prefillDate } : {}),
@@ -1088,20 +1088,11 @@ export default function NewsPage() {
     <div>
       {/* ── Banner ── */}
       <div className="news-banner section-anim section-d0">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative', zIndex: 1 }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: 14,
-            background: '#fff', border: '1.5px solid #f0dcc0', color: '#c47f36', boxShadow: '0 4px 12px rgba(196,127,54,.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            fontSize: 28,
-          }}>
-            <DharmaWheel />
-          </div>
+        <div className="news-banner__main">
+          <span className="news-banner__mark" aria-hidden="true"><DharmaWheel /></span>
           <div>
-            <div style={{ color: '#5a3a22', fontWeight: 800, fontSize: 20, letterSpacing: 0.3 }}>{t.news.title}</div>
-            <div style={{ color: '#7a6a5c', fontSize: 13, marginTop: 3 }}>
-              {t.news.bannerSubtitle}
-            </div>
+            <h1>{t.news.title}</h1>
+            <p>{t.news.bannerSubtitle}</p>
           </div>
         </div>
         {canPost && (
@@ -1132,7 +1123,7 @@ export default function NewsPage() {
             {showFilters && (
               <div className="news-toolbar__filters">
                 <Input
-                  className="news-search"
+                  className="news-search" aria-label={t.common.search}
                   prefix={<SearchOutlined style={{ color: '#7a6a5c' }} />}
                   placeholder={t.news.searchPlaceholder}
                   value={searchText}

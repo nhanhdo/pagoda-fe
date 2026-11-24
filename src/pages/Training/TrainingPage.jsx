@@ -16,7 +16,7 @@ import {
 import dayjs from 'dayjs';
 import { useTrainingPage, TRAINING_TYPES, effectiveStatus } from './useTrainingPage';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { HiddenSubmit } from '../Personnel/PersonnelForm';
 import './TrainingPage.css';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
@@ -122,7 +122,7 @@ export default function TrainingPage() {
   const openModal = (record = null) => {
     setEditRecord(record);
     if (record) {
-      form.setFieldsValue({
+      initializeForm(form, {
         ...record,
         startDate: record.startDate ? dayjs(record.startDate) : null,
         endDate: record.endDate ? dayjs(record.endDate) : null,

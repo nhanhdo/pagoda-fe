@@ -1,299 +1,280 @@
-import { useCreateParam } from '../../utils/useCreateParam';
-import React, { useEffect, useState } from 'react';
-import PageSpinner from '../../components/PageSpinner/PageSpinner';
-import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Table, Button, Input, Select, Avatar, Popconfirm, Tooltip, Pagination, Segmented,
+  Alert, Avatar, Button, ConfigProvider, Input, Modal, Pagination, Segmented, Select, Skeleton, Spin, Table, Tooltip,
 } from 'antd';
 import {
-  PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
-  EyeOutlined, FileExcelOutlined, TableOutlined, AppstoreOutlined, TeamOutlined,
+  AppstoreOutlined, DeleteOutlined, EditOutlined, EyeOutlined, FileExcelOutlined,
+  PlusOutlined, SearchOutlined, TableOutlined,
 } from '@ant-design/icons';
-import { exportToExcel } from '../../utils/exportData';
-import { useNavigate } from 'react-router-dom';
+import { useReducedMotion } from 'framer-motion';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { useCreateParam } from '../../utils/useCreateParam';
+import { exportToExcel } from '../../utils/exportData';
 import PersonnelFormModal from './PersonnelForm';
 import { usePersonnelList } from './usePersonnelList';
-import {
-  toneOf, statusToneOf, positionLabel, initialOf, imgSrc, pinLeft, PIN_RIGHT } from './personnelShared';
-import { useLanguage } from '../../i18n/LanguageContext';
-import './PersonnelList.css';
+import { initialOf, imgSrc, positionLabel, statusToneOf, toneOf } from './personnelShared';
 import './peopleShared.css';
+import './PersonnelList.css';
+
+// Only restore the matching history entry when returning from a personnel profile.
+let listReturn;
+
+function PersonIdentity({ record, link, onOpen }) {
+  const tone = toneOf(record.type);
+  return (
+    <div className="person-cell">
+      <Avatar size={36} src={imgSrc(record.photo)} className="person-cell__avatar"
+        style={{ background: tone.s, color: '#61452f' }}>
+        {initialOf(record.fullName)}
+      </Avatar>
+      <div className="person-cell__text">
+        <Link className="person-cell__name" {...link} onClick={onOpen}>{record.fullName}</Link>
+        {(record.dharmName || record.code) && (
+          <div className="person-cell__sub">
+            {record.dharmName && <span>{record.dharmName}</span>}
+            {record.dharmName && record.code && <span aria-hidden="true">·</span>}
+            {record.code && <span className="tbl-mono">{record.code}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PersonBadge({ value, labels, status = false }) {
+  const tone = status ? statusToneOf(value) : toneOf(value);
+  return (
+    <span className={`tbl-pill personnel-badge${status ? ' personnel-badge--status' : ''}`} style={{ background: tone.s }}>
+      {status && <span className="tbl-pill__dot" style={{ background: tone.c }} />}
+      {labels[value] || value || '—'}
+    </span>
+  );
+}
 
 export default function PersonnelList() {
   const {
-    data, loading, total, page, search, filterType, filterStatus,
-    modalOpen, editRecord,
-    setPage, setSearch, setFilterType, setFilterStatus,
-    setModalOpen, setEditRecord,
-    fetchData, handleDelete,
+    data, total, loading, loadError, page, search, filterType, filterStatus, viewChoice,
+    setPage, setSearch, setFilterType, setFilterStatus, setViewChoice, clearFilters, refresh, handleDelete,
   } = usePersonnelList();
-
   const { canManage, isAdmin, hasRole } = useAuth();
-  useCreateParam(() => openEdit(null), canManage());
+  const { t } = useLanguage();
+  const P = t.personnel;
+  const location = useLocation();
   const navigate = useNavigate();
-  const { t: tt } = useLanguage();
-  const P = tt.personnel;
-  // Phones default to the card view (a wide table is hard to use there); an explicit choice wins
-  const [viewChoice, setViewChoice] = useState(null);
-  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 767px)').matches);
+  const reducedMotion = useReducedMotion();
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 991px)').matches);
+  const [editor, setEditor] = useState({ open: false, record: null });
+  const [deletion, setDeletion] = useState({ open: false, record: null });
+  const [deleting, setDeleting] = useState(false);
+  const root = useRef(null);
+  const searchInput = useRef(null);
+  const dialogTrigger = useRef(null);
+
   useEffect(() => {
-    const mq = window.matchMedia?.('(max-width: 767px)');
-    if (!mq) return undefined;
-    const on = () => setNarrow(mq.matches);
-    if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener?.(on);
-    return () => { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener?.(on); };
+    const media = window.matchMedia('(max-width: 991px)');
+    const update = () => setNarrow(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
   }, []);
-  const viewMode = viewChoice || (narrow ? 'card' : 'table');
-  const setViewMode = setViewChoice;
-  const canRemove = isAdmin() || hasRole('truotri');
-  const isFiltered = Boolean(search.trim() || filterType || filterStatus);
 
-  const openDetail = (r) => navigate(`/app/personnel/${r.id}`);
-  const openEdit = (r) => { setEditRecord(r); setModalOpen(true); };
+  const viewMode = ['table', 'card'].includes(viewChoice) ? viewChoice : narrow ? 'card' : 'table';
+  const filtered = Boolean(search.trim() || filterType || filterStatus);
+  const editable = canManage();
+  const removable = isAdmin() || hasRole('truotri');
 
-  const handleExport = () => {
-    exportToExcel(data, [
-      { header: P.colCode, key: 'code' },
-      { header: tt.common.name, key: 'fullName' },
-      { header: P.dharmName, key: 'dharmName' },
-      { header: tt.common.type, render: (r) => P.types[r.type] || r.type },
-      { header: P.colPosition, render: (r) => positionLabel(tt, r.position) },
-      { header: P.colPhone, key: 'phone' },
-      { header: tt.common.email, key: 'email' },
-      { header: tt.common.status, render: (r) => P.statuses[r.status] || r.status },
-    ], 'nhan-su');
+  const rememberTrigger = (event) => { dialogTrigger.current = event?.currentTarget ?? document.activeElement; };
+  const restoreTrigger = () => {
+    const trigger = dialogTrigger.current;
+    if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    else searchInput.current?.focus({ preventScroll: true });
+  };
+  const openEditor = (record, event) => {
+    rememberTrigger(event);
+    setEditor({ open: true, record });
+  };
+  const closeEditor = () => setEditor(current => ({ ...current, open: false }));
+  useCreateParam(() => openEditor(null), editable);
+
+  const scrollContainer = () => root.current?.closest('.ant-layout-content');
+  const detailLink = (r) => ({ to: `/app/personnel/${r.id}`, state: { personnelList: true } });
+  const rememberList = (event) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+    listReturn = { key: location.key, top: scrollContainer()?.scrollTop ?? 0 };
+    return true;
+  };
+  const openRow = (event, record) => {
+    if (event.target.closest('a, button') || !rememberList(event)) return;
+    const { to, state } = detailLink(record);
+    navigate(to, { state });
+  };
+  useEffect(() => {
+    if (loading || loadError || listReturn?.key !== location.key) return;
+    const saved = listReturn;
+    // Restore after the layout has handled route scrolling and rows are in the DOM.
+    const frame = requestAnimationFrame(() => {
+      const scroll = scrollContainer();
+      if (!scroll || listReturn !== saved) return;
+      scroll.scrollTop = saved.top;
+      listReturn = undefined;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loading, loadError, location.key]);
+
+  const confirmDelete = async () => {
+    if (deleting || !deletion.open) return;
+    setDeleting(true);
+    const removed = await handleDelete(deletion.record.id);
+    setDeleting(false);
+    if (removed) {
+      dialogTrigger.current = null;
+      setDeletion(current => ({ ...current, open: false }));
+    }
   };
 
-  const ActionBtns = ({ r }) => (
-    <div className="personnel-action-group" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+  const handleExport = () => exportToExcel(data, [
+    { header: P.colCode, key: 'code' },
+    { header: t.common.name, key: 'fullName' },
+    { header: P.dharmName, key: 'dharmName' },
+    { header: t.common.type, render: (r) => P.types[r.type] || r.type },
+    { header: P.colPosition, render: (r) => positionLabel(t, r.position) },
+    { header: P.colPhone, key: 'phone' },
+    { header: t.common.email, key: 'email' },
+    { header: t.common.status, render: (r) => P.statuses[r.status] || r.status },
+  ], 'nhan-su');
+
+  const renderActions = (r) => (
+    <div className="personnel-action-group">
       <Tooltip title={P.viewDetail}>
-        <Button type="text" aria-label={P.viewDetail} icon={<EyeOutlined />} onClick={() => openDetail(r)} />
+        <Link className="personnel-action personnel-action--view" aria-label={P.viewDetail} {...detailLink(r)} onClick={rememberList}>
+          <EyeOutlined />
+        </Link>
       </Tooltip>
-      {canManage() && (
+      {editable && (
         <Tooltip title={P.editTooltip}>
-          <Button type="text" aria-label={P.editTooltip} icon={<EditOutlined />} onClick={() => openEdit(r)} />
+          <Button className="personnel-action" type="text" aria-label={P.editTooltip}
+            icon={<EditOutlined />} onClick={(event) => openEditor(r, event)} />
         </Tooltip>
       )}
-      {canRemove && (
-        <Popconfirm title={tt.common.confirmDelete} onConfirm={() => handleDelete(r.id)} okText={tt.common.delete} cancelText={tt.common.cancel} okButtonProps={{ danger: true }}>
-          <Tooltip title={tt.common.delete}>
-            <Button type="text" danger aria-label={tt.common.delete} icon={<DeleteOutlined />} />
-          </Tooltip>
-        </Popconfirm>
+      {removable && (
+        <Tooltip title={t.common.delete}>
+          <Button className="personnel-action" type="text" danger aria-label={t.common.delete}
+            icon={<DeleteOutlined />} onClick={(event) => { rememberTrigger(event); setDeletion({ open: true, record: r }); }} />
+        </Tooltip>
       )}
     </div>
   );
 
-  const avatarOf = (r, size) => {
-    const tone = toneOf(r.type);
-    return r.photo
-      ? <Avatar src={imgSrc(r.photo)} size={size} className="person-cell__avatar" />
-      : <Avatar size={size} className="person-cell__avatar" style={{ background: tone.s, color: tone.c, fontWeight: 700 }}>{initialOf(r.fullName)}</Avatar>;
-  };
-
+  const identity = (r) => <PersonIdentity record={r} link={detailLink(r)} onOpen={rememberList} />;
+  const typeBadge = (r) => <PersonBadge value={r.type} labels={P.types} />;
+  const statusBadge = (r) => <PersonBadge value={r.status} labels={P.statuses} status />;
   const columns = [
-    {
-      fixed: pinLeft(),
-      title: P.colName,
-      key: 'name',
-      width: 280,
-      render: (_, r) => (
-        <div className="person-cell">
-          {avatarOf(r, 40)}
-          <div className="person-cell__text">
-            <div className="person-cell__name">{r.fullName}</div>
-            <div className="person-cell__sub">
-              {r.dharmName && <span>{r.dharmName}</span>}
-              {r.dharmName && r.code && <span className="person-cell__sep">·</span>}
-              {r.code && <span className="tbl-mono">{r.code}</span>}
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: P.colType,
-      dataIndex: 'type',
-      width: 150,
-      render: (v) => {
-        const tone = toneOf(v);
-        return <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>{P.types[v] || v}</span>;
-      },
-    },
-    {
-      title: P.colPosition,
-      dataIndex: 'position',
-      width: 160,
-      render: (v) => v
-        ? <span style={{ color: '#5a4636' }}>{positionLabel(tt, v)}</span>
-        : <span className="tbl-muted">—</span>,
-    },
-    {
-      title: P.colPhone,
-      dataIndex: 'phone',
-      width: 140,
-      render: (v) => v
-        ? <span className="tbl-mono" style={{ color: '#5a4636' }}>{v}</span>
-        : <span className="tbl-muted">—</span>,
-    },
-    {
-      title: tt.common.status,
-      dataIndex: 'status',
-      width: 160,
-      render: (v) => {
-        const tone = statusToneOf(v);
-        return (
-          <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>
-            <span className="tbl-pill__dot" />{P.statuses[v] || v}
-          </span>
-        );
-      },
-    },
-    {
-      title: '',
-      key: 'actions', fixed: PIN_RIGHT,
-      width: 120,
-      align: 'right',
-      render: (_, r) => <ActionBtns r={r} />,
-    },
+    { title: P.colName, key: 'name', width: 256, render: (_, r) => identity(r) },
+    { title: P.colPosition, key: 'position', width: 148, render: (_, r) => positionLabel(t, r.position) || '—' },
+    { title: t.common.status, key: 'status', width: 148, render: (_, r) => statusBadge(r) },
+    { title: P.colType, key: 'type', width: 148, render: (_, r) => typeBadge(r) },
+    { title: P.colPhone, dataIndex: 'phone', width: 130, render: (v) => <span className="tbl-mono">{v || '—'}</span> },
+    { title: t.common.actions, key: 'actions', width: 148, align: 'right', render: (_, r) => renderActions(r) },
   ];
-
-  if (loading && !data.length && !isFiltered) return <PageSpinner />;
-
-  const emptyNode = isFiltered
-    ? <LotusEmpty description={P.emptyFiltered} hint={P.emptyFilteredHint} />
-    : <LotusEmpty description={P.emptyTitle} hint={canManage() ? P.emptyHint : ''} />;
+  const showData = data.length > 0 && !loadError;
 
   return (
-    <div className="pp-page">
-      {/* ── Header ── */}
-      <section className="pp-hero section-anim section-d0">
-        <div className="pp-hero__main">
-          <div className="pp-hero__icon"><TeamOutlined /></div>
+    <ConfigProvider theme={{ token: {
+      motion: !reducedMotion, motionDurationFast: '0.14s', motionDurationMid: '0.22s', motionDurationSlow: '0.22s',
+    } }}>
+      <div className="personnel-page" ref={root}>
+        <section className="personnel-heading personnel-enter">
           <div>
-            <h1 className="pp-hero__title">{P.title}</h1>
-            <p className="pp-hero__sub">{P.subtitle}</p>
+            <h1>{P.title}</h1>
+            <p>{P.subtitle}</p>
           </div>
-        </div>
-        {canManage() && (
-          <div className="pp-hero__actions">
-            <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => openEdit(null)}>
+          {editable && (
+            <Button type="primary" icon={<PlusOutlined aria-hidden="true" />} className="personnel-primary" onClick={(event) => openEditor(null, event)}>
               {P.addNew}
             </Button>
+          )}
+        </section>
+
+        <section className="personnel-surface personnel-enter">
+          <div className="personnel-toolbar">
+            <div className="personnel-toolbar__filters">
+              <Input className="pp-search" ref={searchInput} aria-label={P.searchPlaceholder} placeholder={P.searchPlaceholder}
+                prefix={<SearchOutlined />} value={search} onChange={(e) => setSearch(e.target.value)} allowClear />
+              <Select className="pp-select" aria-label={P.colType} value={filterType} onChange={setFilterType}
+                popupMatchSelectWidth={false}
+                options={[{ value: '', label: P.allTypes }, ...Object.entries(P.types).map(([value, label]) => ({ value, label }))]} />
+              <Select className="pp-select" aria-label={t.common.status} value={filterStatus} onChange={setFilterStatus}
+                popupMatchSelectWidth={false}
+                options={[{ value: '', label: P.allStatuses }, ...Object.entries(P.statuses).map(([value, label]) => ({ value, label }))]} />
+            </div>
+            <div className="personnel-toolbar__tools">
+              <Segmented className="personnel-mode" aria-label={P.displayMode} value={viewMode} onChange={setViewChoice}
+                options={[
+                  { value: 'table', icon: <TableOutlined aria-hidden="true" />, label: P.tableView },
+                  { value: 'card', icon: <AppstoreOutlined aria-hidden="true" />, label: P.cardView },
+                ]} />
+              <Button className="personnel-export" icon={<FileExcelOutlined aria-hidden="true" />} onClick={handleExport} disabled={!showData || loading}>
+                {t.common.exportExcel}
+              </Button>
+            </div>
           </div>
-        )}
-      </section>
 
-      <section className="pp-card section-anim section-d1">
-        {/* ── Toolbar ── */}
-        <div className="pp-toolbar">
-          <Input
-            className="pp-search"
-            placeholder={P.searchPlaceholder}
-            prefix={<SearchOutlined style={{ color: '#bfae99' }} />}
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            allowClear
-          />
-          <Select className="pp-select" value={filterType} onChange={(v) => { setFilterType(v); setPage(1); }}
-            options={[{ value: '', label: P.allTypes }, ...Object.entries(P.types).map(([k, v]) => ({ value: k, label: v }))]} />
-          <Select className="pp-select" value={filterStatus} onChange={(v) => { setFilterStatus(v); setPage(1); }}
-            options={[{ value: '', label: P.allStatuses }, ...Object.entries(P.statuses).map(([k, v]) => ({ value: k, label: v }))]} />
-          <div className="pp-toolbar__end">
-            <Segmented
-              className="pp-seg"
-              value={viewMode}
-              onChange={setViewMode}
-              options={[
-                { value: 'table', icon: <TableOutlined />, title: P.tableView },
-                { value: 'card', icon: <AppstoreOutlined />, title: P.cardView },
-              ]}
-            />
-            <Button className="pp-tool-btn" icon={<FileExcelOutlined />} onClick={handleExport} disabled={!data.length}>
-              {tt.common.exportExcel}
-            </Button>
-          </div>
-        </div>
-
-        {/* ── Content ── */}
-        {viewMode === 'table' ? (
-          <Table
-            dataSource={data}
-            columns={columns}
-            rowKey="id"
-            loading={loading}
-            pagination={{
-              current: page, total, pageSize: 10, onChange: setPage, showSizeChanger: false,
-              showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${P.totalLabel}`,
-            }}
-            size="middle"
-            className="personnel-table"
-            scroll={{ x: 'max-content' }}
-            locale={{ emptyText: emptyNode }}
-            onRow={(r) => ({ style: { cursor: 'pointer' }, onClick: () => openDetail(r) })}
-          />
-        ) : !data.length ? emptyNode : (
-          <div className="personnel-card-grid">
-            {data.map((r) => {
-              const tone = toneOf(r.type);
-              const st = statusToneOf(r.status);
-              return (
-                <div
-                  key={r.id}
-                  className="personnel-card"
-                  role="link"
-                  tabIndex={0}
-                  aria-label={`${P.viewDetail}: ${r.dharmName || r.fullName}`}
-                  onClick={() => openDetail(r)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(r); } }}
-                >
-                  <div className="personnel-card__accent" style={{ background: `linear-gradient(90deg, ${tone.c}, ${tone.s})` }} />
-                  {r.code && <span className="personnel-card__code tbl-mono">{r.code}</span>}
-
-                  <div className="personnel-card__body">
-                    <div className="personnel-card__avatar">
-                      {avatarOf(r, 72)}
-                      <div className="personnel-card__avatar-ring" style={{ borderColor: tone.c }} />
+          <div className="personnel-list" aria-busy={loading}>
+            <div className="personnel-results" role="status">
+              {!loading && !loadError && <span>{total} {P.totalLabel}</span>}
+            </div>
+            {loadError && !loading ? (
+              <Alert className="personnel-feedback" showIcon type="error" message={P.loadError}
+                action={<Button onClick={refresh}>{P.retry}</Button>} />
+            ) : loading && !data.length ? (
+              <div className="personnel-skeleton"><Skeleton active title={false} paragraph={{ rows: 5 }} /></div>
+            ) : showData ? (
+              <Spin spinning={loading} delay={160}>
+                <div key={viewMode} className="personnel-view">
+                  {viewMode === 'table' ? (
+                    <Table className="personnel-table" dataSource={data} columns={columns} rowKey="id"
+                      size="middle" pagination={false} scroll={{ x: 980 }}
+                      onRow={(record) => ({ onClick: (event) => openRow(event, record) })} />
+                  ) : (
+                    <div className="personnel-card-grid">
+                      {data.map(r => (
+                        <article className="personnel-card" key={r.id}>
+                          {identity(r)}
+                          {r.position && <div className="personnel-card__position">{positionLabel(t, r.position)}</div>}
+                          <div className="personnel-card__badges">{typeBadge(r)}{statusBadge(r)}</div>
+                          <div className="personnel-card__footer">{renderActions(r)}</div>
+                        </article>
+                      ))}
                     </div>
-                    <span className="tbl-pill" style={{ color: tone.c, background: tone.s }}>{P.types[r.type] || r.type}</span>
-                    <div className="personnel-card__name">{r.dharmName || r.fullName}</div>
-                    {r.dharmName && <div className="personnel-card__subname">{r.fullName}</div>}
-                    {r.position && <div className="personnel-card__position">{positionLabel(tt, r.position)}</div>}
-                    <div className="personnel-card__status" style={{ color: st.c }}>
-                      <span className="personnel-card__status-dot" style={{ background: st.c }} />
-                      {P.statuses[r.status] || r.status}
-                    </div>
-                  </div>
-
-                  <div className="personnel-card__footer">
-                    <ActionBtns r={r} />
-                  </div>
+                  )}
                 </div>
-              );
-            })}
+              </Spin>
+            ) : (
+              <div className="personnel-feedback personnel-empty">
+                <LotusEmpty description={filtered ? P.emptyFiltered : P.emptyTitle}
+                  hint={filtered ? P.emptyFilteredHint : editable ? P.emptyHint : ''} />
+                {filtered && <Button onClick={clearFilters}>{P.clearFilters}</Button>}
+              </div>
+            )}
+            {showData && total > 10 && (
+              <Pagination className="personnel-pagination" current={page} total={total} pageSize={10} onChange={setPage}
+                responsive showSizeChanger={false} showTotal={(n, range) => `${range[0]}–${range[1]} / ${n}`} />
+            )}
           </div>
-        )}
-        {viewMode === 'card' && total > 10 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-            <Pagination
-              current={page}
-              total={total}
-              pageSize={10}
-              onChange={setPage}
-              showSizeChanger={false}
-              showTotal={(n, range) => `${range[0]}-${range[1]} / ${n} ${P.totalLabel}`}
-            />
-          </div>
-        )}
-      </section>
+        </section>
 
-      <PersonnelFormModal
-        open={modalOpen}
-        record={editRecord}
-        onClose={() => setModalOpen(false)}
-        onSaved={() => { setModalOpen(false); fetchData(); }}
-      />
-    </div>
+        <PersonnelFormModal open={editor.open} record={editor.record} onClose={closeEditor} afterClose={restoreTrigger}
+          onSaved={() => { closeEditor(); refresh(); }} />
+        <Modal className="personnel-dialog" open={deletion.open} title={t.common.confirmDelete}
+          onCancel={() => { if (!deleting) setDeletion(current => ({ ...current, open: false })); }} onOk={confirmDelete}
+          okText={t.common.delete} cancelText={t.common.cancel} confirmLoading={deleting}
+          maskClosable={false} keyboard={!deleting} afterClose={restoreTrigger} focusTriggerAfterClose={false}
+          cancelButtonProps={{ disabled: deleting, autoFocus: true }} okButtonProps={{ danger: true }}>
+          <p>{deletion.record?.fullName}</p>
+        </Modal>
+      </div>
+    </ConfigProvider>
   );
 }

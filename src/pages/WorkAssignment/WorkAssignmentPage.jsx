@@ -17,7 +17,7 @@ import {
   useWorkAssignmentPage, WORK_STATUSES, PRIORITIES, STATUS_TONE, PRIORITY_TONE, isOverdue,
 } from './useWorkAssignmentPage';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules as makeRules } from '../../utils/formGuard';
 import { HiddenSubmit } from '../Personnel/PersonnelForm';
 import { personName, personOptionLabel, initialOf, TONES, pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 import '../Personnel/peopleShared.css';
@@ -63,10 +63,6 @@ function KanbanCard({ record, W, t, canManage, onEdit, onDelete, onMove, onDragS
       draggable={canManage}
       onDragStart={(e) => onDragStart(e, record)}
       onDragEnd={onDragEnd}
-      tabIndex={canManage ? 0 : -1}
-      role={canManage ? 'button' : undefined}
-      aria-label={record.title}
-      onKeyDown={(e) => { if (canManage && e.key === 'Enter' && e.target === e.currentTarget) onEdit(record); }}
     >
       <div className="kanban-card__top">
         <div className="kanban-card__title">{record.title}</div>
@@ -180,7 +176,7 @@ function WorkFormModal({ open, record, personnel, saving, W, t, onClose, onSubmi
   useEffect(() => {
     if (!open) return;
     if (record) {
-      form.setFieldsValue({
+      initializeForm(form, {
         ...record,
         personnelId: record.personnelId ?? record.personnel?.id,
         startDate: record.startDate ? dayjs(record.startDate) : null,

@@ -66,7 +66,7 @@ export default function Login() {
   };
 
   return (
-    <div className="lg-root">
+    <main className="lg-root">
       <LangToggle className="lg-lang" />
 
       <div className="lg-center">
@@ -103,6 +103,7 @@ export default function Login() {
               <Form
                 layout="vertical"
                 onFinish={onFinish}
+                scrollToFirstError={{ focus: true }}
                 size="large"
                 requiredMark={false}
               >
@@ -187,6 +188,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

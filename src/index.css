@@ -1135,3 +1135,234 @@ body {
   .personnel-table td .ant-btn-link.ant-btn-icon-only { width: 40px; height: 40px; }
   .cmt__act { padding: 8px 4px; margin: -8px 0; }
 }
+
+@media (max-width: 767px) {
+  .hdr-lang, .lg-root .hdr-lang.lg-lang {
+    --opt-w: 34px;
+    flex-shrink: 0;
+    padding: 0 3px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .hdr-lang::before {
+    content: '';
+    position: absolute;
+    inset: 7px 0;
+    border-radius: inherit;
+    background: #f8f3eb;
+    border: 1px solid #eee5d9;
+    pointer-events: none;
+  }
+  .hdr-lang__opt { height: 44px; }
+  .hdr-lang__thumb {
+    top: 9px;
+    height: 26px;
+    box-shadow: 0 1px 2px #69451c1f;
+  }
+}
+
+/* Shared app surfaces and motion */
+:root {
+  --ui-fast: 140ms;
+  --ui-state: 220ms;
+  --ui-enter: 320ms;
+  --ui-ease: cubic-bezier(.22, 1, .36, 1);
+  --ui-primary: #93521c;
+  --ui-primary-hover: #793f16;
+  --ui-focus: #8b501e;
+  --ui-surface: #fffdf9;
+}
+
+.app-skip {
+  position: fixed; top: 8px; left: 8px; z-index: 1200;
+  padding: 8px 12px; border-radius: 8px; background: var(--ui-primary);
+  color: #fff; transform: translateY(calc(-100% - 8px));
+}
+.app-skip:focus { transform: none; color: #fff; }
+.app-content:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
+.app-shell .ant-layout-sider { transition-duration: var(--ui-state); }
+.app-drawer .ant-drawer-content-wrapper, .app-drawer .ant-drawer-mask { transition-duration: var(--ui-state); }
+.sb-item .sb-current {
+  position: absolute; inset: 0; border-radius: inherit;
+  background: #f7e7d3; border-inline-start: 3px solid var(--ui-primary);
+  pointer-events: none;
+}
+.sb-item > :not(.sb-current) { position: relative; }
+.app-route {
+  min-width: 0; max-width: 1560px; margin-inline: auto;
+}
+.app-route :is(.pp-hero,.bf-hero,.bk-hero,.cer-hero,.dept-hero,.dn-hero,.fin-hero,.rd-hero,.tr-hero,.um-hero,.news-banner) {
+  gap: 10px 16px; padding: 12px 0 14px; border: 0;
+  border-bottom: 1px solid var(--color-border); border-radius: 0;
+  background: none; box-shadow: none;
+}
+.app-route :is(.pp-hero__icon,.bf-hero__icon,.bk-hero__icon,.cer-hero__icon,.dept-hero__icon,.dn-hero__icon,.fin-hero__icon,.rd-hero__icon,.tr-hero__icon,.um-hero__icon) {
+  width: 38px; height: 38px; flex: 0 0 38px; border: 0;
+  border-radius: 9px; box-shadow: none; background: #f7e9d7;
+  color: var(--ui-primary); font-size: 18px;
+}
+.app-route :is(.pp-hero__title,.bf-hero__title,.bk-hero__title,.cer-hero__title,.dept-hero__title,.dn-hero__title,.fin-hero__title,.rd-hero__title,.tr-hero__title,.um-hero__title,.news-banner h1) {
+  color: var(--color-ink); font-size: clamp(21px, 2vw, 26px);
+  line-height: 1.28; overflow-wrap: anywhere;
+}
+.app-route :is(.pp-hero__sub,.bf-hero__sub,.bk-hero__sub,.cer-hero__sub,.dept-hero__sub,.dn-hero__sub,.fin-hero__sub,.rd-hero__sub,.tr-hero__sub,.um-hero__sub) {
+  color: #6d5544;
+}
+.app-route :is(.pp-card,.db-card,.fin-card,.bk-card,.dept-card,.news-widget,.bf-stat,.dn-stat,.rd-stat,.tr-stat,.um-stat,.pp-stat,.db-kpi) {
+  min-width: 0; border-radius: 12px;
+  border: 1px solid var(--color-border); box-shadow: none;
+  background: var(--ui-surface);
+}
+.app-route :is(.pp-toolbar,.bf-toolbar,.dn-toolbar,.rd-toolbar,.tr-toolbar,.um-toolbar,.dept-toolbar,.cer-toolbar,.news-toolbar__filters,.fin-toolbar) {
+  min-width: 0; align-items: center; gap: 8px 10px;
+}
+.app-route :is(.pp-search,.bf-search,.dn-search,.rd-search,.tr-search,.um-search,.dept-search,.news-search) {
+  border-radius: 8px; min-width: 0;
+}
+.app-route :is(.pp-select,.bf-select,.dn-select,.rd-select,.tr-select,.um-select) .ant-select-selector {
+  border-radius: 8px !important;
+}
+.app-route .personnel-table:not(.personnel-page .personnel-table) .ant-table {
+  border-radius: 10px !important; box-shadow: none;
+}
+.app-route .personnel-table:not(.personnel-page .personnel-table) .ant-table-thead > tr > th {
+  padding-block: 9px !important; color: #654b36 !important;
+}
+.app-route .personnel-table:not(.personnel-page .personnel-table) .ant-table-tbody > tr > td {
+  padding-block: 8px !important;
+}
+.app-route .tbl-pill { white-space: normal; }
+.app-route .tbl-pill__dot { flex: 0 0 6px; }
+.app-route :is(.fin-kpi__value,.fin-fund__value,.dn-stat__value,.db-kpi__value) {
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+}
+.app-route :is(.bk-card__head,.bk-actions,.fin-toolbar,.fin-chart__legend) { flex-wrap: wrap; }
+.app-route .bk-card--danger { border-color: #e6bdba; }
+.app-route .db-hero {
+  background: #faf1e4; box-shadow: none; border: 1px solid var(--color-border);
+  padding: clamp(14px, 2vw, 24px); border-radius: 12px;
+}
+.app-route .db-hero__greet { font-size: clamp(21px, 2.3vw, 32px); line-height: 1.25; overflow-wrap: anywhere; }
+.app-route .db-kpi:hover { box-shadow: none; border-color: #d6b48f; }
+.app-route .dc-event:is(button) { text-align: left; width: 100%; border: 0; font-family: inherit; }
+.app-route .lib-d__panel { animation: m-rise var(--ui-state) var(--ui-ease) backwards; }
+.app-route .news-widget-item:focus-visible { outline-offset: -3px; }
+
+:where(.app-shell,.lg-root,.hp,.not-found) :is(a,button,[tabindex]):focus-visible {
+  outline: 2px solid var(--ui-focus); outline-offset: 2px;
+}
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous),
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):hover,
+:is(.pp-hero__btn,.bf-hero__btn,.tr-hero__btn,.um-hero__btn,.dept-add-btn,.dn-btn,.rd-btn,.fin-btn,.cer-btn,.dc-agenda__add,.news-add-btn,.glow-btn).ant-btn-primary:not(:disabled):is(:hover,:focus-visible) {
+  background: var(--ui-primary) !important; border-color: transparent; color: #fff;
+  box-shadow: none; animation: none; transform: none;
+}
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):hover { background: var(--ui-primary-hover) !important; }
+.app-shell :is(.ant-btn,.sb-item,.hdr-toggle,.hdr-icon-btn):active:not(:disabled) { transform: scale(.97); }
+.app-shell :is(.ant-btn,.hdr-toggle,.hdr-icon-btn) {
+  transition: color var(--ui-fast), background-color var(--ui-fast), border-color var(--ui-fast), transform var(--ui-fast);
+}
+.ant-modal .ant-modal-content { border-radius: 12px; }
+.ant-modal .ant-modal-body { overflow-wrap: anywhere; }
+.ant-message .ant-message-notice-content { border: 1px solid var(--color-border); }
+.section-anim { animation-duration: var(--ui-enter); }
+.section-d0 { animation-delay: 0ms; }
+.section-d1 { animation-delay: 25ms; }
+.section-d2 { animation-delay: 50ms; }
+.section-d3 { animation-delay: 75ms; }
+.kpi-anim, .welcome-anim { animation: m-rise var(--ui-enter) var(--ui-ease) backwards; }
+.kpi-anim-d1 { animation-delay: 25ms; }
+.kpi-anim-d2 { animation-delay: 50ms; }
+.kpi-anim-d3 { animation-delay: 75ms; }
+.app-route :is(.dept-grid > *, .news-feed-content .post-card, .cmt-thread, .dc-agenda__list > li) { animation: none; }
+.m-fade-in, .dc-root, .comment-section { animation-duration: var(--ui-state); }
+
+.lg-root .lg-btn.ant-btn { background: var(--ui-primary) !important; box-shadow: none; }
+.not-found { height: 100dvh; overflow-y: auto; background: #f9f2e7; }
+.not-found__body { animation: m-rise var(--ui-enter) var(--ui-ease) backwards; }
+
+@media (pointer: coarse) {
+  .app-route .personnel-table td .ant-btn-icon-only,
+  .app-route .personnel-page .personnel-action { min-width: 44px; min-height: 44px; }
+  .app-shell :is(.hdr-toggle,.hdr-icon-btn,.hdr-user) { min-width: 44px; min-height: 44px; }
+}
+@media (max-width: 575px) {
+  .app-route :is(.pp-hero,.bf-hero,.bk-hero,.cer-hero,.dept-hero,.dn-hero,.fin-hero,.rd-hero,.tr-hero,.um-hero,.news-banner) { padding-block: 9px 12px; }
+  .app-route .db-actions { gap: 6px; }
+  .app-route .db-action { min-height: 42px; }
+  .app-route .fin-toolbar :is(.ant-select,.ant-picker) { min-width: 0; max-width: 100%; }
+  .app-route .bk-btn { max-width: 100%; white-space: normal; height: auto; min-height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .ant-layout-sider, .app-drawer .ant-drawer-content-wrapper, .app-drawer .ant-drawer-mask {
+    transition-duration: 0.01ms;
+  }
+  .section-anim,.kpi-anim,.welcome-anim,.not-found__body,.app-route .lib-d__panel { animation: none !important; }
+  .app-shell :is(.ant-btn,.sb-item,.hdr-toggle,.hdr-icon-btn):active:not(:disabled) { transform: none; }
+}
+
+/* Layout variants by task */
+.app-route :is(.tr-card,.um-card,.rd-card,.cer-card,.cer-tabs,.fin-tabs,.post-card,.lib-empty) {
+  min-width: 0; border-radius: 12px; border: 1px solid var(--color-border);
+  box-shadow: none; background: var(--ui-surface);
+}
+.app-route :is(.tr-course__name,.rd-title__main,.wa-task__title,.dept-card__name,.lib-card__title,.post-card__title) {
+  white-space: normal; overflow-wrap: anywhere;
+}
+.app-route :is(.tr-stat__label,.bf-stat__label,.um-stat__label,.rd-stat__label,.pp-stat__label) {
+  white-space: normal; overflow-wrap: anywhere;
+}
+.app-route .dept-toolbar { border-radius: 10px; box-shadow: none; }
+.app-route .kanban-board { scroll-snap-type: x proximity; }
+.app-route .kanban-col { scroll-snap-align: start; border-radius: 10px; min-width: 0; }
+.app-route .kanban-card { box-shadow: none; }
+.app-route .kanban-card__actions { opacity: 1; }
+.app-route .dn-total { background: #814917; box-shadow: none; border-radius: 12px; }
+.app-route .fin-fund { background: var(--ui-surface); box-shadow: none; border-radius: 10px; }
+.app-route .fin-fund.is-selected { box-shadow: 0 0 0 1px var(--ui-primary); }
+.app-route .fin-chart g[tabindex]:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
+.app-route .cer-content { animation-duration: var(--ui-state); }
+.app-route .news-banner::before, .app-route .news-banner::after, .app-route .db-hero::after { display: none; }
+.app-route .news-banner, .app-route .news-banner * { text-shadow: none; }
+.app-route .lib-d__backdrop { inset-inline: 0; }
+.app-route .lib-d__art { width: min(240px, 53vw); border-radius: 18px; animation-duration: var(--ui-enter); }
+.app-route .lib-d__name { margin-top: 16px; }
+.app-route .lib-d__round { box-shadow: none; }
+.app-route .lib-d__tabs-pill { transition-duration: var(--ui-state); }
+.app-route .pd-hero .pd-hero__avatar { box-shadow: none; }
+.app-route .pp-form-section__title { color: #6d5544; }
+.app-route .dc-day-button { border: 0; background: transparent; color: inherit; font-family: inherit; cursor: pointer; }
+.app-route .dc-cell.is-today .dc-day-button { background: var(--ui-primary); color: #fff; }
+.app-route .dc-cell.is-selected { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
+.app-route .dc-cell .dc-day-button:focus-visible { outline-offset: -1px; }
+.app-route .db-lunar { background: #80501f; box-shadow: none; }
+.app-route .db-kpi__foot { overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .app-route .db-hero { flex-direction: column; align-items: stretch; gap: 10px; }
+  .app-route .db-lunar { padding: 6px 10px; gap: 8px; }
+  .app-route .db-lunar__day { font-size: 25px; }
+  .app-route .db-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .app-route .db-action { white-space: normal; text-align: start; padding: 4px 7px; min-width: 0; }
+  .app-route .lib-toolbar .ant-segmented { max-width: 100%; overflow: auto; }
+  .app-route .cer-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-route .cer-content, .app-route .lib-d__art { animation: none !important; }
+  .app-route .lib-d__tabs-pill { transition: none; }
+}
+.news-banner__main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.news-banner__mark {
+  display: grid; place-items: center; flex: 0 0 38px; height: 38px;
+  border-radius: 9px; font-size: 22px; background: #f7e9d7; color: var(--ui-primary);
+}
+.news-banner h1 { margin: 0; }
+.news-banner p { margin: 3px 0 0; color: #6d5544; font-size: 13px; }
+.app-route .news-banner { flex-wrap: wrap; margin-bottom: 14px; overflow: visible; }
+.app-route .dept-card__open { border: 0; padding: 0; background: transparent; text-align: start; font: inherit; font-weight: 700; cursor: pointer; }
+.app-route .dept-card__open:hover { text-decoration: underline; }
+.app-route .db-hero__greet span { color: var(--ui-primary); }
+@media (pointer: coarse) {
+  .app-route .dc-item__actions .ant-btn-icon-only,
+  .app-route .kanban-card__actions .ant-btn-icon-only { min-width: 44px; min-height: 44px; }
+}

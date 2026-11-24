@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { Avatar, Button, Tabs } from 'antd';
 import {
   ArrowLeftOutlined, EditOutlined, CalendarOutlined, HomeOutlined, SafetyCertificateOutlined,
@@ -68,6 +68,8 @@ export default function PersonnelDetail() {
   const P = t.personnel;
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backToList = () => location.state?.personnelList ? navigate(-1) : navigate('/app/personnel');
   const { canManage } = useAuth();
   const [person, setPerson] = useState(null);
   const [state, setState] = useState('loading'); // loading | ok | notFound | error
@@ -153,7 +155,7 @@ export default function PersonnelDetail() {
             hint={state === 'notFound' ? P.notFoundHint : ''}
           />
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 8 }}>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/app/personnel')}>{P.backToList}</Button>
+            <Button icon={<ArrowLeftOutlined />} onClick={backToList}>{P.backToList}</Button>
             {state === 'error' && <Button type="primary" icon={<ReloadOutlined />} onClick={() => { setState('loading'); loadPerson(); }}>{P.retry}</Button>}
           </div>
         </section>
@@ -222,7 +224,7 @@ export default function PersonnelDetail() {
   return (
     <div className="pp-page">
       <div className="section-anim section-d0">
-        <Button type="text" icon={<ArrowLeftOutlined />} className="pd-back" onClick={() => navigate('/app/personnel')}>
+        <Button type="text" icon={<ArrowLeftOutlined />} className="pd-back" onClick={backToList}>
           {P.backToList}
         </Button>
       </div>

@@ -18,7 +18,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { exportToExcel } from '../../utils/exportData';
 import api from '../../api/axios';
 import { printReceipt, printThankYou } from '../../utils/printDocs';
-import { guardedClose, rules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules } from '../../utils/formGuard';
 import './DonationPage.css';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
@@ -110,11 +110,11 @@ export default function DonationPage() {
   const openModal = (record = null) => {
     setEditRecord(record);
     if (record) {
-      form.setFieldsValue({ ...record, donationDate: record.donationDate ? dayjs(record.donationDate) : null });
+      initializeForm(form, { ...record, donationDate: record.donationDate ? dayjs(record.donationDate) : null });
     } else {
       form.resetFields();
       const general = funds.find(x => x.code === 'QUY_CHUNG');
-      form.setFieldsValue({ paymentMethod: 'tiền_mặt', donationDate: dayjs(), fundId: general?.id });
+      initializeForm(form, { paymentMethod: 'tiền_mặt', donationDate: dayjs(), fundId: general?.id });
     }
     setModalOpen(true);
   };

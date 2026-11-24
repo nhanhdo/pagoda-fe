@@ -13,7 +13,7 @@ import {
 import dayjs from 'dayjs';
 import { useBuddhistFollowerPage } from './useBuddhistFollowerPage';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose, rules } from '../../utils/formGuard';
+import { initializeForm, guardedClose, rules } from '../../utils/formGuard';
 import './BuddhistFollowerPage.css';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
@@ -203,7 +203,7 @@ export default function BuddhistFollowerPage() {
   const openModal = (record = null) => {
     setEditRecord(record);
     if (record) {
-      form.setFieldsValue({
+      initializeForm(form, {
         ...record,
         dateOfBirth: record.dateOfBirth ? dayjs(record.dateOfBirth) : null,
         preceptDate: record.preceptDate ? dayjs(record.preceptDate) : null,

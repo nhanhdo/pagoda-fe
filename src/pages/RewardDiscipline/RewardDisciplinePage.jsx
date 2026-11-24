@@ -14,7 +14,7 @@ import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useRewardDisciplinePage, rewardSubTypes, disciplineSubTypes } from './useRewardDisciplinePage';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose } from '../../utils/formGuard';
+import { initializeForm, guardedClose } from '../../utils/formGuard';
 import './RewardDisciplinePage.css';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
@@ -97,14 +97,14 @@ export default function RewardDisciplinePage() {
   const openModal = (record = null) => {
     setEditRecord(record);
     if (record) {
-      form.setFieldsValue({
+      initializeForm(form, {
         ...record,
         issuedDate: record.issuedDate ? dayjs(record.issuedDate) : null,
         validUntil: record.validUntil ? dayjs(record.validUntil) : null,
       });
     } else {
       form.resetFields();
-      form.setFieldsValue({ type: kind === DISCIPLINE ? DISCIPLINE : REWARD, issuedDate: dayjs() });
+      initializeForm(form, { type: kind === DISCIPLINE ? DISCIPLINE : REWARD, issuedDate: dayjs() });
     }
     setModalOpen(true);
   };

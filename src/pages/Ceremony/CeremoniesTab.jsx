@@ -12,7 +12,7 @@ import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import CountUp from '../../components/CountUp/CountUp';
 import { KIND_TONE, lunarLabel, daysUntil } from './ceremonyShared';
 import { compactVnd } from '../Finance/financeShared';
-import { guardedClose } from '../../utils/formGuard';
+import { initializeForm, guardedClose } from '../../utils/formGuard';
 
 const PRESETS = [
   { key: 'thuong_nguyen', name: 'Đại lễ Rằm tháng Giêng (Thượng Nguyên)', lunarDay: 15, lunarMonth: 1, ceremonyType: 'cả_hai' },
@@ -33,11 +33,11 @@ function CeremonyModal({ C, t, open, record, funds, onClose, onSaved }) {
   useEffect(() => {
     if (!open) return;
     if (record) {
-      form.setFieldsValue({ ...record, solarDate: record.solarDate ? dayjs(record.solarDate) : null });
+      initializeForm(form, { ...record, solarDate: record.solarDate ? dayjs(record.solarDate) : null });
       setOverride(false);
     } else {
       form.resetFields();
-      form.setFieldsValue({ year: dayjs().year(), ceremonyType: 'cả_hai', registrationOpen: true });
+      initializeForm(form, { year: dayjs().year(), ceremonyType: 'cả_hai', registrationOpen: true });
       setOverride(false);
     }
   }, [open, record]);

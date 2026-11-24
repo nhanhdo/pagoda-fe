@@ -526,13 +526,13 @@ const CSS = `
   .hp__eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
     background:rgba(255,255,255,.75);border:1px solid #f0dfc6;color:#8a5a28;font-size:11.5px;font-weight:700;
     letter-spacing:.22em;text-transform:uppercase;animation:hpRise .6s ease both .05s}
-  .hp__title{margin:18px 0 14px;font-size:clamp(44px,6.2vw,88px);font-weight:900;line-height:.98;letter-spacing:-.01em;color:#5a2c0e;
+  .hp__title{margin:18px 0 14px;font-size:clamp(44px,6.2vw,88px);font-weight:900;line-height:1.12;letter-spacing:-.01em;color:#5a2c0e;
     animation:hpRise .6s ease both .15s}
   .hp__title span{display:block;background:linear-gradient(120deg,#c47f36 0%,#d9646c 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
   .hp__lead{margin:0;max-width:460px;font-size:clamp(14px,1.25vw,17px);line-height:1.7;color:#7a604c;animation:hpRise .6s ease both .25s}
   .hp__actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:clamp(22px,3.5vh,34px);animation:hpRise .6s ease both .35s}
   .hp__cta{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 32px;border:none;border-radius:999px;cursor:pointer;
-    background:linear-gradient(135deg,#d6984a 0%,#c47f36 55%,#b06a24 100%);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;
+    background:var(--ui-primary);color:#fff;font-size:15px;font-weight:800;letter-spacing:.06em;
     box-shadow:0 14px 30px rgba(176,106,36,.32);transition:transform .2s ease,box-shadow .2s ease,filter .2s ease}
   .hp__cta:hover{transform:translateY(-2px);filter:brightness(1.05);box-shadow:0 18px 36px rgba(176,106,36,.4)}
   .hp__cta:focus-visible{outline:3px solid #6b3410;outline-offset:4px}
@@ -545,6 +545,7 @@ const CSS = `
   .hp__fact{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.95);
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(120,90,50,.07);min-width:0}
   .hp__fact-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7a5e44}
+  .hp__fact-label{overflow-wrap:anywhere}
   .hp__fact-value{margin-top:6px;font-size:18px;font-weight:800;color:#3e2c1f;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hp__fact-sub{margin-top:2px;font-size:12px;color:#6f5e50;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize}
   .hp__fact--holy .hp__fact-value{font-size:15px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -613,7 +614,12 @@ const CSS = `
     .hp__login-sm{display:none}
     .hp__facts{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
     .hp__fact--holy{grid-column:1 / -1}
-    .hp__title{font-size:44px}
+    .hp__title{font-size:clamp(36px,10vw,44px)}
+    .hp__main{gap:16px}
+    .hp__arch{--h:min(31dvh,270px)}
+    .hp__top{padding-block:12px}
+    .hp__actions{margin-top:16px}
+    .hp__facts{margin-top:20px}
   }
   @media (prefers-reduced-motion: reduce){ .hp *{animation:none !important} }
 `;
@@ -689,7 +695,7 @@ export default function HomePage() {
             <DharmaWheel /> {L.footerChant}
           </span>
           <h1 className="hp__title">
-            {L.homeTitleA}
+            {L.homeTitleA}{" "}
             <span>{L.homeTitleB}</span>
           </h1>
           <p className="hp__lead">{L.homeLead}</p>

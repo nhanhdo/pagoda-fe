@@ -15,12 +15,9 @@ export default function NotFoundPage() {
 
   return (
     // html/body don't scroll (the app shell does), so this page scrolls itself on short screens
-    <div style={{
-      height: '100dvh', overflowY: 'auto',
-      background: 'radial-gradient(ellipse 50% 40% at 80% 10%, rgba(255,200,170,.45) 0%, transparent 70%), radial-gradient(ellipse 45% 40% at 10% 90%, rgba(200,230,210,.45) 0%, transparent 70%), linear-gradient(180deg,#fffaf2 0%,#fbf1e3 100%)',
-    }}>
+    <main className="not-found">
       <div style={{ position: 'fixed', top: 14, right: 14, zIndex: 2 }}><LangToggle /></div>
-      <div style={{
+      <div className="not-found__body" style={{
         minHeight: '100%',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
@@ -31,12 +28,12 @@ export default function NotFoundPage() {
         <h1 style={{ margin: 0, color: '#5a3a22', fontSize: 17, fontWeight: 700, letterSpacing: 1 }}>{t.common.notFoundTitle}</h1>
         <p style={{ margin: 0, color: '#6f5e50', fontSize: 14 }}>{t.common.notFoundBody}</p>
         <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Button size="large" onClick={() => navigate(-1)} style={{ borderRadius: 10 }}>← {t.common.back}</Button>
+          <Button size="large" onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate(home)} style={{ borderRadius: 10 }}>← {t.common.back}</Button>
           <Button size="large" type="primary" onClick={() => navigate(home)} style={{ borderRadius: 10 }}>
             {user ? t.common.notFoundToApp : t.layout.goHome}
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

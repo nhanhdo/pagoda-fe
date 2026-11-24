@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button, Dropdown, Modal, message } from 'antd';
 import { LeftOutlined, EditOutlined, DeleteOutlined, MoreOutlined, CalendarOutlined } from '@ant-design/icons';
 import api from '../../api/axios';
@@ -20,6 +20,7 @@ const paragraphs = (text = '') => text.split(/\n{2,}/).map(s => s.trim()).filter
 export default function FigureDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
   const { t, lang } = useLanguage();
   const L = t.library;
@@ -51,7 +52,7 @@ export default function FigureDetailPage() {
   const setTab = (key) => {
     const next = new URLSearchParams(params);
     if (key === 'bio') next.delete('tab'); else next.set('tab', key);
-    setParams(next, { replace: true });
+    setParams(next, { replace: true, state: location.state });
     // Keep the tab bar in view when switching from further down the page
     const bar = tabsRef.current;
     if (bar && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ block: 'start' });
@@ -76,7 +77,7 @@ export default function FigureDetailPage() {
   };
 
   const backBtn = (
-    <button type="button" className="lib-d__round" onClick={() => navigate('/app/library')} aria-label={L.backToLibrary}>
+    <button type="button" className="lib-d__round" onClick={() => location.state?.libraryList ? navigate(-1) : navigate('/app/library')} aria-label={L.backToLibrary}>
       <LeftOutlined />
     </button>
   );
@@ -146,7 +147,16 @@ export default function FigureDetailPage() {
         )}
       </header>
 
-      <div className="lib-d__tabs" ref={tabsRef} role="tablist" aria-label={f.name}>
+      <div className="lib-d__tabs" ref={tabsRef} role="tablist" aria-label={f.name} onKeyDown={(event) => {
+        const index = TABS.indexOf(tab);
+        const offsets = { ArrowLeft: -1, ArrowRight: 1 };
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1
+          : offsets[event.key] ? (index + offsets[event.key] + TABS.length) % TABS.length : null;
+        if (next === null) return;
+        event.preventDefault();
+        setTab(TABS[next]);
+        event.currentTarget.querySelectorAll('[role="tab"]')[next]?.focus();
+      }}>
         <div className="lib-d__tabs-track" style={{ '--i': TABS.indexOf(tab) }}>
           <span className="lib-d__tabs-pill" aria-hidden />
           {TABS.map(k => (
@@ -155,6 +165,9 @@ export default function FigureDetailPage() {
               type="button"
               role="tab"
               aria-selected={tab === k}
+              id={`library-tab-${k}`}
+              aria-controls="library-panel"
+              tabIndex={tab === k ? 0 : -1}
               className={`lib-d__tab${tab === k ? ' is-active' : ''}`}
               onClick={() => setTab(k)}
             >
@@ -164,7 +177,7 @@ export default function FigureDetailPage() {
         </div>
       </div>
 
-      <section className="lib-d__panel" key={tab} role="tabpanel">
+      <section className="lib-d__panel" key={tab} role="tabpanel" id="library-panel" aria-labelledby={`library-tab-${tab}`} tabIndex={0}>
         {tab === 'bio' && (
           sections.length || intro ? (
             <div className="lib-bio">

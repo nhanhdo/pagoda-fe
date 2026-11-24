@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutlet, useNavigate, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import {
   Layout, Dropdown, Space, Typography, Modal, Form, Input,
   Descriptions, Tag, message, Select, Grid, Drawer,
@@ -382,10 +382,12 @@ const SIDEBAR_BG = '#ffffff';
 
 /* ── Custom sidebar menu — replaces Ant Design <Menu> ── */
 function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
+  const reduced = useReducedMotion();
   const [hovered, setHovered] = useState(null);
   const { t } = useLanguage();
   // Plain navigation landmark + buttons with aria-current (a role="menu" would promise arrow-key behaviour)
   return (
+    <LayoutGroup>
     <nav aria-label={t.layout.mainNav} style={{ padding: '8px 0', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
       {items.map((item, idx) => {
         if (item.type === 'divider') {
@@ -424,17 +426,13 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
               cursor: 'pointer',
               overflow: 'hidden',
               // Light, quiet menu: soft tint + accent bar for the current page (no heavy gradient)
-              background: sel ? '#fbeedd' : hov ? '#faf5ee' : 'transparent',
-              transition: 'background 0.18s ease',
+              background: hov ? '#faf5ee' : 'transparent',
+              transition: 'background var(--ui-fast) ease',
             }}
           >
-            {/* accent bar for the current page */}
-            {sel && !collapsed && (
-              <span aria-hidden style={{
-                position: 'absolute', left: 0, top: 8, bottom: 8, width: 3,
-                borderRadius: 3, background: '#c47f36',
-              }} />
-            )}
+            {sel && <motion.span aria-hidden="true" className="sb-current"
+              layoutId={reduced ? undefined : 'sidebar-current'}
+              transition={{ duration: reduced ? 0 : 0.22, ease: 'easeOut' }} />}
             {/* icon tile */}
             <span style={{
               width: 32, height: 32, flexShrink: 0,
@@ -462,16 +460,6 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
               </span>
             )}
 
-            {/* collapsed selected dot */}
-            {sel && collapsed && (
-              <span style={{
-                position: 'absolute', bottom: 1,
-                left: '50%', transform: 'translateX(-50%)',
-                display: 'block', width: 4, height: 4,
-                borderRadius: '50%', background: '#c47f36',
-                boxShadow: 'none',
-              }} />
-            )}
           </button>
         );
         return collapsed
@@ -479,6 +467,7 @@ function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
           : node;
       })}
     </nav>
+    </LayoutGroup>
   );
 }
 
@@ -490,18 +479,13 @@ export default function MainLayout() {
   const [changePassLoading, setChangePassLoading] = useState(false);
   const [changePassForm] = Form.useForm();
   const [navState, setNavState] = useState(0); // 0=idle 1=loading 2=done
-  const [buddhaGlows, setBuddhaGlows] = useState([]);
-  const handleBuddhaClick = () => {
-    const id = Date.now();
-    setBuddhaGlows(g => [...g, id]);
-    setTimeout(() => setBuddhaGlows(g => g.filter(x => x !== id)), 2100);
-  };
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const outlet = useOutlet();
   const { lang, t } = useLanguage();
 
+  const reduceMotion = useReducedMotion();
   const contentRef = useRef(null);
   const isFirstNav = useRef(true);
   useEffect(() => {
@@ -547,7 +531,6 @@ export default function MainLayout() {
     document.title = `${name} — ${t.app.siteName}`;
   }, [sectionPath, t]);
 
-  const currentPage = PAGE_TITLES[sectionPath];
 
   const showFullLabel = isMobile || !collapsed;
 
@@ -622,6 +605,7 @@ export default function MainLayout() {
 
   const handleLogoClick = () => goTo('/app/dashboard');
 
+  const headerHeight = 56;
   const sidebarContent = (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
       <div
@@ -629,7 +613,7 @@ export default function MainLayout() {
         tabIndex={0}
         aria-label={t.layout.goHome}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLogoClick(); } }}
-        style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid #ece1d1', cursor: 'pointer', gap: 10 }}
+        style={{ height: headerHeight, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid #ece1d1', cursor: 'pointer', gap: 10 }}
         onClick={handleLogoClick}
       >
         {/* Logo Buddha circle */}
@@ -664,66 +648,18 @@ export default function MainLayout() {
         collapsed={collapsed && !isMobile}
       />
 
-      {/* Buddha mandala — bottom decoration, click for halo effect */}
-      {showFullLabel && (
-        <div className="sider-buddha" style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', padding: '22px 0 18px' }}>
-          <div
-            onClick={handleBuddhaClick}
-            style={{ position: 'relative', width: 112, height: 112, cursor: 'pointer' }}
-          >
-            {/* Soft ambient glow */}
-            <div style={{
-              position: 'absolute', inset: '-30%', borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(250,222,170,0.40) 0%, rgba(250,230,200,0.14) 50%, transparent 72%)',
-              pointerEvents: 'none',
-            }}/>
-
-            {/* Emanating halo rings on click */}
-            {buddhaGlows.map(id => (
-              <React.Fragment key={id}>
-                <div className="buddha-ring buddha-ring-d1"/>
-                <div className="buddha-ring buddha-ring-d2"/>
-                <div className="buddha-ring buddha-ring-d3"/>
-              </React.Fragment>
-            ))}
-
-            {/* Outer golden ring */}
-            <div style={{
-              position: 'absolute', inset: -4, borderRadius: '50%',
-              border: '1.5px solid #ecd6b5',
-              boxShadow: '0 6px 16px rgba(176,111,44,0.14)',
-              pointerEvents: 'none',
-            }}/>
-            {/* Circle-cropped Buddha image */}
-            <div style={{
-              borderRadius: '50%', overflow: 'hidden',
-              width: 112, height: 112,
-              border: '2px solid #fff',
-              opacity: 0.92,
-            }}>
-              <img
-                src="/adida.PNG"
-                alt=""
-                style={{
-                  width: '100%', height: '100%',
-                  objectFit: 'cover', objectPosition: 'center 18%',
-                  display: 'block',
-                  filter: 'brightness(1.06) saturate(1.10)',
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
   const sidebarWidth = 240;
   const collapsedSidebarWidth = 80;
-  const visibleSidebarWidth = isMobile ? 0 : collapsed ? collapsedSidebarWidth : sidebarWidth;
 
   return (
     <Layout className="app-shell" style={{ overflow: 'hidden' }}>
+      <a className="app-skip" href="#app-content" onClick={(event) => {
+        event.preventDefault();
+        contentRef.current?.focus({ preventScroll: true });
+      }}>{t.layout.skipToContent}</a>
       {!isMobile && (
         <Sider trigger={null} collapsible collapsed={collapsed} width={sidebarWidth} collapsedWidth={collapsedSidebarWidth}
           style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #ece1d1', position: 'relative', overflow: 'hidden' }}>
@@ -732,6 +668,7 @@ export default function MainLayout() {
       )}
 
       <Drawer
+        rootClassName="app-drawer"
         open={isMobile && !collapsed}
         onClose={() => setCollapsed(true)}
         placement="left"
@@ -743,7 +680,7 @@ export default function MainLayout() {
       </Drawer>
 
       <Layout className="app-shell" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Header style={{ background: '#ffffff', padding: isPhone ? '0 10px' : '0 16px', height: isPhone ? 56 : 72, minHeight: isPhone ? 56 : 72, lineHeight: isPhone ? '56px' : '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #ece1d1', boxShadow: '0 1px 0 rgba(120,90,50,.02)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
+        <Header style={{ background: '#ffffff', padding: isPhone ? '0 10px' : '0 16px', height: headerHeight, minHeight: headerHeight, lineHeight: `${headerHeight}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #ece1d1', boxShadow: '0 1px 0 rgba(120,90,50,.02)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
 
           {/* ── Navigation progress bar ── */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>
@@ -752,8 +689,8 @@ export default function MainLayout() {
               background: 'linear-gradient(90deg, #e7b35a 0%, #c47f36 55%, #e98a6a 100%)',
               width:   navState === 1 ? '80%' : navState === 2 ? '100%' : '0%',
               opacity: navState === 0 ? 0 : 1,
-              transition: navState === 1
-                ? 'width 0.38s cubic-bezier(0.1,0.5,0.5,1), opacity 0.05s'
+              transition: reduceMotion ? 'none' : navState === 1
+                ? 'width 0.32s cubic-bezier(0.1,0.5,0.5,1), opacity 0.05s'
                 : navState === 2
                   ? 'width 0.14s ease-out, opacity 0.22s ease 0.1s'
                   : 'opacity 0.18s ease',
@@ -770,36 +707,7 @@ export default function MainLayout() {
             >
               {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             </button>
-            {currentPage && <span className="hdr-page-compact">{currentPage.label}</span>}
           </div>
-
-          {currentPage && !isPhone && (
-            <div className="hdr-page-pill" style={{
-              position: 'absolute', left: `calc((100% - ${visibleSidebarWidth}px) / 2)`, transform: 'translateX(-50%)',
-              display: 'flex', alignItems: 'center', gap: 7,
-              background: 'linear-gradient(135deg, #fff8ee 0%, #fcefdc 100%)',
-              border: '1px solid #f0dfc6',
-              borderRadius: 20,
-              padding: '5px 14px 5px 10px',
-              pointerEvents: 'none', userSelect: 'none',
-              maxWidth: isMobile ? 180 : 300,
-            }}>
-              <span style={{
-                fontSize: 14, lineHeight: 1, flexShrink: 0,
-                color: '#c47f36',
-                display: 'flex', alignItems: 'center',
-              }}>
-                {currentPage.icon}
-              </span>
-              <Text style={{
-                fontWeight: 700, fontSize: 14, color: '#5a3a22',
-                letterSpacing: 0.2, whiteSpace: 'nowrap',
-                overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {currentPage.label}
-              </Text>
-            </div>
-          )}
 
           <div className="hdr-actions">
             {/* Language switch */}
@@ -827,7 +735,7 @@ export default function MainLayout() {
                 </div>
               )}
             >
-              <button type="button" className="hdr-user">
+              <button type="button" className="hdr-user" aria-label={t.layout.accountMenu}>
                 <span className="hdr-avatar">
                   {initials}
                   <i className="hdr-avatar__status" />
@@ -844,18 +752,17 @@ export default function MainLayout() {
           </div>
         </Header>
 
-        <Content ref={contentRef} style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.18, ease: 'easeOut' } }}
-              exit={{ opacity: 0, transition: { duration: 0.08, ease: 'easeIn' } }}
-              style={{ minHeight: '100%', paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom, 0px))' : 0 }}
-            >
-              {outlet}
-            </motion.div>
-          </AnimatePresence>
+        <Content ref={contentRef} id="app-content" tabIndex={-1} className="app-content"
+          style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
+          <motion.div
+            key={location.pathname}
+            className="app-route"
+            initial={reduceMotion ? false : { opacity: 0.75, y: 4 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: reduceMotion ? 0 : 0.22, ease: 'easeOut' } }}
+            style={{ minHeight: '100%', paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom, 0px))' : 0 }}
+          >
+            {outlet}
+          </motion.div>
         </Content>
       </Layout>
 

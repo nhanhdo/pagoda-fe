@@ -144,8 +144,9 @@ const vi = {
     dharmName: 'Pháp danh',
     viewDetail: 'Xem chi tiết',
     editTooltip: 'Chỉnh sửa',
-    tableView: 'Dạng bảng',
-    cardView: 'Dạng thẻ',
+    displayMode: 'Chế độ hiển thị', clearFilters: 'Xóa bộ lọc',
+    tableView: 'Bảng',
+    cardView: 'Lưới',
     form: {
       sectionBasic: 'Thông tin cơ bản', sectionContact: 'Liên hệ', sectionWork: 'Công tác', changePhoto: 'Đổi ảnh', photoHint: 'JPG/PNG, tối đa 20MB · kéo để căn khuôn mặt', photoInvalid: 'Chỉ chấp nhận tệp ảnh', photoTooLarge: 'Ảnh vượt quá 20MB',
       fullNameRequired: 'Nhập họ tên',
@@ -745,6 +746,7 @@ const vi = {
     passwordMismatch: 'Mật khẩu xác nhận không khớp',
   },
   layout: {
+    skipToContent: 'Đến nội dung chính', accountMenu: 'Menu tài khoản',
     mainNav: 'Điều hướng chính',
     repliedToYou: 'đã trả lời bình luận của bạn',
     goHome: 'Về trang chủ', expandMenu: 'Mở rộng menu', collapseMenu: 'Thu gọn menu',
@@ -930,8 +932,9 @@ const en: typeof vi = {
     dharmName: 'Dharma Name',
     viewDetail: 'View details',
     editTooltip: 'Edit',
-    tableView: 'Table view',
-    cardView: 'Card view',
+    displayMode: 'Display mode', clearFilters: 'Clear filters',
+    tableView: 'Table',
+    cardView: 'Grid',
     form: {
       sectionBasic: 'Basic info', sectionContact: 'Contact', sectionWork: 'Role', changePhoto: 'Change photo', photoHint: 'JPG/PNG, max 20MB · drag to frame the face', photoInvalid: 'Only image files are allowed', photoTooLarge: 'Image exceeds 20MB',
       fullNameRequired: 'Please enter full name',
@@ -1531,6 +1534,7 @@ const en: typeof vi = {
     passwordMismatch: 'Passwords do not match',
   },
   layout: {
+    skipToContent: 'Skip to main content', accountMenu: 'Account menu',
     mainNav: 'Main navigation',
     repliedToYou: 'replied to your comment',
     goHome: 'Go to home', expandMenu: 'Expand menu', collapseMenu: 'Collapse menu',

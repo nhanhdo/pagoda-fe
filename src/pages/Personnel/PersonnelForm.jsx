@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal, Form, Input, Select, DatePicker, Button, Row, Col, Upload, Radio, message,
 } from 'antd';
@@ -36,13 +36,14 @@ function Section({ icon, title, children }) {
  * Add / edit personnel in a modal. Shared by the list and the detail page.
  * Props: open, record (null = create), onClose(), onSaved(savedRecord?)
  */
-export default function PersonnelFormModal({ open, record, onClose, onSaved }) {
+export default function PersonnelFormModal({ open, record, onClose, onSaved, afterClose }) {
   const { t } = useLanguage();
   const P = t.personnel;
   const F = P.form;
   const R = makeRules(t);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [departments, setDepartments] = useState([]);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
@@ -68,6 +69,7 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved }) {
       DATE_FIELDS.forEach(k => { v[k] = record[k] ? dayjs(record[k]) : null; });
       delete v.photo;
       form.setFieldsValue(v);
+      form.setFields(Object.keys(v).map(name => ({ name, touched: false })));
     } else {
       form.resetFields();
     }
@@ -88,6 +90,8 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved }) {
   };
 
   const onFinish = async (values) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     try {
       const fd = new FormData();
@@ -105,15 +109,29 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved }) {
     } catch (error) {
       message.error(error.response?.data?.message || t.common.error);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
 
-  const close = () => guardedClose(form, onClose, t);
+  const close = () => { if (!savingRef.current) guardedClose(form, onClose, t); };
+  useEffect(() => {
+    if (!open || cropOpen) return;
+    const closeDuringEntry = (event) => {
+      // Ant Design handles Escape once focus is inside its dialog.
+      if (event.key !== 'Escape' || event.defaultPrevented || event.target.closest?.('.ant-modal-wrap')) return;
+      event.preventDefault();
+      if (!savingRef.current) guardedClose(form, onClose, t);
+    };
+    document.addEventListener('keydown', closeDuringEntry);
+    return () => document.removeEventListener('keydown', closeDuringEntry);
+  }, [open, cropOpen, form, onClose, t]);
+
   const deptOptions = useMemo(() => departments.map(d => ({ value: d.id, label: d.name })), [departments]);
 
   return (
     <Modal
+      className="personnel-dialog"
       title={record ? P.editTitle : P.addTitle}
       open={open}
       onCancel={close}
@@ -123,10 +141,16 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved }) {
       confirmLoading={saving}
       maskClosable={false}
       width={760}
+      centered
+      keyboard={!saving}
+      cancelButtonProps={{ disabled: saving }}
+      focusTriggerAfterClose={!afterClose}
+      afterClose={afterClose}
+      afterOpenChange={(visible) => { if (visible) form.getFieldInstance('fullName')?.focus({ preventScroll: true }); }}
       destroyOnClose
-      styles={{ body: { maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: 4 } }}
+      styles={{ body: { maxHeight: 'min(640px, calc(100dvh - 150px))', overflowY: 'auto', paddingRight: 4 } }}
     >
-      <Form form={form} layout="vertical" onFinish={onFinish} className="pp-form"
+      <Form form={form} layout="vertical" scrollToFirstError={{ focus: true }} onFinish={onFinish} className="pp-form"
         initialValues={{ status: 'đang_hoạt_động' }}>
         <HiddenSubmit />
 

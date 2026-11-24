@@ -11,7 +11,7 @@ import api from '../../api/axios';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import { printReceipt, printSoList } from '../../utils/printDocs';
 import { KIND_TONE, lunarLabel, displayName, QUICK_OFFERINGS, emptyEntry, daysUntil, fetchFollowersCached, slotLabel, entryHasData } from './ceremonyShared';
-import { guardedClose } from '../../utils/formGuard';
+import { initializeForm, guardedClose } from '../../utils/formGuard';
 import { vnd, compactVnd, softOf } from '../Finance/financeShared';
 import { pinLeft, PIN_RIGHT } from '../Personnel/personnelShared';
 
@@ -26,7 +26,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
   useEffect(() => {
     if (!open) return;
     if (record) {
-      form.setFieldsValue({
+      initializeForm(form, {
         ...record,
         offeringAmount: Number(record.offeringAmount) || 0,
         entries: (record.entries || []).map(e => ({ ...e })),
@@ -34,7 +34,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
     } else {
       const k = allowedKinds[0] || 'cầu_an';
       form.resetFields();
-      form.setFieldsValue({ kind: k, paymentMethod: 'tiền_mặt', offeringAmount: 0, fundId: ceremony?.defaultFundId || undefined, entries: [emptyEntry(k)] });
+      initializeForm(form, { kind: k, paymentMethod: 'tiền_mặt', offeringAmount: 0, fundId: ceremony?.defaultFundId || undefined, entries: [emptyEntry(k)] });
     }
   }, [open, record]);
 
