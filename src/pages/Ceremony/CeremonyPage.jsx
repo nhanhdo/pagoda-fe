@@ -19,6 +19,7 @@ export default function CeremonyPage() {
   const C = t.ceremony;
   const { isAdmin, hasRole } = useAuth();
   const canWrite = isAdmin() || hasRole('truotri') || hasRole('thuki') || hasRole('truongban');
+  const canCreateCeremony = hasRole('admin', 'thuki');
   const canRemove = isAdmin() || hasRole('truotri');
   const admin = isAdmin();
   const location = useLocation();
@@ -61,6 +62,10 @@ export default function CeremonyPage() {
   if (loading) return <PageSpinner />;
 
   const openRegistrations = (id) => { setSelectedId(id); setTab('registrations'); };
+  const selectedCeremony = ceremonies.find(c => c.id === selectedId);
+  const canCreateRegistration = canWrite && selectedCeremony &&
+    (selectedCeremony.ceremonyType !== 'cầu_siêu' || canCreateCeremony);
+  const canShowCreate = { ceremonies: canCreateCeremony, registrations: canCreateRegistration, tablets: canWrite }[tab];
   const heroAction = {
     ceremonies: C.addCeremony,
     registrations: C.addRegistration,
@@ -83,9 +88,8 @@ export default function CeremonyPage() {
             <p className="cer-hero__sub">{C.subtitle}</p>
           </div>
         </div>
-        {canWrite && (tab !== 'registrations' || ceremonies.length > 0) && (() => {
-          const selected = ceremonies.find(c => c.id === selectedId);
-          const locked = tab === 'registrations' && selected && !selected.registrationOpen && !admin;
+        {canShowCreate && (() => {
+          const locked = tab === 'registrations' && !selectedCeremony.registrationOpen && !admin;
           return (
             <Tooltip title={locked ? C.closedForRegistration : ''}>
               <Button type="primary" icon={<PlusOutlined />} className="cer-btn" disabled={locked} onClick={() => setCreateSignal(s => s + 1)}>
@@ -104,7 +108,7 @@ export default function CeremonyPage() {
         {tab === 'ceremonies' && (
           <CeremoniesTab
             C={C} t={t} lang={lang} ceremonies={ceremonies} funds={funds}
-            canWrite={canWrite} canRemove={canRemove} createSignal={createSignal}
+            canWrite={canWrite} canCreate={canCreateCeremony} canRemove={canRemove} createSignal={createSignal}
             onChanged={loadCeremonies} onOpenRegistrations={openRegistrations}
           />
         )}
@@ -112,7 +116,7 @@ export default function CeremonyPage() {
           <RegistrationsTab
             C={C} t={t} lang={lang} ceremonies={ceremonies} funds={funds}
             selectedId={selectedId} setSelectedId={setSelectedId}
-            canWrite={canWrite} canRemove={canRemove} isAdmin={admin} createSignal={createSignal} onChanged={loadCeremonies}
+            canWrite={canWrite} canAddSpirit={canCreateCeremony} canRemove={canRemove} isAdmin={admin} createSignal={createSignal} onChanged={loadCeremonies}
           />
         )}
         {tab === 'tablets' && (

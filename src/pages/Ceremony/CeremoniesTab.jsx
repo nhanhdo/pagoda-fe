@@ -136,10 +136,13 @@ function CeremonyModal({ C, t, open, record, funds, onClose, onSaved }) {
   );
 }
 
-export default function CeremoniesTab({ C, t, lang, ceremonies, funds, canWrite, canRemove, createSignal, onChanged, onOpenRegistrations }) {
+export default function CeremoniesTab({ C, t, lang, ceremonies, funds, canWrite, canCreate, canRemove, createSignal, onChanged, onOpenRegistrations }) {
   const [modal, setModal] = useState({ open: false, record: null });
   const firstSignal = useRef(createSignal);
-  useEffect(() => { if (createSignal !== firstSignal.current) setModal({ open: true, record: null }); }, [createSignal]);
+  useEffect(() => {
+    if (canCreate && createSignal !== firstSignal.current) setModal({ open: true, record: null });
+    firstSignal.current = createSignal;
+  }, [canCreate, createSignal]);
 
   const toggleOpen = async (c) => {
     try {
@@ -168,7 +171,7 @@ export default function CeremoniesTab({ C, t, lang, ceremonies, funds, canWrite,
   // The modal must render in the empty state too, otherwise "Thêm đàn lễ" does nothing on a fresh install.
   const modalEl = (
     <CeremonyModal
-      C={C} t={t} open={modal.open} record={modal.record} funds={funds}
+      C={C} t={t} open={modal.open && (modal.record ? canWrite : canCreate)} record={modal.record} funds={funds}
       onClose={() => setModal({ open: false, record: null })}
       onSaved={() => { setModal({ open: false, record: null }); onChanged(); }}
     />
@@ -178,7 +181,7 @@ export default function CeremoniesTab({ C, t, lang, ceremonies, funds, canWrite,
     return (
       <>
         <section className="cer-card">
-          <LotusEmpty description={C.emptyCeremonies} hint={canWrite ? C.emptyCeremoniesHint : ''} />
+          <LotusEmpty description={C.emptyCeremonies} hint={canCreate ? C.emptyCeremoniesHint : ''} />
         </section>
         {modalEl}
       </>

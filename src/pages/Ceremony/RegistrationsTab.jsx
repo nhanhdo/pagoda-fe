@@ -16,11 +16,12 @@ import { vnd, compactVnd, softOf } from '../Finance/financeShared';
 
 const METHODS = ['tiền_mặt', 'chuyển_khoản', 'khác'];
 
-function RegistrationModal({ C, t, lang, open, record, ceremony, funds, followers, tablets, canRemove, onClose, onSaved }) {
+function RegistrationModal({ C, t, lang, open, record, ceremony, funds, followers, tablets, canAddSpirit, canRemove, onClose, onSaved }) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const kind = Form.useWatch('kind', form);
-  const allowedKinds = ceremony?.ceremonyType === 'cả_hai' ? ['cầu_an', 'cầu_siêu'] : [ceremony?.ceremonyType].filter(Boolean);
+  const ceremonyKinds = ceremony?.ceremonyType === 'cả_hai' ? ['cầu_an', 'cầu_siêu'] : [ceremony?.ceremonyType].filter(Boolean);
+  const allowedKinds = ceremonyKinds.filter(key => key !== 'cầu_siêu' || canAddSpirit || record?.kind === 'cầu_siêu');
 
   useEffect(() => {
     if (!open) return;
@@ -159,7 +160,11 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
                   <Button type="text" danger icon={<MinusCircleOutlined />} disabled={fields.length <= 1} onClick={() => remove(name)} aria-label={t.common.delete} />
                 </div>
               ))}
-              <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add(emptyEntry(kind))}>{kind === 'cầu_siêu' ? C.addSpirit : C.addPerson}</Button>
+              {(kind !== 'cầu_siêu' || canAddSpirit) && (
+                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add(emptyEntry(kind))}>
+                  {kind === 'cầu_siêu' ? C.addSpirit : C.addPerson}
+                </Button>
+              )}
             </div>
           )}
         </Form.List>
@@ -198,8 +203,9 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
   );
 }
 
-export default function RegistrationsTab({ C, t, lang, ceremonies, funds, selectedId, setSelectedId, canWrite, canRemove, isAdmin, createSignal, onChanged }) {
+export default function RegistrationsTab({ C, t, lang, ceremonies, funds, selectedId, setSelectedId, canWrite, canAddSpirit, canRemove, isAdmin, createSignal, onChanged }) {
   const ceremony = ceremonies.find(c => c.id === selectedId) || null;
+  const canCreate = canWrite && ceremony && (ceremony.ceremonyType !== 'cầu_siêu' || canAddSpirit);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [kindFilter, setKindFilter] = useState('all');
@@ -231,7 +237,7 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
     api.get('/memorial-tablets', { params: { status: 'đang_thờ' } }).then(r => setTablets(r.data || [])).catch(() => {});
   }, []);
   useEffect(() => {
-    if (createSignal === firstSignal.current || !ceremony) return;
+    if (createSignal === firstSignal.current || !canCreate) return;
     if (!ceremony.registrationOpen && !isAdmin) { message.warning(C.closedForRegistration); return; }
     setModal({ open: true, record: null });
   }, [createSignal]);
@@ -378,12 +384,12 @@ export default function RegistrationsTab({ C, t, lang, ceremonies, funds, select
             </ol>
           ),
         }}
-        locale={{ emptyText: <LotusEmpty description={search || kindFilter !== 'all' ? C.emptyFiltered : C.emptyRegistrations} hint={canWrite && !search ? C.emptyRegistrationsHint : ''} /> }}
+        locale={{ emptyText: <LotusEmpty description={search || kindFilter !== 'all' ? C.emptyFiltered : C.emptyRegistrations} hint={canCreate && !search ? C.emptyRegistrationsHint : ''} /> }}
       />
 
       <RegistrationModal
-        C={C} t={t} lang={lang} open={modal.open} record={modal.record} ceremony={ceremony}
-        funds={funds} followers={followers} tablets={tablets} canRemove={canRemove}
+        C={C} t={t} lang={lang} open={modal.open && Boolean(modal.record ? canWrite : canCreate)} record={modal.record} ceremony={ceremony}
+        funds={funds} followers={followers} tablets={tablets} canAddSpirit={canAddSpirit} canRemove={canRemove}
         onClose={() => setModal({ open: false, record: null })}
         onSaved={() => { setModal({ open: false, record: null }); load(); onChanged(); }}
       />
