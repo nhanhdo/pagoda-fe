@@ -14,16 +14,52 @@ const HEARTBEAT_MS   = 60 * 1000;      // presence ping ("đang online" = seen i
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
+    if (!localStorage.getItem('token')) return null;
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(() => Boolean(localStorage.getItem('token')));
   const { t } = useLanguage();
   const tRef = useRef(t);
   tRef.current = t;
   const logoutTimerRef = useRef(null);
   const warnTimerRef   = useRef(null);
   const warnShownRef   = useRef(false);
+
+  useEffect(() => {
+    let request;
+    const refresh = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setCheckingSession(false);
+        return;
+      }
+      request?.abort();
+      const currentRequest = new AbortController();
+      request = currentRequest;
+      const isCurrent = () => !currentRequest.signal.aborted && localStorage.getItem('token') === token;
+      try {
+        const { data } = await api.get('/auth/me', { signal: currentRequest.signal, timeout: 6000 });
+        if (!isCurrent()) return;
+        if (!data?.id || !data?.role) throw new Error('Invalid session profile');
+        const { id, username, role, personnel } = data;
+        const profile = { id, username, role, personnel };
+        localStorage.setItem('user', JSON.stringify(profile));
+        setUser(profile);
+      } catch {
+        if (isCurrent()) setUser(previous => previous?.role ? { ...previous, role: undefined } : previous);
+      } finally {
+        if (!currentRequest.signal.aborted) setCheckingSession(false);
+      }
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => {
+      request?.abort();
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
 
   const login = async (username, password) => {
     setLoading(true);
@@ -126,7 +162,7 @@ export const AuthProvider = ({ children }) => {
   const canManage = () => ['admin', 'truotri', 'thuki'].includes(user?.role);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasRole, isAdmin, canManage }}>
+    <AuthContext.Provider value={{ user, loading, checkingSession, login, logout, hasRole, isAdmin, canManage }}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,6 +5,7 @@ import NotFoundPage from './pages/NotFound/NotFoundPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/Layout/MainLayout';
 import LotusEmpty from './components/LotusEmpty/LotusEmpty';
+import PageSpinner from './components/PageSpinner/PageSpinner';
 import HomePage from './pages/Home/HomePage';
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -26,7 +27,8 @@ import LibraryPage from './pages/Library/LibraryPage';
 import FigureDetailPage from './pages/Library/FigureDetailPage';
 
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, checkingSession } = useAuth();
+  if (checkingSession) return <PageSpinner />;
   return user ? children : <Navigate to="/login" replace />;
 };
 
