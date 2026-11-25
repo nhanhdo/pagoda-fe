@@ -1357,7 +1357,6 @@ body {
 .app-route .dc-cell.is-today .dc-day-button { background: var(--ui-primary); color: #fff; }
 .app-route .dc-cell.is-selected { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
 .app-route .dc-cell .dc-day-button:focus-visible { outline-offset: -1px; }
-.app-route .db-lunar { background: #80501f; box-shadow: none; }
 .app-route .db-kpi__foot { overflow-wrap: anywhere; }
 @media (max-width: 767px) {
   .app-route .db-hero { flex-direction: column; align-items: stretch; gap: 10px; }
