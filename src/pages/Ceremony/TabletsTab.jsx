@@ -95,13 +95,13 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
   );
 }
 
-function LayoutView({ C, layout, canWrite, onAdd, onOpen }) {
-  if (!layout.areas.length) return <LotusEmpty description={C.emptyTablets} hint={canWrite ? C.emptyTabletsHint : ''} />;
+function LayoutView({ C, layout, canCreate, onAdd, onOpen }) {
+  if (!layout.areas.length) return <LotusEmpty description={C.emptyTablets} hint={canCreate ? C.emptyTabletsHint : ''} />;
   return (
     <div className="cer-layout">
       {layout.areas.map(a => {
-        const rows = Math.max(a.rows, 1) + (canWrite ? 1 : 0);
-        const slots = Math.max(a.slots, 1) + (canWrite ? 1 : 0);
+        const rows = Math.max(a.rows, 1) + (canCreate ? 1 : 0);
+        const slots = Math.max(a.slots, 1) + (canCreate ? 1 : 0);
         const byPos = new Map(a.tablets.map(tb => [`${tb.rowNo}-${tb.slotNo}`, tb]));
         return (
           <section key={a.area} className="cer-area">
@@ -125,7 +125,7 @@ function LayoutView({ C, layout, canWrite, onAdd, onOpen }) {
                           </Tooltip>
                         );
                       }
-                      return canWrite ? (
+                      return canCreate ? (
                         <button type="button" key={`${r}-${s}`} className="cer-slot" onClick={() => onAdd({ area: a.area, rowNo: r + 1, slotNo: s + 1 })} aria-label={`${a.area} · ${C.fields.rowNo} ${r + 1} · ${C.fields.slotNo} ${s + 1}`}>
                           <PlusOutlined />
                         </button>
@@ -142,7 +142,7 @@ function LayoutView({ C, layout, canWrite, onAdd, onOpen }) {
   );
 }
 
-export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) {
+export default function TabletsTab({ C, t, canCreate, canWrite, canRemove, createSignal }) {
   const [view, setView] = useState('layout');
   const [rows, setRows] = useState([]);
   const [layout, setLayout] = useState({ areas: [], total: 0 });
@@ -151,7 +151,7 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
   const [status, setStatus] = useState('đang_thờ');
   const [modal, setModal] = useState({ open: false, record: null, preset: null });
   const [followers, setFollowers] = useState([]);
-  const firstSignal = useRef(createSignal);
+  const lastSignal = useRef(createSignal);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -171,7 +171,11 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
 
   useEffect(() => { const id = setTimeout(load, search ? 300 : 0); return () => clearTimeout(id); }, [load]);
   useEffect(() => { fetchFollowersCached().then(setFollowers); }, []);
-  useEffect(() => { if (createSignal !== firstSignal.current) setModal({ open: true, record: null, preset: null }); }, [createSignal]);
+  useEffect(() => {
+    if (createSignal === lastSignal.current) return;
+    lastSignal.current = createSignal;
+    if (canCreate) setModal({ open: true, record: null, preset: null });
+  }, [canCreate, createSignal]);
 
   const areas = layout.areas.map(a => a.area);
   const openById = async (id) => {
@@ -244,17 +248,17 @@ export default function TabletsTab({ C, t, canWrite, canRemove, createSignal }) 
       </div>
 
       {view === 'layout' ? (
-        <LayoutView C={C} layout={layout} canWrite={canWrite} onAdd={(preset) => setModal({ open: true, record: null, preset })} onOpen={openById} />
+        <LayoutView C={C} layout={layout} canCreate={canCreate} onAdd={(preset) => setModal({ open: true, record: null, preset })} onOpen={openById} />
       ) : (
         <Table
           dataSource={rows} columns={columns} rowKey="id" loading={loading} className="personnel-table" scroll={{ x: 'max-content' }}
           pagination={{ pageSize: 10, showTotal: (n, range) => `${range[0]}-${range[1]} / ${n} ${C.tabletUnit}` }}
-          locale={{ emptyText: <LotusEmpty description={search ? C.emptyFiltered : C.emptyTablets} hint={canWrite && !search ? C.emptyTabletsHint : ''} /> }}
+          locale={{ emptyText: <LotusEmpty description={search ? C.emptyFiltered : C.emptyTablets} hint={canCreate && !search ? C.emptyTabletsHint : ''} /> }}
         />
       )}
 
       <TabletModal
-        C={C} t={t} open={modal.open} record={modal.record} preset={modal.preset} areas={areas} followers={followers}
+        C={C} t={t} open={modal.open && (modal.record ? canWrite : canCreate)} record={modal.record} preset={modal.preset} areas={areas} followers={followers}
         onClose={() => setModal({ open: false, record: null, preset: null })}
         onSaved={() => { setModal({ open: false, record: null, preset: null }); load(); }}
       />

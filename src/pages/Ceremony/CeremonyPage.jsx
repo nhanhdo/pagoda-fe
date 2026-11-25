@@ -20,6 +20,7 @@ export default function CeremonyPage() {
   const { isAdmin, hasRole } = useAuth();
   const canWrite = isAdmin() || hasRole('truotri') || hasRole('thuki') || hasRole('truongban');
   const canCreateCeremony = hasRole('admin', 'thuki');
+  const canCreateTablet = hasRole('admin', 'thuki');
   const canRemove = isAdmin() || hasRole('truotri');
   const admin = isAdmin();
   const location = useLocation();
@@ -65,7 +66,7 @@ export default function CeremonyPage() {
   const selectedCeremony = ceremonies.find(c => c.id === selectedId);
   const canCreateRegistration = canWrite && selectedCeremony &&
     (selectedCeremony.ceremonyType !== 'cầu_siêu' || canCreateCeremony);
-  const canShowCreate = { ceremonies: canCreateCeremony, registrations: canCreateRegistration, tablets: canWrite }[tab];
+  const canShowCreate = { ceremonies: canCreateCeremony, registrations: canCreateRegistration, tablets: canCreateTablet }[tab];
   const heroAction = {
     ceremonies: C.addCeremony,
     registrations: C.addRegistration,
@@ -120,7 +121,7 @@ export default function CeremonyPage() {
           />
         )}
         {tab === 'tablets' && (
-          <TabletsTab C={C} t={t} canWrite={canWrite} canRemove={canRemove} createSignal={createSignal} />
+          <TabletsTab C={C} t={t} canCreate={canCreateTablet} canWrite={canWrite} canRemove={canRemove} createSignal={createSignal} />
         )}
       </div>
     </div>
