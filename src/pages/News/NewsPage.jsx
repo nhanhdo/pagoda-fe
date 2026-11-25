@@ -373,11 +373,11 @@ function PostCard({ post, canEdit, onEdit, onDelete, focused }) {
   const menu = {
     items: [
       { key: 'edit', icon: <EditOutlined />, label: t.common.edit },
-      { key: 'delete', icon: <DeleteOutlined />, label: t.common.delete, danger: true },
+      ...(onDelete ? [{ key: 'delete', icon: <DeleteOutlined />, label: t.common.delete, danger: true }] : []),
     ],
     onClick: ({ key }) => {
       if (key === 'edit') onEdit(post);
-      if (key === 'delete') {
+      if (key === 'delete' && onDelete) {
         Modal.confirm({
           title: t.news.deletePostConfirm,
           content: post.title,
@@ -963,6 +963,7 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
 /* ─── Main Page ───────────────────────────────────────────── */
 export default function NewsPage() {
   const { t, lang } = useLanguage();
+  const { hasRole } = useAuth();
   const [calPrefillDate, setCalPrefillDate] = useState(null);
   const [calModalOpen, setCalModalOpen] = useState(false);
   const {
@@ -1035,7 +1036,7 @@ export default function NewsPage() {
     : null;
 
   const feed = (type, icon, emptyText) => (
-    <FeedTab posts={getDisplayPosts(type)} loading={loading} loadFailed={loadFailed} onRetry={fetchAll} canEdit={canEdit} onEdit={openEdit} onDelete={handleDelete} emptyIcon={icon} emptyText={emptyText} resetKey={`${activeFilter}|${searchText}`} focusPostId={focusPostId} />
+    <FeedTab posts={getDisplayPosts(type)} loading={loading} loadFailed={loadFailed} onRetry={fetchAll} canEdit={canEdit} onEdit={openEdit} onDelete={hasRole('admin', 'truotri') ? handleDelete : undefined} emptyIcon={icon} emptyText={emptyText} resetKey={`${activeFilter}|${searchText}`} focusPostId={focusPostId} />
   );
 
   const tabs = [

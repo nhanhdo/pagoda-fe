@@ -14,7 +14,7 @@ import { useDashboard } from './useDashboard';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { solarToLunar, getBuddhistHolidays } from '../../utils/lunarCalendar';
 import { useCountUp } from '../../components/CountUp/CountUp';
-import { useAuth } from '../../contexts/AuthContext';
+import { DUTY_CREATE_ROLES, useAuth } from '../../contexts/AuthContext';
 import './Dashboard.css';
 
 const ACCENT = {
@@ -217,13 +217,13 @@ export default function Dashboard() {
   const pending = stats?.pendingWork ?? 0;
 
   // Only offer shortcuts the backend lets this role create; ?create=1 opens the form directly.
-  const MGR = ['admin', 'truotri', 'thuki', 'truongban'];
+  const MGR = ['admin', 'truotri', 'thuki'];
   const quickActions = [
-    { label: d.addPersonnel, icon: <UsergroupAddOutlined />, path: '/app/personnel',         tone: 'amber',    roles: ['admin', 'truotri', 'thuki'] },
-    { label: d.createDuty,   icon: <ScheduleOutlined />,     path: '/app/duty-schedule',     tone: 'sky',      roles: MGR },
+    { label: d.addPersonnel, icon: <UsergroupAddOutlined />, path: '/app/personnel',         tone: 'amber',    roles: MGR },
+    { label: d.createDuty,   icon: <ScheduleOutlined />,     path: '/app/duty-schedule',     tone: 'sky',      roles: DUTY_CREATE_ROLES },
     { label: d.assignWork,   icon: <SolutionOutlined />,     path: '/app/work-assignment',   tone: 'sage',     roles: MGR },
     { label: d.addFollower,  icon: <HeartOutlined />,        path: '/app/buddhist-followers', tone: 'rose',    roles: MGR },
-    { label: d.createCourse, icon: <BookOutlined />,         path: '/app/training',          tone: 'teal',     roles: ['admin', 'truotri', 'thuki'] },
+    { label: d.createCourse, icon: <BookOutlined />,         path: '/app/training',          tone: 'teal',     roles: MGR },
     { label: d.postNews,     icon: <FileTextOutlined />,     path: '/app/news',              tone: 'lavender' },
   ].filter(a => !a.roles || a.roles.includes(role));
   // Empty-state shortcuts follow the same permissions as the quick actions

@@ -1,3 +1,4 @@
+import { useAuth } from '../../contexts/AuthContext';
 import { useCreateParam } from '../../utils/useCreateParam';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
@@ -71,10 +72,10 @@ function KanbanCard({ record, W, t, canManage, onEdit, onDelete, onMove, onDragS
             <Tooltip title={t.common.edit}>
               <Button type="text" size="small" aria-label={t.common.edit} icon={<EditOutlined />} onClick={() => onEdit(record)} />
             </Tooltip>
-            <Popconfirm title={W.confirmDelete} onConfirm={() => onDelete(record.id)}
+            {onDelete && <Popconfirm title={W.confirmDelete} onConfirm={() => onDelete(record.id)}
               okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
               <Button type="text" size="small" danger aria-label={t.common.delete} icon={<DeleteOutlined />} />
-            </Popconfirm>
+            </Popconfirm>}
           </div>
         )}
       </div>
@@ -245,7 +246,9 @@ export default function WorkAssignmentPage() {
     modalOpen, setModalOpen, editRecord, setEditRecord,
     personnel, handleSubmit, handleDelete, moveStatus, canManage,
   } = useWorkAssignmentPage();
+  const { hasRole } = useAuth();
   const manage = canManage();
+  const canDelete = hasRole('admin', 'truotri');
   useCreateParam(() => openModal(), manage);
   const [viewMode, setViewMode] = useState('table');
   const [search, setSearch] = useState('');
@@ -352,12 +355,12 @@ export default function WorkAssignmentPage() {
           <Tooltip title={t.common.edit}>
             <Button type="text" aria-label={t.common.edit} icon={<EditOutlined />} onClick={() => openModal(r)} />
           </Tooltip>
-          <Popconfirm title={W.confirmDelete} onConfirm={() => handleDelete(r.id)}
+          {canDelete && <Popconfirm title={W.confirmDelete} onConfirm={() => handleDelete(r.id)}
             okText={t.common.delete} cancelText={t.common.cancel} okButtonProps={{ danger: true }}>
             <Tooltip title={t.common.delete}>
               <Button type="text" danger aria-label={t.common.delete} icon={<DeleteOutlined />} />
             </Tooltip>
-          </Popconfirm>
+          </Popconfirm>}
         </div>
       ),
     }] : []),
@@ -471,7 +474,7 @@ export default function WorkAssignmentPage() {
             t={t}
             canManage={manage}
             onEdit={openModal}
-            onDelete={handleDelete}
+            onDelete={canDelete ? handleDelete : undefined}
             onMove={moveStatus}
           />
         )}

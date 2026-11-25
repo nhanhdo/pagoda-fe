@@ -5,6 +5,8 @@ import { useLanguage } from '../i18n/LanguageContext';
 
 const AuthContext = createContext(null);
 
+export const DUTY_CREATE_ROLES = ['admin', 'thuki'];
+
 const IDLE_TIMEOUT   = 15 * 60 * 1000; // 15 minutes
 const WARN_BEFORE    =  1 * 60 * 1000; // warn 1 minute before
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];

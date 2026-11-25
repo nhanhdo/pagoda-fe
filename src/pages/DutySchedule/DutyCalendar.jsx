@@ -52,7 +52,7 @@ const personName = (d) => d.personnel?.dharmName || d.personnel?.fullName || 'â€
 const initialOf = (name = '') => name.trim().split(/\s+/).pop()?.[0]?.toUpperCase() || '?';
 
 export default function DutyCalendar({
-  data, month, onMonthChange, canManage, onAdd, onEdit, onDelete, renderDetails, t, lang,
+  data, month, onMonthChange, canManage, canCreate, onAdd, onEdit, onDelete, renderDetails, t, lang,
 }) {
   const D = t.dutySchedule;
   const [selected, setSelected] = useState(dayjs());
@@ -171,7 +171,7 @@ export default function DutyCalendar({
                     wd >= 5 && 'is-weekend',
                   ].filter(Boolean).join(' ')}
                   onClick={() => { setSelected(day); if (narrow && duties.length) revealAgenda(); }}
-                  onDoubleClick={() => canManage && !outside && onAdd(day)}
+                  onDoubleClick={() => canCreate && !outside && onAdd(day)}
                 >
                   <div className="dc-cell__head">
                     <button type="button" className="dc-cell__num dc-day-button" aria-pressed={isSel}
@@ -183,7 +183,7 @@ export default function DutyCalendar({
                     <span className={`dc-cell__lunar${holyDay ? ' is-holy' : ''}`}>
                       {lunar.day === 1 ? `${lunar.day}/${lunar.month}` : lunar.day}
                     </span>
-                    {canManage && !outside && (
+                    {canCreate && !outside && (
                       <button
                         type="button"
                         className="dc-cell__add"
@@ -265,7 +265,7 @@ export default function DutyCalendar({
                 </div>
               </div>
             </div>
-            {canManage && (
+            {canCreate && (
               <Button type="primary" icon={<PlusOutlined />} onClick={() => onAdd(selected)} className="dc-agenda__add">
                 {D.addShift}
               </Button>
@@ -276,7 +276,7 @@ export default function DutyCalendar({
             <div className="dc-agenda__empty">
               <span className="dc-agenda__empty-icon"><CalendarOutlined /></span>
               <div>{D.dayEmpty}</div>
-              {canManage && <div className="dc-agenda__empty-hint">{D.dayEmptyHint}</div>}
+              {canCreate && <div className="dc-agenda__empty-hint">{D.dayEmptyHint}</div>}
             </div>
           ) : (
             <ul className="dc-agenda__list">

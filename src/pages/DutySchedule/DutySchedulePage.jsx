@@ -1,3 +1,4 @@
+import { DUTY_CREATE_ROLES, useAuth } from '../../contexts/AuthContext';
 import { useCreateParam } from '../../utils/useCreateParam';
 import React, { useMemo, useRef, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
@@ -47,8 +48,10 @@ export default function DutySchedulePage() {
   const [defaultDate, setDefaultDate] = useState(null);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
+  const { hasRole } = useAuth();
   const manage = canManage();
-  useCreateParam(() => openModal(), manage);
+  const canCreate = hasRole(...DUTY_CREATE_ROLES);
+  useCreateParam(() => openModal(), canCreate);
   // Full-page spinner only until the first fetch settles (later range/month changes keep the layout)
   const sawLoading = useRef(false);
   const booted = useRef(false);
@@ -56,6 +59,7 @@ export default function DutySchedulePage() {
   else if (sawLoading.current) booted.current = true;
 
   const openModal = (record = null, day = null) => {
+    if (record ? !manage : !canCreate) return;
     setEditRecord(record);
     setDefaultDate(day);
     setModalOpen(true);
@@ -235,7 +239,7 @@ export default function DutySchedulePage() {
             <p className="pp-hero__sub">{D.subtitle}</p>
           </div>
         </div>
-        {manage && (
+        {canCreate && (
           <div className="pp-hero__actions">
             <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => openModal()}>
               {D.addNew}
@@ -320,7 +324,7 @@ export default function DutySchedulePage() {
             locale={{
               emptyText: isFiltered
                 ? <LotusEmpty description={D.emptyFiltered} hint={D.emptyFilteredHint} />
-                : <LotusEmpty description={D.emptyRange} hint={manage ? D.emptyRangeHint : ''} />,
+                : <LotusEmpty description={D.emptyRange} hint={canCreate ? D.emptyRangeHint : ''} />,
             }}
           />
         ) : (
@@ -329,6 +333,7 @@ export default function DutySchedulePage() {
             month={calendarValue}
             onMonthChange={handleCalendarMonthChange}
             canManage={manage}
+            canCreate={canCreate}
             onAdd={(day) => openModal(null, day)}
             onEdit={(d) => openModal(d)}
             onDelete={handleDelete}
@@ -340,7 +345,7 @@ export default function DutySchedulePage() {
       </section>
 
       <DutyFormModal
-        open={modalOpen}
+        open={modalOpen && (editRecord ? manage : canCreate)}
         record={editRecord}
         defaultDate={defaultDate}
         personnel={personnel}
