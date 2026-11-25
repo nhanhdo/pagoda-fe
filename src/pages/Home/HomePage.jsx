@@ -459,6 +459,50 @@ function Temple() {
   );
 }
 
+function PagodaIllustration() {
+  const canvasRef = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    let active = true;
+    let scene;
+    const onLost = (event) => {
+      event.preventDefault();
+      setReady(false);
+    };
+    const onRestored = () => {
+      if (!scene) return;
+      scene.render();
+      setReady(true);
+    };
+
+    import("./pagodaScene")
+      .then(({ mountPagoda }) => {
+        if (!active || !window.WebGL2RenderingContext || !canvas.getContext("webgl2", { alpha: true, antialias: true, powerPreference: "low-power" })) return;
+        scene = mountPagoda(canvas);
+        canvas.addEventListener("webglcontextlost", onLost);
+        canvas.addEventListener("webglcontextrestored", onRestored);
+        setReady(true);
+      })
+      .catch(() => { if (active) setReady(false); });
+
+    return () => {
+      active = false;
+      canvas.removeEventListener("webglcontextlost", onLost);
+      canvas.removeEventListener("webglcontextrestored", onRestored);
+      scene?.dispose();
+    };
+  }, []);
+
+  return (
+    <div className={`hp__temple${ready ? " is-3d" : ""}`}>
+      <Temple />
+      <canvas className="hp__temple-model" ref={canvasRef} />
+    </div>
+  );
+}
+
 /* ── Live clock (text) ─────────────────────────────────── */
 function useNow() {
   const [now, setNow] = useState(() => new Date());
@@ -589,6 +633,9 @@ const CSS = `
   .hp__hills svg{position:absolute;left:0;width:100%;display:block}
   .hp__temple{position:absolute;left:50%;bottom:15%;width:80%;transform:translateX(-50%);z-index:4;pointer-events:none}
   .hp__temple svg{width:100%;height:auto;display:block}
+  .hp__temple-model{position:absolute;inset:auto 0 0;width:100%;height:114%;visibility:hidden}
+  .hp__temple.is-3d svg{visibility:hidden}
+  .hp__temple.is-3d .hp__temple-model{visibility:visible}
   .hp__pond{position:absolute;left:0;right:0;bottom:0;height:16%;z-index:5;pointer-events:none;
     background:linear-gradient(180deg,#cfe6ee 0%,#bcdbe7 60%,#aed2e0 100%)}
   .hp__pond::before{content:'';position:absolute;left:8%;right:8%;top:30%;height:2px;border-radius:2px;background:rgba(255,255,255,.75);animation:hpRipple 5s ease-in-out infinite}
@@ -834,9 +881,7 @@ export default function HomePage() {
               </svg>
             </div>
 
-            <div className="hp__temple">
-              <Temple />
-            </div>
+            <PagodaIllustration />
 
             <div className="hp__pond">
               {phone ? (
