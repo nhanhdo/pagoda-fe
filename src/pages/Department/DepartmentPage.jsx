@@ -243,8 +243,8 @@ export default function DepartmentPage() {
       <Drawer
         open={!!drawerDept}
         onClose={() => setDrawerDept(null)}
-        width={400}
-        title={null}
+        width="min(400px, 100vw)"
+        aria-labelledby="department-drawer-title"
         closable
         className="dept-drawer"
         styles={{ body: { padding: 0 } }}
@@ -252,8 +252,10 @@ export default function DepartmentPage() {
         {drawerDept && (
           <>
             <div className="dept-drawer__hero" style={{ background: `linear-gradient(160deg, ${drawerTheme.soft} 0%, ${drawerTheme.tint} 100%)` }}>
-              <DeptIcon theme={drawerTheme} size={56} />
-              <div className="dept-drawer__name">{drawerDept.name}</div>
+              <div className="dept-drawer__icon-ring" aria-hidden="true">
+                <DeptIcon theme={drawerTheme} size={56} />
+              </div>
+              <div id="department-drawer-title" className="dept-drawer__name">{drawerDept.name}</div>
               <div className="dept-drawer__code" style={{ color: drawerTheme.accent }}>{drawerDept.code}</div>
               {drawerDept.description && <p className="dept-drawer__desc">{drawerDept.description}</p>}
               {canEdit && (
