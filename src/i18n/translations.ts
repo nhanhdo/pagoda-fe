@@ -72,7 +72,7 @@ const vi = {
   login: {
     lunarCalendar: 'Âm lịch', lunarMonth: 'Tháng', lunarYear: 'Năm', lunarLeap: 'nhuận',
     brandSubtitle: 'Hệ thống quản lý', brandQuote: 'Tâm bình thì thế giới bình, tâm an thì vạn sự an', signInHint: 'Vui lòng đăng nhập để tiếp tục', footerChant: 'Nam Mô A Di Đà Phật',
-    homeTitleA: 'Chùa', homeTitleB: 'Tân Thành', homeLead: 'Nơi an lạc, nơi tu tập và kết nối thiện duyên. Hệ thống quản lý giúp đại chúng theo dõi lịch trực, khóa tu, Phật sự và công đức một cách trang nghiêm, minh bạch.',
+    homeTitleA: 'Chùa', homeTitleB: 'Tân Thành', homeLead: 'Nơi an lạc, tu tập và kết nối thiện duyên.',
     homeEnter: 'Vào hệ thống', homeAudience: 'Dành cho chư Tăng Ni & ban điều hành', homeYear: 'Năm {y}', homeUpcoming: 'Sắp tới',
     signIn: 'Đăng nhập', usernamePlaceholder: 'Nhập tên đăng nhập', passwordPlaceholder: 'Nhập mật khẩu', idleLoggedOut: 'Phiên làm việc đã hết hạn do không hoạt động. Vui lòng đăng nhập lại.',
     pagodaName: 'Chùa Tân Thành',
@@ -861,7 +861,7 @@ const en: typeof vi = {
   login: {
     lunarCalendar: 'Lunar date', lunarMonth: 'Month', lunarYear: 'Year of', lunarLeap: '(leap)',
     brandSubtitle: 'Management system', brandQuote: 'When the mind is at peace, the world is at peace', signInHint: 'Please sign in to continue', footerChant: 'Namo Amitabha Buddha',
-    homeTitleA: 'Tân Thành', homeTitleB: 'Pagoda', homeLead: 'A place of peace, practice and good connections. The management system helps the community follow duty rosters, retreats, Dharma activities and merit in a dignified, transparent way.',
+    homeTitleA: 'Tân Thành', homeTitleB: 'Pagoda', homeLead: 'A place for peace, practice and meaningful connection.',
     homeEnter: 'Enter the system', homeAudience: 'For the Sangha & the management board', homeYear: 'Year {y}', homeUpcoming: 'Coming up',
     signIn: 'Sign in', usernamePlaceholder: 'Enter your username', passwordPlaceholder: 'Enter your password', idleLoggedOut: 'Your session expired due to inactivity. Please sign in again.',
     pagodaName: 'Tan Thanh Pagoda',

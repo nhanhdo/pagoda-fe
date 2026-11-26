@@ -1,0 +1,12 @@
+.hp--showcase * { animation-play-state: paused !important; }
+.hp--showcase .hp__cta {
+  animation: hp-cta-showcase 1.6s ease-in-out calc(var(--hp-seek) + 4.4s) both paused;
+}
+.hp--showcase .hp__cta .anticon {
+  animation: hp-arrow-showcase 1.6s ease-in-out calc(var(--hp-seek) + 4.4s) both paused;
+}
+@keyframes hp-cta-showcase {
+  50% { box-shadow: 0 0 0 6px #ac793d42, 0 9px 20px #5f350d39; background: #f0d49a; }
+}
+@keyframes hp-arrow-showcase { 50% { transform: translateX(5px); } }
+

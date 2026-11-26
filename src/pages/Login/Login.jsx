@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation, useNavigationType } from "react-router-dom";
 import { Form, Input, Button, message } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useAuth } from "../../contexts/AuthContext";
@@ -52,6 +53,15 @@ export default function Login() {
   const { t, lang } = useLanguage();
   const { login, loading } = useAuth();
   const [error, setError] = useState("");
+  const headingRef = useRef(null);
+  const { state } = useLocation();
+  const navigationType = useNavigationType();
+  const fromHome = navigationType === "PUSH" && state?.fromHome === true;
+
+  useLayoutEffect(() => {
+    if (fromHome) headingRef.current.focus({ preventScroll: true });
+  }, [fromHome]);
+
   useEffect(() => {
     if (sessionStorage.getItem("logoutReason") === "idle") {
       sessionStorage.removeItem("logoutReason");
@@ -66,7 +76,10 @@ export default function Login() {
   };
 
   return (
-    <main className="lg-root">
+    <main
+      className="lg-root"
+      data-home-entry={fromHome ? state.entryMotion : undefined}
+    >
       <LangToggle className="lg-lang" />
 
       <div className="lg-center">
@@ -96,7 +109,7 @@ export default function Login() {
                 <div className="lg-head-icon">
                   <img src="/tanthanh.png" alt="" width="60" height="60" />
                 </div>
-                <h2>{t.login.signIn}</h2>
+                <h2 ref={headingRef} tabIndex={-1}>{t.login.signIn}</h2>
                 <p>{t.login.signInHint}</p>
               </div>
 
