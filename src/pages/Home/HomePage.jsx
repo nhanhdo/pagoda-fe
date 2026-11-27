@@ -41,36 +41,36 @@ function nextHolyDay(from, lang) {
   return null;
 }
 
-function useHomeMotion(pageRef, heroRef, enabled) {
+function useHomeMotion(pageRef, stageRef, enabled) {
   useLayoutEffect(() => {
     if (!enabled) return;
     const page = pageRef.current;
-    const hero = heroRef.current;
+    const stage = stageRef.current;
     const media = window.matchMedia("(prefers-reduced-motion: no-preference)");
-    let heroVisible = true;
+    let stageVisible = true;
     let frame = 0;
 
     const update = () => {
       frame = 0;
-      if (!heroVisible) return;
+      if (!stageVisible) return;
       const travel = Math.max(40, Math.min(490, page.scrollHeight - page.clientHeight));
       const progress = Math.max(0, Math.min(page.scrollTop / travel, 1));
       const offset = media.matches ? progress * 22 : 0;
-      hero.style.setProperty("--hp-scroll", `${offset}px`);
+      stage.style.setProperty("--hp-scroll", `${offset}px`);
     };
 
     const queueUpdate = () => {
-      if (heroVisible && !frame) frame = requestAnimationFrame(update);
+      if (stageVisible && !frame) frame = requestAnimationFrame(update);
     };
 
     let observer;
     if ("IntersectionObserver" in window) {
       observer = new IntersectionObserver(([entry]) => {
-        heroVisible = entry.isIntersecting;
-        hero.toggleAttribute("data-offscreen", !heroVisible);
+        stageVisible = entry.isIntersecting;
+        stage.toggleAttribute("data-offscreen", !stageVisible);
         queueUpdate();
       }, { root: page });
-      observer.observe(hero);
+      observer.observe(stage);
     }
 
     update();
@@ -84,7 +84,7 @@ function useHomeMotion(pageRef, heroRef, enabled) {
       media.removeEventListener("change", queueUpdate);
       window.removeEventListener("resize", queueUpdate);
     };
-  }, [pageRef, heroRef, enabled]);
+  }, [pageRef, stageRef, enabled]);
 }
 
 function TempleScene({ src }) {
@@ -106,9 +106,9 @@ export function HomeLanding({
   sceneSrc = "/temple-cinema.jpg",
 }) {
   const pageRef = useRef(null);
-  const heroRef = useRef(null);
+  const stageRef = useRef(null);
   const isShowcase = showcaseTime !== undefined;
-  useHomeMotion(pageRef, heroRef, !isShowcase);
+  useHomeMotion(pageRef, stageRef, !isShowcase);
   const { t, lang } = useLanguage();
   const L = t.login;
   const D = t.dashboard;
@@ -123,91 +123,95 @@ export function HomeLanding({
       lang={lang}
       style={isShowcase ? { "--hp-seek": `${-showcaseTime}s` } : undefined}
     >
-      <header className="hp__header">
-        <div className="hp__top hp__shell">
-          <div className="hp__brand">
-            <img className="hp__logo" src={logoSrc} width="48" height="48" alt="" />
-            <div>
-              <div className="hp__name">{L.pagodaName}</div>
-              <div className="hp__sub">{L.brandSubtitle}</div>
-            </div>
-          </div>
-          <div className="hp__top-actions">
-            <LangToggle />
-            <button type="button" className="hp__login-sm" onClick={onEnter}>
-              <LoginOutlined aria-hidden="true" /> {L.signIn}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="hp__main">
-        <section ref={heroRef} className="hp__hero" aria-labelledby="hp-title">
-          <TempleScene src={sceneSrc} />
-          <div className="hp__text hp__shell">
-            <p className="hp__eyebrow"><DharmaWheel /> {L.footerChant}</p>
-            <h1 className="hp__title" id="hp-title">
-              <span className="hp__title-part"><span>{L.homeTitleA}</span></span>{" "}
-              <span className="hp__title-part"><span>{L.homeTitleB}</span></span>
-            </h1>
-            <p className="hp__lead">{L.homeLead}</p>
-            <button type="button" className="hp__cta" onClick={onEnter}>
-              {L.homeEnter} <ArrowRightOutlined aria-hidden="true" />
-            </button>
-          </div>
-        </section>
-
-        <div className="hp__facts hp__shell">
-          <div className="hp__fact">
-            <div className="hp__fact-label">
-              <CalendarOutlined aria-hidden="true" /> {D.today}
-            </div>
-            <div className="hp__fact-value">
-              {two(now.getDate())}/{two(now.getMonth() + 1)}/
-              {now.getFullYear()}
-            </div>
-            <div className="hp__fact-sub">
-              {now.toLocaleDateString(lang === "en" ? "en-US" : "vi-VN", {
-                weekday: "long",
-              })}{" "}
-              ·{" "}
-              <span className="hp__mono">
-                {two(now.getHours())}:{two(now.getMinutes())}
-              </span>
-            </div>
-          </div>
-          <div className="hp__fact">
-            <div className="hp__fact-label">
-              <MoonOutlined aria-hidden="true" /> {D.lunarLabel}
-            </div>
-            <div className="hp__fact-value">
-              {lunar.day}/{lunar.month}
-              {lunar.leap ? "*" : ""}
-            </div>
-            <div className="hp__fact-sub">
-              {L.homeYear.replace("{y}", lunar.yearName)}
-            </div>
-          </div>
-          <div className="hp__fact hp__fact--holy">
-            <div className="hp__fact-label">
-              {holy?.major ? (
-                <StarFilled aria-hidden="true" style={{ color: "#e0a83a" }} />
-              ) : (
-                <StarOutlined aria-hidden="true" />
-              )}{" "}
-              {L.homeUpcoming}
-            </div>
-            <div className="hp__fact-value">{holy ? holy.name : "—"}</div>
-            {holy && (
-              <div className="hp__fact-sub">
-                {holy.diff === 0
-                  ? D.today
-                  : `${D.inDays.replace("{n}", holy.diff)} · ${holy.date.format("DD/MM")}`}
+      <div ref={stageRef} className="hp__stage">
+        <TempleScene src={sceneSrc} />
+        <header className="hp__header hp__glass hp__shell">
+          <div className="hp__top">
+            <div className="hp__brand">
+              <img className="hp__logo" src={logoSrc} width="48" height="48" alt="" />
+              <div>
+                <div className="hp__name">{L.pagodaName}</div>
+                <div className="hp__sub">{L.brandSubtitle}</div>
               </div>
-            )}
+            </div>
+            <div className="hp__top-actions">
+              <LangToggle />
+              <button type="button" className="hp__login-sm" onClick={onEnter}>
+                <LoginOutlined aria-hidden="true" /> {L.signIn}
+              </button>
+            </div>
           </div>
-        </div>
-      </main>
+        </header>
+
+        <main className="hp__main">
+          <section className="hp__hero" aria-labelledby="hp-title">
+            <div className="hp__text hp__shell">
+              <p className="hp__eyebrow"><DharmaWheel /> {L.footerChant}</p>
+              <h1 className="hp__title" id="hp-title">
+                <span className="hp__title-part"><span>{L.homeTitleA}</span></span>{" "}
+                <span className="hp__title-part"><span>{L.homeTitleB}</span></span>
+              </h1>
+              <p className="hp__lead">{L.homeLead}</p>
+              <button type="button" className="hp__cta" onClick={onEnter}>
+                {L.homeEnter} <ArrowRightOutlined aria-hidden="true" />
+              </button>
+            </div>
+          </section>
+
+          <footer className="hp__facts hp__glass hp__shell">
+            <div className="hp__fact">
+              <div className="hp__fact-label">
+                <CalendarOutlined aria-hidden="true" /> {D.today}
+              </div>
+              <div className="hp__today-copy">
+                <div className="hp__fact-value">
+                  {two(now.getDate())}/{two(now.getMonth() + 1)}/
+                  {now.getFullYear()}
+                </div>
+                <div className="hp__fact-sub">
+                  {now.toLocaleDateString(lang === "en" ? "en-US" : "vi-VN", {
+                    weekday: "long",
+                  })}{" "}
+                  ·{" "}
+                  <span className="hp__mono">
+                    {two(now.getHours())}:{two(now.getMinutes())}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="hp__fact">
+              <div className="hp__fact-label">
+                <MoonOutlined aria-hidden="true" /> {D.lunarLabel}
+              </div>
+              <div className="hp__fact-value">
+                {lunar.day}/{lunar.month}
+                {lunar.leap ? "*" : ""}
+              </div>
+              <div className="hp__fact-sub">
+                {L.homeYear.replace("{y}", lunar.yearName)}
+              </div>
+            </div>
+            <div className="hp__fact hp__fact--holy">
+              <div className="hp__fact-label">
+                {holy?.major ? (
+                  <StarFilled aria-hidden="true" />
+                ) : (
+                  <StarOutlined aria-hidden="true" />
+                )}{" "}
+                {L.homeUpcoming}
+              </div>
+              <div className="hp__fact-value">{holy ? holy.name : "—"}</div>
+              {holy && (
+                <div className="hp__fact-sub">
+                  {holy.diff === 0
+                    ? D.today
+                    : `${D.inDays.replace("{n}", holy.diff)} · ${holy.date.format("DD/MM")}`}
+                </div>
+              )}
+            </div>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }

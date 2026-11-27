@@ -283,10 +283,10 @@
 .lg-root .lg-input.ant-input-affix-wrapper {
   min-height: 50px;
   padding-inline: 14px;
-  border: 1px solid transparent;
+  border: 1px solid #cdbba8;
   border-radius: 14px;
-  background: var(--lg-surface);
-  box-shadow: var(--lg-inset);
+  background: #fffaf3;
+  box-shadow: none;
   transition: border-color .18s;
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Avatar, Tooltip, Result, Button, Alert } from 'antd';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import {
@@ -84,9 +84,14 @@ function KpiTile({ label, value, tone, icon, foot, footTone, onClick, delay }) {
 }
 
 function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
-  const [drawn, setDrawn] = useState(false);
-  const [active, setActive] = useState(null);
-  useEffect(() => { const id = setTimeout(() => setDrawn(true), 200); return () => clearTimeout(id); }, []);
+  const [selected, setSelected] = useState(null);
+  const [hovered, setHovered] = useState(null);
+  const [focused, setFocused] = useState(null);
+  const active = hovered ?? focused ?? selected;
+  const toggle = index => setSelected(value => value === index ? null : index);
+  const preview = (event, index) => {
+    if (event.pointerType === 'mouse') setHovered(index);
+  };
 
   const c = size / 2;
   const r = (size - thickness - 12) / 2;
@@ -104,9 +109,10 @@ function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
   });
 
   return (
-    <div className="db-bd" onMouseLeave={() => setActive(null)}>
+    <div className="db-bd">
       <div className="db-bd__chart" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${totalLabel}: ${total}`}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
+          aria-label={`${totalLabel}: ${total}`} style={{ '--db-ring-length': C }}>
           <circle cx={c} cy={c} r={r} fill="none" stroke="#f6efe5" strokeWidth={thickness} />
           <circle cx={c} cy={c} r={r - thickness / 2 - 6} fill="none" stroke="#f3ebdf" strokeWidth="1" strokeDasharray="2 4" />
           {arcs.map((a, i) => {
@@ -119,14 +125,14 @@ function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
                 fill="none"
                 stroke={a.color}
                 strokeWidth={isActive ? thickness + 7 : thickness}
-                strokeDasharray={drawn ? `${a.len} ${C - a.len}` : `0 ${C}`}
+                strokeDasharray={`${a.len} ${C - a.len}`}
                 strokeDashoffset={-a.off}
                 transform={`rotate(-90 ${c} ${c})`}
                 opacity={dim ? 0.28 : 1}
                 className="db-bd__arc"
-                style={{ transitionDelay: drawn ? '0s' : `${i * 0.12}s` }}
-                onMouseEnter={() => setActive(i)}
-                onClick={() => setActive(v => (v === i ? null : i))}
+                onPointerEnter={event => preview(event, i)}
+                onPointerLeave={event => preview(event, null)}
+                onClick={() => toggle(i)}
               />
             );
           })}
@@ -149,29 +155,28 @@ function Breakdown({ data, total, totalLabel, size = 172, thickness = 16 }) {
 
       <ul className="db-bd__legend">
         {data.map((d, i) => (
-          <li
-            key={d.label}
-            className={`db-bd__row${active === i ? ' is-active' : ''}${active != null && active !== i ? ' is-dim' : ''}`}
-            onMouseEnter={() => setActive(i)}
-            // tap / keyboard: same highlight as hover (touch screens have no hover)
-            tabIndex={0}
-            aria-pressed={active === i}
-            role="button"
-            onClick={() => setActive(v => (v === i ? null : i))}
-            onFocus={() => setActive(i)}
-            onBlur={() => setActive(null)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive(v => (v === i ? null : i)); } }}
-            style={{ '--c': d.color }}
-          >
-            <span className="db-bd__swatch" />
-            <div className="db-bd__info">
-              <div className="db-bd__line">
-                <span className="db-bd__name">{d.label}</span>
-                <span className="db-bd__value">{d.value}</span>
-              </div>
-              <div className="db-bd__track"><i style={{ width: drawn ? `${pct(d.value)}%` : 0 }} /></div>
-            </div>
-            <span className="db-bd__pct">{pct(d.value)}%</span>
+          <li key={d.label}>
+            <button
+              type="button"
+              className={`db-bd__row${active === i ? ' is-active' : ''}`}
+              aria-pressed={selected === i}
+              onPointerEnter={event => preview(event, i)}
+              onPointerLeave={event => preview(event, null)}
+              onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setFocused(i); }}
+              onBlur={() => setFocused(null)}
+              onClick={() => toggle(i)}
+              style={{ '--c': d.color }}
+            >
+              <span className="db-bd__swatch" />
+              <span className="db-bd__info">
+                <span className="db-bd__line">
+                  <span className="db-bd__name">{d.label}</span>
+                  <span className="db-bd__value">{d.value}</span>
+                </span>
+                <span className="db-bd__track" aria-hidden="true"><i style={{ width: `${pct(d.value)}%` }} /></span>
+              </span>
+              <span className="db-bd__pct">{pct(d.value)}%</span>
+            </button>
           </li>
         ))}
       </ul>

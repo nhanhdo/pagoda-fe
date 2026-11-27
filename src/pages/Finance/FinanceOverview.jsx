@@ -14,27 +14,36 @@ const { RangePicker } = DatePicker;
 
 function MonthlyChart({ data, F, lang }) {
   const [hover, setHover] = useState(null);
-  const max = Math.max(1, ...data.map(d => Math.max(d.income, d.expense)));
-  const W = 720, H = 220, padL = 8, padB = 26, gap = 6;
+  const peak = Math.max(1, ...data.map(d => Math.max(d.income, d.expense)));
+  const step = 10 ** Math.floor(Math.log10(Math.max(1, peak / 4)));
+  const max = Math.ceil(peak / (4 * step)) * 4 * step;
+  const padL = 82, padB = 27, H = 220, gap = 6;
+  const W = Math.max(360, data.length * 46 + padL);
   const slot = (W - padL) / Math.max(1, data.length);
-  const bw = Math.max(6, (slot - gap * 3) / 2);
+  const bw = Math.max(3, Math.min(26, (slot - gap * 3) / 2));
   const y = (v) => (H - padB) * (1 - v / max);
   return (
     <div className="fin-chart">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="group" aria-label={F.monthlyTitle}>
-        {[0.25, 0.5, 0.75, 1].map(p => (
-          <line key={p} x1="0" x2={W} y1={(H - padB) * (1 - p)} y2={(H - padB) * (1 - p)} stroke="#f3ebdf" strokeWidth="1" />
+      <div className="fin-chart__plot">
+      <svg viewBox={`0 -7 ${W} ${H + 7}`} style={{ minWidth: W }} role="group" aria-label={F.monthlyTitle}>
+        {[0, .25, .5, .75, 1].map(p => (
+          <g key={p} aria-hidden="true">
+            <line x1={padL} x2={W} y1={y(max * p)} y2={y(max * p)} stroke="#e8ddcf" strokeWidth="1" />
+            <text x={padL - 8} y={y(max * p)} dominantBaseline="middle" textAnchor="end" className="fin-chart__axis">{compactVnd(max * p, lang)}</text>
+          </g>
         ))}
         {data.map((d, i) => {
-          const x = padL + i * slot + gap;
+          const start = padL + i * slot;
+          const x = start + (slot - 2 * bw - gap) / 2;
           return (
             <g key={d.month} tabIndex={0} role="img"
               aria-label={`${d.month} · ${F.income}: ${vnd(d.income)} · ${F.expense}: ${vnd(d.expense)}`}
               onFocus={() => setHover(i)} onBlur={() => setHover(null)}
-              onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
-              <rect x={x - gap / 2} y="0" width={slot} height={H - padB} fill={hover === i ? '#fcf6ee' : 'transparent'} />
-              <rect className="fin-chart__bar" x={x} y={y(d.income)} width={bw} height={(H - padB) - y(d.income)} rx="4" fill="#4f9a72" />
-              <rect className="fin-chart__bar" x={x + bw + gap} y={y(d.expense)} width={bw} height={(H - padB) - y(d.expense)} rx="4" fill="#e5787f" />
+              onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+              onClick={() => setHover(i)}>
+              <rect x={start} y="0" width={slot} height={H - padB} fill={hover === i ? '#fcf6ee' : 'transparent'} />
+              <rect className="fin-chart__bar" x={x} y={y(d.income)} width={bw} height={(H - padB) - y(d.income)} rx="4" fill="#3e7556" />
+              <rect className="fin-chart__bar" x={x + bw + gap} y={y(d.expense)} width={bw} height={(H - padB) - y(d.expense)} rx="4" fill="#ad5c53" />
               <text x={x + bw + gap / 2} y={H - 8} textAnchor="middle" className="fin-chart__label">
                 {`T${Number(d.month.slice(5))}/${d.month.slice(2, 4)}`}
               </text>
@@ -42,9 +51,10 @@ function MonthlyChart({ data, F, lang }) {
           );
         })}
       </svg>
+      </div>
       <div className="fin-chart__legend">
-        <span><i style={{ background: '#4f9a72' }} />{F.income}</span>
-        <span><i style={{ background: '#e5787f' }} />{F.expense}</span>
+        <span><i style={{ background: '#3e7556' }} />{F.income}</span>
+        <span><i style={{ background: '#ad5c53' }} />{F.expense}</span>
         {hover !== null && data[hover] && (
           <span className="fin-chart__tip">
             <strong>{`T${Number(data[hover].month.slice(5))}/${data[hover].month.slice(0, 4)}`}</strong>
@@ -202,7 +212,9 @@ export default function FinanceOverview({ F, funds, range, setRange, fundId, set
           <div className="fin-grid section-anim section-d3">
             <section className="fin-card">
               <header className="fin-card__head">{F.monthlyTitle}</header>
-              <MonthlyChart data={report.monthly} F={F} lang={lang} />
+              {report.monthly?.length
+                ? <MonthlyChart data={report.monthly} F={F} lang={lang} />
+                : <p className="fin-muted">{F.noMonthlyData}</p>}
             </section>
             <section className="fin-card">
               <header className="fin-card__head">{F.categoryTitle}</header>

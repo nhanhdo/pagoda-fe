@@ -625,7 +625,7 @@ export default function MainLayout() {
               border: '2px solid #fff',
               boxShadow: '0 0 0 1.5px rgba(214,160,96,.6), 0 4px 12px rgba(196,127,54,.25)',
             }}>
-              <img src="/adida.PNG" alt="" style={{
+              <img src="/pagoda-tab.svg" alt="" style={{
                 width: '100%', height: '100%',
                 objectFit: 'cover', objectPosition: 'center 18%',
                 display: 'block',
@@ -683,7 +683,7 @@ export default function MainLayout() {
         <Header style={{ background: '#ffffff', padding: isPhone ? '0 10px' : '0 16px', height: headerHeight, minHeight: headerHeight, lineHeight: `${headerHeight}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #ece1d1', boxShadow: '0 1px 0 rgba(120,90,50,.02)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
 
           {/* ── Navigation progress bar ── */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="hdr-nav-progress" aria-hidden="true" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>
             <div style={{
               height: '100%',
               background: 'linear-gradient(90deg, #e7b35a 0%, #c47f36 55%, #e98a6a 100%)',
@@ -707,6 +707,9 @@ export default function MainLayout() {
             >
               {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             </button>
+            <span className="hdr-page-compact">
+              {PAGE_TITLES[sectionPath]?.label || t.layout.defaultPageTitle}
+            </span>
           </div>
 
           <div className="hdr-actions">
@@ -757,7 +760,7 @@ export default function MainLayout() {
           <motion.div
             key={location.pathname}
             className="app-route"
-            initial={reduceMotion ? false : { opacity: 0.75, y: 4 }}
+            initial={reduceMotion ? false : { opacity: 0.9, y: 3 }}
             animate={{ opacity: 1, y: 0, transition: { duration: reduceMotion ? 0 : 0.22, ease: 'easeOut' } }}
             style={{ minHeight: '100%', paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom, 0px))' : 0 }}
           >

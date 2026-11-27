@@ -181,7 +181,8 @@
 .db-bd__chart svg { display: block; overflow: visible; }
 .db-bd__arc {
   cursor: pointer;
-  transition: stroke-dasharray 1s cubic-bezier(.22,1,.36,1), stroke-width .25s ease, opacity .25s ease;
+  transition: stroke-width var(--ui-fast), opacity var(--ui-fast);
+  animation: db-ring-draw .65s var(--ui-ease) both;
 }
 .db-bd__center {
   position: absolute; inset: 0;
@@ -195,11 +196,12 @@
 .db-bd__legend { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; }
 .db-bd__row {
   display: flex; align-items: center; gap: 12px;
-  padding: 8px 10px; border-radius: 12px; cursor: default;
+  width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid transparent;
+  border-radius: 8px; background: transparent; font: inherit; text-align: start; cursor: pointer;
   transition: background .2s ease, opacity .2s ease;
 }
 .db-bd__row.is-active { background: color-mix(in srgb, var(--c) 9%, #fff); }
-.db-bd__row.is-dim { opacity: .5; }
+.db-bd__row:hover, .db-bd__row.is-active { border-color: var(--ui-line); }
 .db-bd__swatch {
   width: 12px; height: 12px; flex-shrink: 0; border-radius: 4px;
   background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent);
@@ -208,10 +210,10 @@
 .db-bd__line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .db-bd__name { font-size: 13px; font-weight: 600; color: #4a3626; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-bd__value { font-size: 13.5px; font-weight: 800; color: #2f2117; font-variant-numeric: tabular-nums; }
-.db-bd__track { height: 5px; margin-top: 5px; border-radius: 999px; background: #f4ece0; overflow: hidden; }
+.db-bd__track { display: block; height: 5px; margin-top: 5px; border-radius: 999px; background: #f4ece0; overflow: hidden; }
 .db-bd__track i {
   display: block; height: 100%; border-radius: inherit; background: var(--c);
-  transition: width 1s cubic-bezier(.22,1,.36,1);
+  transform-origin: left; animation: db-track-grow .65s var(--ui-ease) both;
 }
 .db-bd__pct { width: 38px; flex-shrink: 0; text-align: right; font-size: 12px; font-weight: 600; color: #6f5e50; font-variant-numeric: tabular-nums; }
 
@@ -312,4 +314,12 @@
 @media (max-width: 420px) {
   .db-kpi__label { white-space: normal; font-size: 12px; }
   .db-action { flex-basis: 100%; }
+}
+
+@keyframes db-ring-draw { from { stroke-dasharray: 0 var(--db-ring-length); } }
+@keyframes db-track-grow { from { transform: scaleX(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .db-bd__arc, .db-bd__row { transition: none; }
+  .db-bd__arc, .db-bd__track i { animation: none; }
 }

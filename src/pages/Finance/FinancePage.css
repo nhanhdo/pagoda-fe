@@ -93,13 +93,14 @@
 .fin-muted { padding: 18px; border-radius: 14px; background: #fcf9f4; border: 1px dashed #eadcc6; color: #a8978a; font-size: 13px; }
 
 /* Monthly chart */
-.fin-chart svg { width: 100%; height: 230px; display: block; }
-.fin-chart__bar { transform-box: fill-box; transform-origin: bottom; animation: fin-grow .8s var(--m-out, ease) both; }
+.fin-chart__plot { overflow-x: auto; padding-bottom: 2px; }
+.fin-chart svg { width: 100%; height: auto; display: block; }
+.fin-chart__bar { transform-box: fill-box; transform-origin: bottom; animation: fin-grow var(--ui-enter) var(--ui-ease) both; }
 @keyframes fin-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-.fin-chart__label { font-size: 11px; fill: #a8978a; }
+.fin-chart__label, .fin-chart__axis { font-size: 12px; fill: #6d5948; }
 .fin-chart__legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 6px; font-size: 12.5px; color: #6b5a4c; }
 .fin-chart__legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
-.fin-chart__tip { margin-left: auto; color: #4a3626; }
+.fin-chart__tip { flex-basis: 100%; color: #4a3626; }
 
 /* Category breakdown */
 .fin-cats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
