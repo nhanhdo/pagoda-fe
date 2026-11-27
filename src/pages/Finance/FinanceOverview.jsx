@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Button, DatePicker, Select, Tooltip } from 'antd';
 import {
   RiseOutlined, FallOutlined, SwapOutlined, ClockCircleOutlined, CalendarOutlined,
@@ -12,56 +12,100 @@ import { vnd, compactVnd, CATEGORY_COLOR, softOf, presetRanges, ymd } from './fi
 
 const { RangePicker } = DatePicker;
 
+function MonthComparison({ month, F, lang }) {
+  const date = new Date(`${month.month}-01T00:00:00Z`);
+  const period = new Intl.DateTimeFormat(lang === 'vi' ? 'vi-VN' : 'en-GB', {
+    month: 'long', year: 'numeric', timeZone: 'UTC',
+  }).format(date);
+  const max = Math.max(1, month.income, month.expense);
+  const series = [
+    { key: 'income', label: F.income, value: month.income },
+    { key: 'expense', label: F.expense, value: month.expense },
+  ];
+
+  return (
+    <div className="fin-month">
+      <p className="fin-month__period"><CalendarOutlined aria-hidden="true" /> {period}</p>
+      <ul className="fin-month__series">
+        {series.map(item => (
+          <li key={item.key} className={`fin-series--${item.key}`}>
+            <div className="fin-month__summary">
+              <span><i className="fin-series__swatch" aria-hidden="true" />{item.label}</span>
+              <strong>{vnd(item.value)}</strong>
+            </div>
+            <div className="fin-month__track" aria-hidden="true">
+              <span style={{ inlineSize: `${(item.value / max) * 100}%` }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function MonthlyChart({ data, F, lang }) {
   const [hover, setHover] = useState(null);
+  const [focused, setFocused] = useState(null);
+  const plotRef = useRef(null);
+  const [plotWidth, setPlotWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const plot = plotRef.current;
+    const measure = () => setPlotWidth(plot.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(plot);
+    return () => observer.disconnect();
+  }, []);
+
   const peak = Math.max(1, ...data.map(d => Math.max(d.income, d.expense)));
   const step = 10 ** Math.floor(Math.log10(Math.max(1, peak / 4)));
   const max = Math.ceil(peak / (4 * step)) * 4 * step;
   const padL = 82, padB = 27, H = 220, gap = 6;
-  const W = Math.max(360, data.length * 46 + padL);
+  const W = Math.max(plotWidth, 320, data.length * 46 + padL);
   const slot = (W - padL) / Math.max(1, data.length);
   const bw = Math.max(3, Math.min(26, (slot - gap * 3) / 2));
   const y = (v) => (H - padB) * (1 - v / max);
+  const active = hover ?? focused;
+  const detail = data[active] ?? data[data.length - 1];
   return (
     <div className="fin-chart">
-      <div className="fin-chart__plot">
-      <svg viewBox={`0 -7 ${W} ${H + 7}`} style={{ minWidth: W }} role="group" aria-label={F.monthlyTitle}>
-        {[0, .25, .5, .75, 1].map(p => (
-          <g key={p} aria-hidden="true">
-            <line x1={padL} x2={W} y1={y(max * p)} y2={y(max * p)} stroke="#e8ddcf" strokeWidth="1" />
-            <text x={padL - 8} y={y(max * p)} dominantBaseline="middle" textAnchor="end" className="fin-chart__axis">{compactVnd(max * p, lang)}</text>
-          </g>
-        ))}
-        {data.map((d, i) => {
-          const start = padL + i * slot;
-          const x = start + (slot - 2 * bw - gap) / 2;
-          return (
-            <g key={d.month} tabIndex={0} role="img"
-              aria-label={`${d.month} · ${F.income}: ${vnd(d.income)} · ${F.expense}: ${vnd(d.expense)}`}
-              onFocus={() => setHover(i)} onBlur={() => setHover(null)}
-              onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
-              onClick={() => setHover(i)}>
-              <rect x={start} y="0" width={slot} height={H - padB} fill={hover === i ? '#fcf6ee' : 'transparent'} />
-              <rect className="fin-chart__bar" x={x} y={y(d.income)} width={bw} height={(H - padB) - y(d.income)} rx="4" fill="#3e7556" />
-              <rect className="fin-chart__bar" x={x + bw + gap} y={y(d.expense)} width={bw} height={(H - padB) - y(d.expense)} rx="4" fill="#ad5c53" />
-              <text x={x + bw + gap / 2} y={H - 8} textAnchor="middle" className="fin-chart__label">
-                {`T${Number(d.month.slice(5))}/${d.month.slice(2, 4)}`}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-      </div>
       <div className="fin-chart__legend">
-        <span><i style={{ background: '#3e7556' }} />{F.income}</span>
-        <span><i style={{ background: '#ad5c53' }} />{F.expense}</span>
-        {hover !== null && data[hover] && (
-          <span className="fin-chart__tip">
-            <strong>{`T${Number(data[hover].month.slice(5))}/${data[hover].month.slice(0, 4)}`}</strong>
-            {' · '}{F.income} {compactVnd(data[hover].income, lang)}{' · '}{F.expense} {compactVnd(data[hover].expense, lang)}
-          </span>
-        )}
+        <span className="fin-series--income"><i className="fin-series__swatch" aria-hidden="true" />{F.income}</span>
+        <span className="fin-series--expense"><i className="fin-series__swatch" aria-hidden="true" />{F.expense}</span>
       </div>
+      <div className="fin-chart__plot" ref={plotRef}>
+        <svg viewBox={`0 -7 ${W} ${H + 7}`} width={W} height={H + 7} role="group" aria-label={F.monthlyTitle}>
+          {[0, .25, .5, .75, 1].map(p => (
+            <g key={p} aria-hidden="true">
+              <line x1={padL} x2={W} y1={y(max * p)} y2={y(max * p)} stroke="#e8ddcf" strokeWidth="1" />
+              <text x={padL - 8} y={y(max * p)} dominantBaseline="middle" textAnchor="end" className="fin-chart__axis">{compactVnd(max * p, lang)}</text>
+            </g>
+          ))}
+          {data.map((d, i) => {
+            const start = padL + i * slot;
+            const x = start + (slot - 2 * bw - gap) / 2;
+            return (
+              <g key={d.month} tabIndex={0} role="img"
+                aria-label={`${d.month} · ${F.income}: ${vnd(d.income)} · ${F.expense}: ${vnd(d.expense)}`}
+                onFocus={() => setFocused(i)} onBlur={() => setFocused(null)}
+                onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+                onClick={() => setHover(i)}>
+                <rect x={start} y="0" width={slot} height={H - padB} fill={active === i ? '#f3e9db' : 'transparent'} />
+                <rect className="fin-chart__bar fin-series--income" x={x} y={y(d.income)} width={bw} height={(H - padB) - y(d.income)} rx="4" />
+                <rect className="fin-chart__bar fin-series--expense" x={x + bw + gap} y={y(d.expense)} width={bw} height={(H - padB) - y(d.expense)} rx="4" />
+                <text x={x + bw + gap / 2} y={H - 8} textAnchor="middle" className="fin-chart__label">
+                  {`T${Number(d.month.slice(5))}/${d.month.slice(2, 4)}`}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <p className="fin-chart__tip">
+        <strong>{detail.month.slice(5)}/{detail.month.slice(0, 4)}</strong>
+        {' · '}{F.income} {compactVnd(detail.income, lang)}{' · '}{F.expense} {compactVnd(detail.expense, lang)}
+      </p>
     </div>
   );
 }
@@ -212,9 +256,9 @@ export default function FinanceOverview({ F, funds, range, setRange, fundId, set
           <div className="fin-grid section-anim section-d3">
             <section className="fin-card">
               <header className="fin-card__head">{F.monthlyTitle}</header>
-              {report.monthly?.length
-                ? <MonthlyChart data={report.monthly} F={F} lang={lang} />
-                : <p className="fin-muted">{F.noMonthlyData}</p>}
+              {report.monthly?.length === 1 && <MonthComparison month={report.monthly[0]} F={F} lang={lang} />}
+              {report.monthly?.length > 1 && <MonthlyChart data={report.monthly} F={F} lang={lang} />}
+              {!report.monthly?.length && <p className="fin-muted">{F.noMonthlyData}</p>}
             </section>
             <section className="fin-card">
               <header className="fin-card__head">{F.categoryTitle}</header>
