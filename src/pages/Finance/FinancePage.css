@@ -103,49 +103,6 @@
   border-radius: 3px;
   background: var(--fin-series);
 }
-.fin-month {
-  display: grid;
-  gap: 17px;
-  padding: clamp(12px, 2vw, 20px);
-  border: 1px solid #e9e1d6;
-  border-radius: 10px;
-  background: #fcfaf6;
-}
-.fin-month__period {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0;
-  color: #6d5948;
-  font-size: 13px;
-  font-weight: 650;
-}
-.fin-month__series { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
-.fin-month__summary {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 4px 12px;
-  margin-bottom: 7px;
-  color: #49392d;
-}
-.fin-month__summary strong {
-  color: var(--fin-series);
-  font-size: clamp(15px, 1.5vw, 20px);
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-.fin-month__track { height: 12px; overflow: hidden; border-radius: 4px; background: #eee7db; }
-.fin-month__track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--fin-series);
-  transform-origin: left center;
-  animation: fin-grow-inline var(--ui-enter) var(--ui-ease) both;
-}
-
 .fin-chart__plot { overflow-x: auto; padding-bottom: 2px; }
 .fin-chart__plot svg { display: block; max-width: none; }
 .fin-chart__bar {
@@ -155,7 +112,6 @@
   animation: fin-grow var(--ui-enter) var(--ui-ease) both;
 }
 @keyframes fin-grow { from { transform: scaleY(0); } }
-@keyframes fin-grow-inline { from { transform: scaleX(0); } }
 .fin-chart__label, .fin-chart__axis { font-size: 12px; fill: #6d5948; }
 .fin-chart__legend { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12.5px; color: #6b5a4c; }
 .fin-chart__tip {
@@ -256,5 +212,5 @@
   .fin-chart__tip { min-block-size: calc(2.8em + 14px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fin-month__track span, .fin-chart__bar, .fin-fund__track i, .fin-cats__track i, .personnel-table .ant-table-tbody > tr.fin-row--focus > td { animation: none; }
+  .fin-chart__bar, .fin-fund__track i, .fin-cats__track i, .personnel-table .ant-table-tbody > tr.fin-row--focus > td { animation: none; }
 }

@@ -12,37 +12,6 @@ import { vnd, compactVnd, CATEGORY_COLOR, softOf, presetRanges, ymd } from './fi
 
 const { RangePicker } = DatePicker;
 
-function MonthComparison({ month, F, lang }) {
-  const date = new Date(`${month.month}-01T00:00:00Z`);
-  const period = new Intl.DateTimeFormat(lang === 'vi' ? 'vi-VN' : 'en-GB', {
-    month: 'long', year: 'numeric', timeZone: 'UTC',
-  }).format(date);
-  const max = Math.max(1, month.income, month.expense);
-  const series = [
-    { key: 'income', label: F.income, value: month.income },
-    { key: 'expense', label: F.expense, value: month.expense },
-  ];
-
-  return (
-    <div className="fin-month">
-      <p className="fin-month__period"><CalendarOutlined aria-hidden="true" /> {period}</p>
-      <ul className="fin-month__series">
-        {series.map(item => (
-          <li key={item.key} className={`fin-series--${item.key}`}>
-            <div className="fin-month__summary">
-              <span><i className="fin-series__swatch" aria-hidden="true" />{item.label}</span>
-              <strong>{vnd(item.value)}</strong>
-            </div>
-            <div className="fin-month__track" aria-hidden="true">
-              <span style={{ inlineSize: `${(item.value / max) * 100}%` }} />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 function MonthlyChart({ data, F, lang }) {
   const [hover, setHover] = useState(null);
   const [focused, setFocused] = useState(null);
@@ -256,9 +225,9 @@ export default function FinanceOverview({ F, funds, range, setRange, fundId, set
           <div className="fin-grid section-anim section-d3">
             <section className="fin-card">
               <header className="fin-card__head">{F.monthlyTitle}</header>
-              {report.monthly?.length === 1 && <MonthComparison month={report.monthly[0]} F={F} lang={lang} />}
-              {report.monthly?.length > 1 && <MonthlyChart data={report.monthly} F={F} lang={lang} />}
-              {!report.monthly?.length && <p className="fin-muted">{F.noMonthlyData}</p>}
+              {report.monthly?.length
+                ? <MonthlyChart data={report.monthly} F={F} lang={lang} />
+                : <p className="fin-muted">{F.noMonthlyData}</p>}
             </section>
             <section className="fin-card">
               <header className="fin-card__head">{F.categoryTitle}</header>
