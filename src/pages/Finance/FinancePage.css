@@ -135,6 +135,8 @@
 .fin-muted-code { color: #8c7a6b; font-size: 12.5px; }
 
 /* Ledger summary */
+.personnel-table .ant-table-cell.fin-ledger-nowrap { white-space: nowrap; }
+
 .fin-ledger-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .fin-ledger-sum div { padding: 10px 14px; border-radius: 12px; background: #fcf9f4; border: 1px solid #f3ebdf; }
 .fin-ledger-sum span { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #a8978a; }

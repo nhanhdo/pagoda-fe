@@ -57,8 +57,8 @@ export default function LedgerTab({ F, funds, refreshKey }) {
   };
 
   const columns = [
-    { title: F.colDate, dataIndex: 'date', width: 180, render: (v) => <span className="tbl-mono">{dayjs(v).format('DD/MM/YYYY')}</span> },
-    { title: F.colCode, dataIndex: 'code', width: 120, render: (v) => <span className="tbl-mono fin-muted-code">{v || '—'}</span> },
+    { title: F.colDate, dataIndex: 'date', width: 126, render: (v) => <span className="tbl-mono">{dayjs(v).format('DD/MM/YYYY')}</span> },
+    { title: F.colCode, dataIndex: 'code', width: 146, className: 'fin-ledger-nowrap', render: (v) => <span className="tbl-mono fin-muted-code">{v || '—'}</span> },
     {
       title: F.colParty, key: 'party', width: 260,
       render: (_, r) => (
@@ -75,9 +75,9 @@ export default function LedgerTab({ F, funds, refreshKey }) {
         return r.fund ? <span className="tbl-pill" style={{ color: c, background: softOf(c) }}>{r.fund.name}</span> : null;
       },
     },
-    { title: F.colIncome, dataIndex: 'income', width: 140, align: 'right', render: (v) => (v ? <span className="fin-in tbl-mono">+{vnd(v)}</span> : '') },
-    { title: F.colExpense, dataIndex: 'expense', width: 140, align: 'right', render: (v) => (v ? <span className="fin-out tbl-mono">−{vnd(v)}</span> : '') },
-    { title: F.colBalance, dataIndex: 'balance', width: 150, align: 'right', render: (v) => <strong className={`tbl-mono${v < 0 ? ' fin-out' : ''}`}>{vnd(v)}</strong> },
+    { title: F.colIncome, dataIndex: 'income', width: 158, className: 'fin-ledger-nowrap', align: 'right', render: (v) => (v ? <span className="fin-in tbl-mono">+{vnd(v)}</span> : '') },
+    { title: F.colExpense, dataIndex: 'expense', width: 158, className: 'fin-ledger-nowrap', align: 'right', render: (v) => (v ? <span className="fin-out tbl-mono">−{vnd(v)}</span> : '') },
+    { title: F.colBalance, dataIndex: 'balance', width: 158, className: 'fin-ledger-nowrap', align: 'right', render: (v) => <strong className={`tbl-mono${v < 0 ? ' fin-out' : ''}`}>{vnd(v)}</strong> },
   ];
 
   return (
