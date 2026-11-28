@@ -179,7 +179,7 @@ const vi = {
   },
   department: {
     cardActions: 'Thao tác với ban', editAction: 'Chỉnh sửa', addMember: 'Thêm thành viên',
-    memberCountOne: '{n} thành viên', memberCountMany: '{n} thành viên', emptyMembers: 'Ban này chưa có thành viên',
+    memberCountOne: '{n} thành viên', memberCountMany: '{n} thành viên', emptyMembers: 'Ban này chưa có thành viên', memberRange: 'Đang xem {from}–{to} / {total} thành viên',
     updateSuccess: 'Cập nhật thành công', addSuccess: 'Thêm ban thành công', loadError: 'Không thể tải danh sách ban', deleteError: 'Không thể xóa ban', codeFormat: 'Mã chỉ gồm chữ, số, “_” hoặc “-”', namePlaceholder: 'VD: Ban Hộ Tự',
     title: 'Ban / Đơn vị', addNew: 'Thêm ban', addTitle: 'Thêm ban/đơn vị', editTitle: 'Sửa ban/đơn vị',
     colCode: 'Mã ban', colName: 'Tên ban', colMembers: 'Số thành viên',
@@ -975,7 +975,7 @@ const en: typeof vi = {
   },
   department: {
     cardActions: 'Department actions', editAction: 'Edit', addMember: 'Add Member',
-    memberCountOne: '{n} member', memberCountMany: '{n} members', emptyMembers: 'This department has no members yet',
+    memberCountOne: '{n} member', memberCountMany: '{n} members', emptyMembers: 'This department has no members yet', memberRange: 'Showing {from}–{to} of {total} members',
     updateSuccess: 'Updated successfully', addSuccess: 'Department added', loadError: 'Could not load departments', deleteError: 'Could not delete department', codeFormat: 'Code may contain letters, digits, “_” or “-”', namePlaceholder: 'e.g. Temple Guard Board',
     title: 'Departments', addNew: 'Add Department', addTitle: 'Add Department', editTitle: 'Edit Department',
     colCode: 'Dept Code', colName: 'Department Name', colMembers: 'Members',

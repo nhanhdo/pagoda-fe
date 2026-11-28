@@ -86,6 +86,70 @@ function DeptCard({ dept, active, canEdit, onOpen, onEdit, onDelete, t }) {
   );
 }
 
+const VISIBLE_MEMBERS = 5;
+
+function DeptMembers({ members, theme, t }) {
+  const listRef = useRef(null);
+  const [range, setRange] = useState([1, VISIBLE_MEMBERS]);
+  const scrollable = members.length > VISIBLE_MEMBERS;
+
+  const updateRange = () => {
+    const list = listRef.current;
+    if (!list?.clientHeight) return;
+    const top = list.scrollTop;
+    const bottom = top + list.clientHeight;
+    const rows = Array.from(list.children);
+    const from = rows.findIndex(row => row.offsetTop + row.offsetHeight > top + 1);
+    const to = rows.findLastIndex(row => row.offsetTop < bottom - 1);
+    if (from >= 0 && to >= from) {
+      setRange(current => current[0] === from + 1 && current[1] === to + 1 ? current : [from + 1, to + 1]);
+    }
+  };
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!scrollable || !list) return;
+    const fit = () => {
+      const fifth = list.children[VISIBLE_MEMBERS - 1];
+      list.style.setProperty('--dept-five-rows', `${fifth.offsetTop + fifth.offsetHeight}px`);
+      updateRange();
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(list);
+    Array.from(list.children).slice(0, VISIBLE_MEMBERS).forEach(row => observer.observe(row));
+    return () => observer.disconnect();
+  }, [members, scrollable]);
+
+  return (
+    <>
+      <ul ref={listRef} className={`dept-member-list${scrollable ? ' dept-member-list--scroll' : ''}`}
+        tabIndex={scrollable ? 0 : undefined} aria-label={scrollable ? t.department.members : undefined}
+        onScroll={scrollable ? updateRange : undefined}>
+        {members.map(member => (
+          <li key={member.id} className="dept-member">
+            <Avatar size={36} style={{ background: theme.soft, color: theme.accent, flexShrink: 0 }}>
+              {memberInitial(member)}
+            </Avatar>
+            <div className="dept-member__identity">
+              <div className="dept-member__name">{memberName(member)}</div>
+              {member.dharmName && member.fullName && member.dharmName !== member.fullName && (
+                <div className="dept-member__sub">{member.fullName}</div>
+              )}
+            </div>
+            {member.position && <span className="dept-member__role">{positionLabel(t, member.position)}</span>}
+          </li>
+        ))}
+      </ul>
+      {scrollable && (
+        <p className="dept-member-range">
+          {t.department.memberRange.replace('{from}', range[0]).replace('{to}', range[1]).replace('{total}', members.length)}
+        </p>
+      )}
+    </>
+  );
+}
+
 function DeptDetails({ dept, canEdit, canAddMember, onEdit, onAddMember, onClose, t }) {
   const theme = getDeptTheme(dept.code);
   const members = dept.members || [];
@@ -119,22 +183,7 @@ function DeptDetails({ dept, canEdit, canAddMember, onEdit, onAddMember, onClose
         {members.length === 0 ? (
           <div className="dept-detail__empty"><UserOutlined aria-hidden="true" /> {t.department.emptyMembers}</div>
         ) : (
-          <ul className="dept-member-list">
-            {members.map(member => (
-              <li key={member.id} className="dept-member">
-                <Avatar size={36} style={{ background: theme.soft, color: theme.accent, flexShrink: 0 }}>
-                  {memberInitial(member)}
-                </Avatar>
-                <div className="dept-member__identity">
-                  <div className="dept-member__name">{memberName(member)}</div>
-                  {member.dharmName && member.fullName && member.dharmName !== member.fullName && (
-                    <div className="dept-member__sub">{member.fullName}</div>
-                  )}
-                </div>
-                {member.position && <span className="dept-member__role">{positionLabel(t, member.position)}</span>}
-              </li>
-            ))}
-          </ul>
+          <DeptMembers key={dept.id} members={members} theme={theme} t={t} />
         )}
       </div>
     </section>
