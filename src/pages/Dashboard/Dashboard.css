@@ -80,6 +80,8 @@
 /* ── KPI tiles ───────────────────────────────────────────── */
 .db-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .db-kpi {
+  position: relative; isolation: isolate;
+  --aui-shine-color: color-mix(in srgb, var(--kpi-accent) 14%, transparent);
   display: flex; flex-direction: column; gap: 6px;
   min-width: 0; padding: 18px 20px 14px;
   border: 1px solid #ece1d1; border-radius: 18px;
@@ -107,7 +109,7 @@
 .db-kpi__foot.is-warn { color: #c98a1e; font-weight: 600; }
 .db-kpi__foot.is-ok { color: #4f9a72; font-weight: 600; }
 .db-kpi__arrow { font-size: 11px; color: var(--kpi-accent); opacity: 0; transform: translateX(-4px); transition: opacity .2s, transform .2s; }
-.db-kpi:hover .db-kpi__arrow { opacity: 1; transform: none; }
+.db-kpi:is(:hover,:focus-visible) .db-kpi__arrow { opacity: 1; transform: translateX(3px); }
 
 /* ── Section cards ───────────────────────────────────────── */
 .db-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 18px; align-items: stretch; }
@@ -320,6 +322,7 @@
 @keyframes db-track-grow { from { transform: scaleX(0); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .db-bd__arc, .db-bd__row { transition: none; }
+  .db-bd__arc, .db-bd__row, .db-kpi__arrow { transition: none; }
+  .db-kpi:is(:hover,:focus-visible) .db-kpi__arrow { transform: none; }
   .db-bd__arc, .db-bd__track i { animation: none; }
 }

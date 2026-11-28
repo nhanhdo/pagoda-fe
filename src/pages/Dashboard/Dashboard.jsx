@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Avatar, Tooltip, Result, Button, Alert } from 'antd';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import { Shine } from '../../components/AnimateUI/Effects';
 import {
   TeamOutlined, HeartOutlined, BookOutlined, CheckSquareOutlined,
   ArrowRightOutlined, ScheduleOutlined, SolutionOutlined,
@@ -70,6 +71,7 @@ function KpiTile({ label, value, tone, icon, foot, footTone, onClick, delay }) {
   const shown = Math.round(useCountUp(value));
   return (
     <button type="button" className={`db-kpi kpi-anim kpi-anim-d${delay}`} onClick={onClick} style={{ '--kpi-accent': a.c, '--kpi-soft': a.s }}>
+      <Shine />
       <div className="db-kpi__top">
         <span className="db-kpi__label">{label}</span>
         <span className="db-kpi__icon">{icon}</span>

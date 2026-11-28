@@ -240,6 +240,9 @@
   line-height: 1.55;
 }
 .hp__cta {
+  position: relative;
+  isolation: isolate;
+  --aui-shine-color: #fff9ebc9;
   min-height: 54px;
   gap: 23px;
   margin-top: 20px;

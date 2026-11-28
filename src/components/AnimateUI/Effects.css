@@ -1,0 +1,19 @@
+.aui-shine {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.aui-shine__beam {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 20%, var(--aui-shine-color, #fff8) 50%, transparent 80%);
+  transform: translateX(-100%) skewX(-18deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aui-shine { display: none; }
+}

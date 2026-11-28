@@ -12,6 +12,7 @@ import {
 } from "@ant-design/icons";
 import DharmaWheel from "../../components/DharmaWheel/DharmaWheel";
 import LangToggle from "../../components/LangToggle/LangToggle";
+import { Shine } from "../../components/AnimateUI/Effects";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { getBuddhistHolidays, solarToLunar } from "../../utils/lunarCalendar";
@@ -153,6 +154,7 @@ export function HomeLanding({
               </h1>
               <p className="hp__lead">{L.homeLead}</p>
               <button type="button" className="hp__cta" onClick={onEnter}>
+                {!isShowcase && <Shine intro />}
                 {L.homeEnter} <ArrowRightOutlined aria-hidden="true" />
               </button>
             </div>
