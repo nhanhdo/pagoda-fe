@@ -110,18 +110,12 @@
 .hp .hdr-lang__opt:hover { color: var(--hp-ink); }
 .hp .hdr-lang__opt.is-active { color: var(--hp-gold); }
 
-.hp .hdr-lang__thumb,
-.hp .hdr-lang:active .hdr-lang__thumb {
-  top: auto;
-  bottom: 8px;
-  left: 8px;
-  width: calc(var(--opt-w) - 16px);
+.hp .hdr-lang__thumb {
+  inset: auto 8px 8px;
   height: 2px;
   background: var(--hp-gold);
   box-shadow: none;
-  transition: transform .15s var(--hp-ease);
 }
-.hp .hdr-lang.is-en .hdr-lang__thumb { transform: translateX(var(--opt-w)); }
 
 .hp__login-sm, .hp__cta {
   display: inline-flex;

@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import DharmaWheel from '../DharmaWheel/DharmaWheel';
 import LangToggle from '../LangToggle/LangToggle';
+import { Fade } from '../AnimateUI/Effects';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getBuddhistHolidays } from '../../utils/lunarCalendar';
@@ -757,15 +758,14 @@ export default function MainLayout() {
 
         <Content ref={contentRef} id="app-content" tabIndex={-1} className="app-content"
           style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
-          <motion.div
+          <Fade
             key={location.pathname}
             className="app-route"
-            initial={reduceMotion ? false : { opacity: 0.9, y: 3 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: reduceMotion ? 0 : 0.22, ease: 'easeOut' } }}
+            initialOpacity={0.9}
             style={{ minHeight: '100%', paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom, 0px))' : 0 }}
           >
             {outlet}
-          </motion.div>
+          </Fade>
         </Content>
       </Layout>
 

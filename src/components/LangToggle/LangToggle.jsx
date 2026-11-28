@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useId } from 'react';
+import { Highlight } from '../AnimateUI/Effects';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 /** VI / EN pill switch (styles: .hdr-lang in index.css). Used in the app header, login and home page. */
 export default function LangToggle({ className = '' }) {
   const { lang, setLang } = useLanguage();
+  const highlightId = useId();
   const onArrow = (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
     event.preventDefault();
@@ -13,7 +15,6 @@ export default function LangToggle({ className = '' }) {
   };
   return (
     <div className={`hdr-lang is-${lang} ${className}`.trim()} role="radiogroup" onKeyDown={onArrow} aria-label="Language / Ngôn ngữ">
-      <span className="hdr-lang__thumb" aria-hidden="true" />
       {['vi', 'en'].map(code => (
         <button
           key={code}
@@ -27,7 +28,8 @@ export default function LangToggle({ className = '' }) {
           onClick={() => setLang(code)}
           title={code === 'vi' ? 'Tiếng Việt' : 'English'}
         >
-          {code.toUpperCase()}
+          <Highlight active={lang === code} layoutId={highlightId} className="hdr-lang__thumb" />
+          <span className="hdr-lang__text">{code.toUpperCase()}</span>
         </button>
       ))}
     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Button, DatePicker, Select, Tooltip } from 'antd';
 import {
   RiseOutlined, FallOutlined, SwapOutlined, ClockCircleOutlined, CalendarOutlined,
@@ -6,6 +6,7 @@ import {
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
+import { Highlight } from '../../components/AnimateUI/Effects';
 import CountUp from '../../components/CountUp/CountUp';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { vnd, compactVnd, CATEGORY_COLOR, softOf, presetRanges, ymd } from './financeShared';
@@ -84,6 +85,7 @@ export default function FinanceOverview({ F, funds, range, setRange, fundId, set
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState('thisMonth');
+  const presetHighlightId = useId();
   const [failed, setFailed] = useState(false);
   const [retry, setRetry] = useState(0);
 
@@ -122,7 +124,10 @@ export default function FinanceOverview({ F, funds, range, setRange, fundId, set
       <div className="fin-toolbar section-anim section-d2">
         <div className="fin-presets">
           {[...presets.map(p => ({ key: p.key, label: p.label })), { key: 'allTime', label: F.presets.allTime }].map(p => (
-            <button key={p.key} type="button" className={`fin-chip${preset === p.key ? ' is-active' : ''}`} aria-pressed={preset === p.key} onClick={() => pickPreset(p.key)}>{p.label}</button>
+            <button key={p.key} type="button" className={`fin-chip${preset === p.key ? ' is-active' : ''}`} aria-pressed={preset === p.key} onClick={() => pickPreset(p.key)}>
+              <Highlight active={preset === p.key} layoutId={presetHighlightId} className="fin-chip__highlight" />
+              <span className="fin-chip__label">{p.label}</span>
+            </button>
           ))}
         </div>
         <RangePicker

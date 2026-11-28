@@ -787,14 +787,11 @@ body {
   border-radius: 999px; background: #f6efe5; border: 1px solid #efe4d4;
 }
 .hdr-lang__thumb {
-  position: absolute; top: 3px; left: 3px;
-  width: var(--opt-w); height: 26px;
+  position: absolute; inset: 0;
   border-radius: 999px; background: #fff;
   box-shadow: 0 1px 4px rgba(120,90,50,.18), 0 0 0 1px rgba(236,214,181,.6);
-  transition: transform .38s cubic-bezier(.34,1.45,.64,1), width .25s ease;
   pointer-events: none;
 }
-.hdr-lang.is-en .hdr-lang__thumb { transform: translateX(calc(var(--opt-w) + 2px)); }
 .hdr-lang__opt {
   position: relative; z-index: 1;
   width: var(--opt-w); height: 26px; padding: 0;
@@ -802,14 +799,9 @@ body {
   font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: #7a6a5c;
   cursor: pointer; transition: color .25s ease;
 }
+.hdr-lang__text { position: relative; }
 .hdr-lang__opt:hover { color: #8a5a28; }
 .hdr-lang__opt.is-active { color: #b06f2c; }
-.hdr-lang:active .hdr-lang__thumb { width: calc(var(--opt-w) + 6px); }
-.hdr-lang.is-en:active .hdr-lang__thumb { transform: translateX(calc(var(--opt-w) - 4px)); }
-@media (prefers-reduced-motion: reduce) {
-  .hdr-lang__thumb { transition: none; }
-}
-
 .hdr-icon-btn {
   width: 38px; height: 38px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -1083,7 +1075,7 @@ body {
 /* ── Touch screens: every tap target at least 40px (WCAG 2.5.5 / Apple HIG) ── */
 @media (pointer: coarse) {
   .hdr-lang { --opt-w: 40px; }
-  .hdr-lang__opt, .hdr-lang__thumb { height: 34px; }
+  .hdr-lang__opt { height: 34px; }
   .hdr-lang { padding: 3px; }
   .hdr-icon-btn, .hdr-toggle { width: 40px; height: 40px; }
   .notif__mark { height: 36px; padding: 0 14px; }
@@ -1115,8 +1107,7 @@ body {
   }
   .hdr-lang__opt { height: 44px; }
   .hdr-lang__thumb {
-    top: 9px;
-    height: 26px;
+    inset: 9px 0;
     box-shadow: 0 1px 2px #69451c1f;
   }
 }

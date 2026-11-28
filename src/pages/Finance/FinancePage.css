@@ -62,11 +62,20 @@
 .fin-filters { margin-bottom: 14px; }
 .fin-presets { display: flex; gap: 6px; flex-wrap: wrap; }
 .fin-chip {
-  height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid #efe2cf; background: #fffaf3;
+  position: relative; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid #efe2cf; background: #fffaf3;
   color: #8a6a4a; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s, border-color .15s;
 }
 .fin-chip:hover { background: #fbefdf; }
-.fin-chip.is-active { background: #c47f36; border-color: #c47f36; color: #fff; }
+.fin-chip.is-active { border-color: #c89554; color: #3e2c1f; }
+.fin-chip__highlight {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid #c89554;
+  background: #edc791;
+  pointer-events: none;
+}
+.fin-chip__label { position: relative; }
 .fin-range.ant-picker, .fin-select .ant-select-selector { border-radius: 999px !important; background: #fcf9f4 !important; }
 .fin-select { min-width: 160px; }
 .fin-search.ant-input-affix-wrapper { flex: 1 1 220px; max-width: 320px; border-radius: 999px; background: #fcf9f4; border-color: #efe5d6; padding-inline: 14px; }
