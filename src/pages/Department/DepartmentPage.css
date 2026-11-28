@@ -182,10 +182,11 @@
   border-radius: 14px;
   overflow: hidden;
 }
-.dept-detail__head {
+.dept-detail > .dept-detail__head {
   padding: 14px;
+  background: linear-gradient(145deg, #ffffff65, transparent) #deedf9;
   border: 0;
-  border-bottom: 1px solid var(--ui-line);
+  border-bottom: 1px solid #c6ddef;
   box-shadow: inset 0 1px 0 #fffc;
 }
 .dept-detail__top { display: flex; align-items: flex-start; gap: 9px; }
@@ -249,7 +250,6 @@
   overflow-wrap: anywhere;
 }
 .dept-drawer .dept-detail { border: 0; border-radius: 0; }
-.dept-drawer .dept-detail__head { background-color: #e7dfd5; }
 @media (max-width: 767px) {
   .dept-hero__stats { width: 100%; }
   .dept-stat { flex: 1; min-width: 0; padding: 8px 10px; }
