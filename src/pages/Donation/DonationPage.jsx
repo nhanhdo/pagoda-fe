@@ -3,9 +3,10 @@ import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import CountUp from '../../components/CountUp/CountUp';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
-  Table, Button, Input, Modal, Form, Popconfirm, Row, Col, DatePicker,
+  Table, Button, Input, Form, Popconfirm, Row, Col, DatePicker,
   InputNumber, Select, Segmented, Avatar, Tooltip, message as antMessage,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, SearchOutlined, DeleteOutlined, EditOutlined,
   HeartOutlined, CalendarOutlined, UserOutlined, DownloadOutlined,
@@ -281,7 +282,7 @@ export default function DonationPage() {
             {D.exportExcel}
           </Button>
           {canManage() && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="dn-btn">
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="add-action dn-btn">
               {D.addNew}
             </Button>
           )}
@@ -399,20 +400,22 @@ export default function DonationPage() {
       </section>
 
       {/* ── Add / edit ── */}
-      <Modal
+      <FormDialog
+        sections={[['donor', D.donorSection], ['donation', D.donationSection]]}
         title={editRecord ? D.editTitle : D.addTitle}
         open={modalOpen}
         onCancel={() => guardedClose(form, () => { setModalOpen(false); setEditRecord(null); }, t)}
         maskClosable={false}
         confirmLoading={saving}
         onOk={() => form.submit()}
+        isAdding={!editRecord}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         width={620}
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} className="dn-form">
-          <div className="dn-form__section">{D.donorSection}</div>
+          <FormSectionHeading section="donor" className="dn-form__section">{D.donorSection}</FormSectionHeading>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="buddhistFollowerId" label={D.form.follower}>
@@ -434,7 +437,7 @@ export default function DonationPage() {
             </Col>
           </Row>
 
-          <div className="dn-form__section">{D.donationSection}</div>
+          <FormSectionHeading section="donation" className="dn-form__section">{D.donationSection}</FormSectionHeading>
           <Form.Item name="fundId" label={D.fieldFund}>
             <Select options={funds.filter(x => x.isActive !== false || x.id === editRecord?.fundId).map(x => ({
               value: x.id,
@@ -495,7 +498,7 @@ export default function DonationPage() {
             </Col>
           </Row>
         </Form>
-      </Modal>
+      </FormDialog>
     </div>
   );
 }

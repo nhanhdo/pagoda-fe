@@ -5,6 +5,7 @@ import {
   message, Popconfirm, Space, Spin, Upload, Switch, Typography, Avatar, Dropdown,
   Calendar, Badge, Tooltip, Segmented, Image,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined, CalendarOutlined,
   ThunderboltOutlined, ReadOutlined, EnvironmentOutlined, ClockCircleOutlined,
@@ -601,17 +602,20 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
   };
 
   return (
-    <Modal
+    <FormDialog
+      sections={[['overview', t.common.formOverview], ['content', t.news.formContentLabel], ['image', t.news.formImageLabel]]}
       title={<span style={{ fontWeight: 700, fontSize: 16 }}>{editRecord ? t.news.editPost : t.news.addNew}</span>}
       open={open} onCancel={() => guardedClose(form, onClose, t)} onOk={() => form.submit()}
+      isAdding={!editRecord}
       okText={editRecord ? t.common.update : t.news.addNew}
       cancelText={t.common.cancel}
       confirmLoading={submitting} maskClosable={false}
       width={680} destroyOnClose
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-          <Form.Item name="type" label={t.news.formTypeLabel} rules={[rules(t).select(t.news.formTypeLabel.toLowerCase())]} style={{ flex: 1, marginBottom: 12 }}>
+        <FormSectionHeading section="overview">{t.common.formOverview}</FormSectionHeading>
+        <div className="form-dialog__row" style={{ alignItems: 'flex-end' }}>
+          <Form.Item name="type" label={t.news.formTypeLabel} rules={[rules(t).select(t.news.formTypeLabel.toLowerCase())]} style={{ flex: '1 1 130px', marginBottom: 12 }}>
             <Select size="large">
               <Select.Option value="event">📅  {t.news.typeEvent}</Select.Option>
               <Select.Option value="news">⚡  {t.news.typeNews}</Select.Option>
@@ -634,24 +638,26 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
           <Input size="large" placeholder={t.news.formTitlePlaceholder} />
         </Form.Item>
 
+        <FormSectionHeading section="content">{t.news.formContentLabel}</FormSectionHeading>
         <Form.Item name="content" label={t.news.formContentLabel}>
           <TextArea autoSize={{ minRows: 4, maxRows: 10 }} placeholder={t.news.formContentPlaceholder} />
         </Form.Item>
 
         {currentType === 'event' && (
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Form.Item name="eventDate" label={t.news.formDateLabel} style={{ flex: 1 }} rules={[{ required: true, message: t.news.eventDateRequired }]}>
+          <div className="form-dialog__row">
+            <Form.Item name="eventDate" label={t.news.formDateLabel} style={{ flex: '1 1 135px' }} rules={[{ required: true, message: t.news.eventDateRequired }]}>
               <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
             </Form.Item>
             <Form.Item name="eventTime" label={t.news.formTimeLabel} style={{ width: 120 }}>
               <TimePicker format="HH:mm" minuteStep={5} needConfirm={false} placeholder="08:00" style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="eventLocation" label={t.news.formLocationLabel} style={{ flex: 2 }}>
+            <Form.Item name="eventLocation" label={t.news.formLocationLabel} style={{ flex: '2 1 150px' }}>
               <Input />
             </Form.Item>
           </div>
         )}
 
+        <FormSectionHeading section="image">{t.news.formImageLabel}</FormSectionHeading>
         <Form.Item label={t.news.formImageLabel}>
           <Upload
             listType="picture-card" maxCount={1}
@@ -673,7 +679,7 @@ function PostFormModal({ open, onClose, editRecord, type: defaultType, onSaved, 
         {/* Enter in a single-line field submits; the OK button lives in the footer */}
         <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
 
@@ -914,7 +920,7 @@ function EventCalendarView({ events, canEdit, onDblClickDate }) {
             ))}
             {!selHoliday && selEvents.length === 0 && <div style={{ fontSize: 12, color: '#7a6a5c' }}>{CL.nothingThisDay}</div>}
             {canEdit && (
-              <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={() => onDblClickDate(sel)} style={{ marginTop: 4 }}>
+              <Button className="add-action" size="small" type="dashed" icon={<PlusOutlined />} onClick={() => onDblClickDate(sel)} style={{ marginTop: 4 }}>
                 {CL.addEventFor.replace('{d}', sel.format('DD/MM'))}
               </Button>
             )}
@@ -1099,7 +1105,7 @@ export default function NewsPage() {
         {canPost && (
           <Button
             icon={<PlusOutlined />} onClick={openCreate}
-            className="news-add-btn"
+            className="news-add-btn add-action"
             title={canEdit ? t.news.shareDescription : t.news.pendingDescription}
             type="primary"
             style={{ fontWeight: 700, height: 40, borderRadius: 10, fontSize: 14, position: 'relative', zIndex: 1 }}

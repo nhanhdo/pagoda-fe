@@ -111,7 +111,7 @@ export default function LibraryPage() {
         </div>
         {canEdit && (
           <div className="pp-hero__actions">
-            <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => setForm({ open: true, record: null })}>
+            <Button type="primary" icon={<PlusOutlined />} className="add-action pp-hero__btn" onClick={() => setForm({ open: true, record: null })}>
               {L.addNew}
             </Button>
           </div>

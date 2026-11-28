@@ -5,9 +5,10 @@ import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import CountUp from '../../components/CountUp/CountUp';
 import {
-  Table, Button, Select, Modal, Form, Input, DatePicker, Popconfirm, Row, Col, Tooltip,
+  Table, Button, Select, Form, Input, DatePicker, Popconfirm, Row, Col, Tooltip,
   Segmented, Dropdown, Avatar,
 } from 'antd';
+import FormDialog from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined, TableOutlined, ProjectOutlined, UserOutlined,
   ClockCircleOutlined, SearchOutlined, CarryOutOutlined, SyncOutlined, CheckCircleOutlined,
@@ -189,11 +190,12 @@ function WorkFormModal({ open, record, personnel, saving, W, t, onClose, onSubmi
   }, [open, record, form]);
 
   return (
-    <Modal
+    <FormDialog
       title={record ? W.editTitle : W.addTitle}
       open={open}
       onCancel={() => guardedClose(form, onClose, t)}
       onOk={() => form.submit()}
+      isAdding={!record}
       okText={record ? t.common.update : t.common.add}
       cancelText={t.common.cancel}
       confirmLoading={saving}
@@ -233,7 +235,7 @@ function WorkFormModal({ open, record, personnel, saving, W, t, onClose, onSubmi
         </Form.Item>
         <Form.Item name="notes" label={t.common.notes} style={{ marginBottom: 0 }}><Input.TextArea rows={2} /></Form.Item>
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
 
@@ -389,7 +391,7 @@ export default function WorkAssignmentPage() {
         </div>
         {manage && (
           <div className="pp-hero__actions">
-            <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => openModal()}>{W.addNew}</Button>
+            <Button type="primary" icon={<PlusOutlined />} className="add-action pp-hero__btn" onClick={() => openModal()}>{W.addNew}</Button>
           </div>
         )}
       </section>

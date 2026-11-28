@@ -74,7 +74,7 @@ export default function FinancePage() {
             <p className="fin-hero__sub">{F.subtitle}</p>
           </div>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} className="fin-btn" onClick={() => { setTab('expenses'); setCreateSignal(s => s + 1); }}>
+        <Button type="primary" icon={<PlusOutlined />} className="add-action fin-btn" onClick={() => { setTab('expenses'); setCreateSignal(s => s + 1); }}>
           {F.addExpense}
         </Button>
       </section>

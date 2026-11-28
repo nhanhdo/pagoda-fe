@@ -3,9 +3,10 @@ import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import CountUp from '../../components/CountUp/CountUp';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
-  Table, Button, Select, Modal, Form, Input, message, Popconfirm, Row, Col,
+  Table, Button, Select, Form, Input, message, Popconfirm, Row, Col,
   DatePicker, Segmented, Avatar, Tooltip,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined, TrophyOutlined, WarningOutlined,
   SearchOutlined, CalendarOutlined, StarOutlined, SafetyCertificateOutlined,
@@ -268,7 +269,7 @@ export default function RewardDisciplinePage() {
           </div>
         </div>
         {canEdit && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="rd-btn">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="add-action rd-btn">
             {R.addNew}
           </Button>
         )}
@@ -361,11 +362,13 @@ export default function RewardDisciplinePage() {
       </section>
 
       {/* ── Add / edit ── */}
-      <Modal
+      <FormDialog
+        sections={[['overview', t.common.formOverview], ['details', t.common.formDetails]]}
         title={editRecord ? R.editTitle : R.addTitle}
         open={modalOpen}
         onCancel={() => guardedClose(form, () => setModalOpen(false), t)}
         onOk={() => form.submit()}
+        isAdding={!editRecord}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         okButtonProps={{ danger: formType === DISCIPLINE }}
@@ -375,6 +378,7 @@ export default function RewardDisciplinePage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} className="rd-form">
+          <FormSectionHeading section="overview">{t.common.formOverview}</FormSectionHeading>
           <Form.Item name="type" label={R.fieldType} initialValue={REWARD}>
             <Segmented
               block
@@ -411,6 +415,7 @@ export default function RewardDisciplinePage() {
               </Form.Item>
             </Col>
           </Row>
+          <FormSectionHeading section="details">{t.common.formDetails}</FormSectionHeading>
           <Form.Item name="title" label={R.colTitle} rules={[{ required: true, message: R.titleRequired }]}>
             <Input placeholder={R.titlePlaceholder} />
           </Form.Item>
@@ -447,7 +452,7 @@ export default function RewardDisciplinePage() {
             <Input.TextArea rows={2} />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormDialog>
     </div>
   );
 }

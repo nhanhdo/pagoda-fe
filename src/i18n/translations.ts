@@ -6,7 +6,7 @@ const vi = {
   nav: {
     dashboard: 'Tổng quan',
     personnel: 'Quản lý nhân sự',
-    departments: 'Ban/Đơn vị',
+    departments: 'Ban / Đơn vị',
     dutySchedule: 'Lịch trực chùa',
     workAssignment: 'Phân công công việc',
     training: 'Đào tạo - Giới đàn',
@@ -21,6 +21,8 @@ const vi = {
     library: 'Thư viện Phật & Bồ Tát',
   },
   common: {
+    formSections: 'Các mục biểu mẫu', formOverview: 'Thông tin chung',
+    formSchedule: 'Thời gian và tổ chức', formPayment: 'Thanh toán', formDetails: 'Chi tiết',
     loadError: 'Không thể tải dữ liệu', deleteError: 'Không thể xóa',
     notFoundTitle: 'Trang không tồn tại', notFoundBody: 'Đường dẫn bạn tìm kiếm không được tìm thấy.', notFoundToApp: 'Về trang tổng quan',
     cropTitle: 'Căn chỉnh ảnh đại diện', cropHint: 'Kéo ảnh để đưa khuôn mặt vào giữa vòng tròn. Dùng thanh trượt hoặc con lăn chuột để phóng to.', cropZoom: 'Thu phóng', cropReset: 'Đặt lại', cropApply: 'Dùng ảnh này', cropAdjust: 'Căn chỉnh lại', cropLoadError: 'Không xử lý được ảnh này',
@@ -57,6 +59,7 @@ const vi = {
     todayDuty: 'Lịch trực hôm nay', noDutyToday: 'Chưa có lịch trực hôm nay',
     tangNi: 'Tăng ni', cuSi: 'Cư sĩ', phatTu: 'Phật tử', tinhNguyenVien: 'Tình nguyện viên', nhanVien: 'Nhân viên',
     notUpdated: 'Chưa cập nhật', viewAll: 'Xem tất cả',
+    otherActions: 'Thao tác khác', viewPendingWork: 'Xem việc cần xử lý',
     quickActionsTitle: 'Thao tác nhanh', personnelBreakdown: 'Cơ cấu nhân sự', systemOverview: 'Tổng quan hệ thống',
     addPersonnel: 'Thêm nhân sự', createDuty: 'Tạo lịch trực', assignWork: 'Phân công việc',
     addFollower: 'Thêm phật tử', createCourse: 'Tạo khóa học', postNews: 'Đăng tin tức',
@@ -175,9 +178,10 @@ const vi = {
     },
   },
   department: {
-    cardActions: 'Thao tác với ban',
+    cardActions: 'Thao tác với ban', editAction: 'Chỉnh sửa', addMember: 'Thêm thành viên',
+    memberCountOne: '{n} thành viên', memberCountMany: '{n} thành viên', emptyMembers: 'Ban này chưa có thành viên',
     updateSuccess: 'Cập nhật thành công', addSuccess: 'Thêm ban thành công', loadError: 'Không thể tải danh sách ban', deleteError: 'Không thể xóa ban', codeFormat: 'Mã chỉ gồm chữ, số, “_” hoặc “-”', namePlaceholder: 'VD: Ban Hộ Tự',
-    title: 'Ban/Đơn vị', addNew: 'Thêm ban', addTitle: 'Thêm ban/đơn vị', editTitle: 'Sửa ban/đơn vị',
+    title: 'Ban / Đơn vị', addNew: 'Thêm ban', addTitle: 'Thêm ban/đơn vị', editTitle: 'Sửa ban/đơn vị',
     colCode: 'Mã ban', colName: 'Tên ban', colMembers: 'Số thành viên',
     members: 'Thành viên', codePlaceholder: 'VD: BAN_HOT_TU',
     confirmDelete: 'Xóa ban này?', noMembers: 'Chưa có thành viên', viewMembers: 'xem',
@@ -272,6 +276,7 @@ const vi = {
     emptyFiltered: 'Không có khóa học khớp bộ lọc', emptyFilteredHint: 'Thử đổi từ khóa, loại hoặc trạng thái.',
   },
   buddhistFollower: {
+    formSections: { basic: 'Thông tin cơ bản', contact: 'Liên hệ', participation: 'Quy y và sinh hoạt' },
     updateSuccess: 'Cập nhật thành công', addSuccess: 'Thêm thành công',
     title: 'Phật tử & TNV', addNew: 'Thêm Phật tử/TNV', addTitle: 'Thêm Phật tử / TNV', editTitle: 'Sửa thông tin',
     colName: 'Họ tên / Pháp danh', colType: 'Loại', colArea: 'Khu vực',
@@ -747,6 +752,8 @@ const vi = {
     passwordMismatch: 'Mật khẩu xác nhận không khớp',
   },
   layout: {
+    navGroups: { operations: 'Vận hành', community: 'Sinh hoạt & Đào tạo', finance: 'Tài chính', admin: 'Hệ thống' },
+    findPage: 'Tìm trang', noMatchingPages: 'Không tìm thấy trang phù hợp',
     skipToContent: 'Đến nội dung chính', accountMenu: 'Menu tài khoản',
     mainNav: 'Điều hướng chính',
     repliedToYou: 'đã trả lời bình luận của bạn',
@@ -771,7 +778,7 @@ const vi = {
     pageTitle: {
       dashboard: 'Tổng quan',
       personnel: 'Nhân sự',
-      departments: 'Ban ngành',
+      departments: 'Ban / Đơn vị',
       dutySchedule: 'Lịch trực',
       workAssignment: 'Phân công',
       training: 'Đào tạo',
@@ -810,6 +817,8 @@ const en: typeof vi = {
     library: 'Buddhas & Bodhisattvas',
   },
   common: {
+    formSections: 'Form sections', formOverview: 'General information',
+    formSchedule: 'Schedule and organization', formPayment: 'Payment', formDetails: 'Details',
     loadError: 'Could not load data', deleteError: 'Could not delete',
     notFoundTitle: 'Page not found', notFoundBody: 'The link you followed could not be found.', notFoundToApp: 'Go to dashboard',
     cropTitle: 'Adjust profile photo', cropHint: 'Drag the photo to centre the face in the circle. Use the slider or mouse wheel to zoom.', cropZoom: 'Zoom', cropReset: 'Reset', cropApply: 'Use this photo', cropAdjust: 'Re-adjust', cropLoadError: 'Could not process this image',
@@ -846,6 +855,7 @@ const en: typeof vi = {
     todayDuty: "Today's Duty", noDutyToday: 'No duty schedule today',
     tangNi: 'Monastics', cuSi: 'Lay practitioners', phatTu: 'Buddhist followers', tinhNguyenVien: 'Volunteers', nhanVien: 'Staff',
     notUpdated: 'Not updated', viewAll: 'View all',
+    otherActions: 'More actions', viewPendingWork: 'View pending tasks',
     quickActionsTitle: 'Quick Actions', personnelBreakdown: 'Personnel Breakdown', systemOverview: 'System Overview',
     addPersonnel: 'Add Personnel', createDuty: 'Create Duty', assignWork: 'Assign Work',
     addFollower: 'Add Follower', createCourse: 'Create Course', postNews: 'Post News',
@@ -964,7 +974,8 @@ const en: typeof vi = {
     },
   },
   department: {
-    cardActions: 'Department actions',
+    cardActions: 'Department actions', editAction: 'Edit', addMember: 'Add Member',
+    memberCountOne: '{n} member', memberCountMany: '{n} members', emptyMembers: 'This department has no members yet',
     updateSuccess: 'Updated successfully', addSuccess: 'Department added', loadError: 'Could not load departments', deleteError: 'Could not delete department', codeFormat: 'Code may contain letters, digits, “_” or “-”', namePlaceholder: 'e.g. Temple Guard Board',
     title: 'Departments', addNew: 'Add Department', addTitle: 'Add Department', editTitle: 'Edit Department',
     colCode: 'Dept Code', colName: 'Department Name', colMembers: 'Members',
@@ -1061,6 +1072,7 @@ const en: typeof vi = {
     emptyFiltered: 'No courses match the filters', emptyFilteredHint: 'Try another keyword, type or status.',
   },
   buddhistFollower: {
+    formSections: { basic: 'Basic information', contact: 'Contact', participation: 'Refuge and participation' },
     updateSuccess: 'Updated successfully', addSuccess: 'Added successfully',
     title: 'Followers & Volunteers', addNew: 'Add Follower/Volunteer', addTitle: 'Add Follower / Volunteer', editTitle: 'Edit Info',
     colName: 'Full Name / Dharma Name', colType: 'Type', colArea: 'Area',
@@ -1536,6 +1548,8 @@ const en: typeof vi = {
     passwordMismatch: 'Passwords do not match',
   },
   layout: {
+    navGroups: { operations: 'Operations', community: 'Community & Training', finance: 'Finance', admin: 'System' },
+    findPage: 'Find a page', noMatchingPages: 'No matching pages',
     skipToContent: 'Skip to main content', accountMenu: 'Account menu',
     mainNav: 'Main navigation',
     repliedToYou: 'replied to your comment',

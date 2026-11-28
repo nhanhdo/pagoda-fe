@@ -1,0 +1,113 @@
+.form-dialog-wrap.ant-modal-wrap { overflow: hidden; }
+.form-dialog-wrap .form-dialog.ant-modal {
+  top: auto;
+  padding-bottom: 0;
+  max-width: calc(100vw - 24px) !important;
+  margin: 0 auto !important;
+}
+.form-dialog.ant-modal .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  max-height: calc(var(--form-dialog-viewport, 100dvh) - 32px);
+  padding: 0;
+  border-radius: 16px;
+}
+.form-dialog.ant-modal .ant-modal-header {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 15px 20px 12px;
+  border-bottom: 1px solid var(--ui-line);
+  border-radius: 16px 16px 0 0;
+}
+.form-dialog .ant-modal-title {
+  padding-inline-end: 32px;
+  color: var(--ui-heading);
+  overflow-wrap: anywhere;
+}
+.form-dialog.ant-modal .ant-modal-body,
+.form-dialog__fields {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 16px;
+  padding: 16px 20px !important;
+  scrollbar-gutter: stable;
+}
+.form-dialog--indexed.ant-modal .ant-modal-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 !important;
+  scrollbar-gutter: auto;
+}
+.form-dialog.ant-modal .ant-modal-footer {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 10px 20px;
+  border-top: 1px solid var(--ui-line);
+}
+.form-dialog__row { display: flex; flex-wrap: wrap; column-gap: 12px; }
+.form-dialog .ant-form-item { margin-bottom: 16px; }
+.form-dialog .ant-form-item-label > label { font-weight: 600; }
+.form-dialog .ant-form :is(input, textarea, [role="combobox"]) { scroll-margin-block: 24px; }
+.form-dialog__nav {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--ui-line);
+}
+.form-dialog__nav button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  padding: 4px 10px;
+  background: #fff;
+  color: var(--ui-heading);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.form-dialog__nav button:is(:hover, [aria-current]) {
+  background: #f8eee0;
+  border-color: #d7b99b;
+  color: var(--ui-primary);
+}
+.form-dialog__nav button:focus-visible,
+.form-dialog__section:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 1px;
+}
+.form-dialog .form-dialog__section {
+  margin-block: 16px 12px;
+  color: var(--ui-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+.form-dialog .ant-form > .form-dialog__section:first-child,
+.form-dialog .ant-form > .pp-form-section:first-of-type > .form-dialog__section {
+  margin-top: 0;
+}
+.form-dialog .lib-form-tabs > .ant-tabs-nav {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  background: #fff;
+}
+@media (max-width: 575px) {
+  .form-dialog-wrap .form-dialog.ant-modal { max-width: calc(100vw - 16px) !important; }
+  .form-dialog.ant-modal .ant-modal-content { max-height: calc(var(--form-dialog-viewport, 100dvh) - 16px); }
+  .form-dialog.ant-modal :is(.ant-modal-header,.ant-modal-footer) { padding-inline: 12px; }
+  .form-dialog.ant-modal:not(.form-dialog--indexed) .ant-modal-body,
+  .form-dialog :is(.form-dialog__nav,.form-dialog__fields) { padding-inline: 12px !important; }
+  .form-dialog :is(.ant-modal-footer .ant-btn, .form-dialog__nav button) { min-height: 44px; }
+  .form-dialog .ant-form :is(input.ant-input, .ant-picker, .ant-input-number, .ant-input-affix-wrapper, .ant-select-single) {
+    min-height: 44px;
+  }
+  .form-dialog .ant-form .ant-select-single:not(.ant-select-customize-input) .ant-select-selector { min-height: 44px; }
+  .form-dialog .ant-form .ant-input-number-input { min-height: 42px; }
+}

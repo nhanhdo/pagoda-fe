@@ -191,7 +191,7 @@ export default function PersonnelList() {
             <p>{P.subtitle}</p>
           </div>
           {editable && (
-            <Button type="primary" icon={<PlusOutlined aria-hidden="true" />} className="personnel-primary" onClick={(event) => openEditor(null, event)}>
+            <Button type="primary" icon={<PlusOutlined aria-hidden="true" />} className="add-action personnel-primary" onClick={(event) => openEditor(null, event)}>
               {P.addNew}
             </Button>
           )}

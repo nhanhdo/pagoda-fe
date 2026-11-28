@@ -93,7 +93,7 @@ export default function CeremonyPage() {
           const locked = tab === 'registrations' && !selectedCeremony.registrationOpen && !admin;
           return (
             <Tooltip title={locked ? C.closedForRegistration : ''}>
-              <Button type="primary" icon={<PlusOutlined />} className="cer-btn" disabled={locked} onClick={() => setCreateSignal(s => s + 1)}>
+              <Button type="primary" icon={<PlusOutlined />} className="add-action cer-btn" disabled={locked} onClick={() => setCreateSignal(s => s + 1)}>
                 {heroAction}
               </Button>
             </Tooltip>

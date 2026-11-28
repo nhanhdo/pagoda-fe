@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import {
-  Layout, Dropdown, Space, Typography, Modal, Form, Input,
+  Layout, Dropdown, Space, Modal, Form, Input,
   Descriptions, Tag, message, Select, Grid, Drawer,
   Badge, Popover, Button, Empty, Tooltip, Skeleton,
 } from 'antd';
+import FormDialog from '../FormDialog/FormDialog';
 import {
-  AppstoreFilled, TeamOutlined, CalendarFilled, CheckSquareFilled,
-  BookFilled, HeartFilled, TrophyFilled, BankFilled, NotificationFilled,
-  LogoutOutlined, UserOutlined, KeyOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  BellOutlined, SafetyCertificateFilled, DollarCircleOutlined, DownOutlined, CheckOutlined, CloudServerOutlined, AccountBookOutlined, FireOutlined,
+  AppstoreOutlined, TeamOutlined, CalendarOutlined, CheckSquareOutlined,
+  BookOutlined, HeartOutlined, TrophyOutlined, BankOutlined, NotificationOutlined,
+  LogoutOutlined, UserOutlined, KeyOutlined, MenuUnfoldOutlined, LeftOutlined, RightOutlined, CloseOutlined, SearchOutlined, SettingOutlined,
+  BellOutlined, SafetyCertificateOutlined, DollarCircleOutlined, DownOutlined, CheckOutlined, CloudServerOutlined, AccountBookOutlined, FireOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import DharmaWheel from '../DharmaWheel/DharmaWheel';
@@ -21,8 +22,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { getBuddhistHolidays } from '../../utils/lunarCalendar';
 import { guardedClose, rules } from '../../utils/formGuard';
 
-const { Header, Sider, Content } = Layout;
-const { Text } = Typography;
+const { Header, Content } = Layout;
 const { useBreakpoint } = Grid;
 
 function LotusSVG({ size = 40, opacity = 1 }) {
@@ -379,101 +379,79 @@ function NotificationBell() {
   );
 }
 
-const SIDEBAR_BG = '#ffffff';
 
-/* ── Custom sidebar menu — replaces Ant Design <Menu> ── */
-function SidebarMenu({ items, selectedKey, onSelect, collapsed }) {
-  const reduced = useReducedMotion();
-  const [hovered, setHovered] = useState(null);
+const SIDEBAR_PREFERENCE = 'pagoda.sidebar.collapsed';
+
+function normalizePageName(text) {
+  return text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replaceAll('đ', 'd');
+}
+
+function SidebarMenu({ groups, selectedKey, onSelect, collapsed, query }) {
   const { t } = useLanguage();
-  // Plain navigation landmark + buttons with aria-current (a role="menu" would promise arrow-key behaviour)
+  const search = normalizePageName(query.trim());
+  const visibleGroups = groups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => normalizePageName(item.label).includes(search)),
+    }))
+    .filter(group => group.items.length > 0);
+
   return (
-    <LayoutGroup>
-    <nav aria-label={t.layout.mainNav} style={{ padding: '8px 0', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-      {items.map((item, idx) => {
-        if (item.type === 'divider') {
-          return (
-            <div key={`div-${idx}`} style={{
-              height: 1, margin: '10px 20px',
-              background: '#f1e8db',
-            }} />
-          );
-        }
-        const sel = selectedKey === item.key;
-        const hov = hovered === item.key;
-        const node = (
-          <button
-            type="button"
-            key={item.key}
-            className="sb-item"
-            aria-label={collapsed ? item.label : undefined}
-            aria-current={sel ? 'page' : undefined}
-            onClick={() => onSelect(item.key)}
-            onMouseEnter={() => setHovered(item.key)}
-            onMouseLeave={() => setHovered(null)}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              gap: collapsed ? 0 : 10,
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              padding: collapsed ? '6px 0' : '5px 10px 5px 6px',
-              width: 'calc(100% - 24px)',
-              margin: '2px 12px',
-              border: 0,
-              font: 'inherit',
-              textAlign: 'left',
-              borderRadius: 12,
-              cursor: 'pointer',
-              overflow: 'hidden',
-              // Light, quiet menu: soft tint + accent bar for the current page (no heavy gradient)
-              background: hov ? '#faf5ee' : 'transparent',
-              transition: 'background var(--ui-fast) ease',
-            }}
-          >
-            {sel && <motion.span aria-hidden="true" className="sb-current"
-              layoutId={reduced ? undefined : 'sidebar-current'}
-              transition={{ duration: reduced ? 0 : 0.22, ease: 'easeOut' }} />}
-            {/* icon tile */}
-            <span style={{
-              width: 32, height: 32, flexShrink: 0,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: 10,
-              fontSize: 15.5, lineHeight: 1,
-              background: 'transparent',
-              color: sel ? '#b06f2c' : hov ? '#b06f2c' : '#8f7a66',
-              transition: 'color 0.18s, background 0.18s',
-            }}>
-              {item.icon}
-            </span>
-
-            {/* label */}
-            {!collapsed && (
-              <span style={{
-                fontSize: 13.5, flex: 1,
-                fontWeight: sel ? 700 : 500,
-                letterSpacing: 0.1,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                color: sel ? '#8a4f1c' : hov ? '#2f2117' : '#4f4238',
-                transition: 'color 0.18s',
-              }}>
-                {item.label}
-              </span>
-            )}
-
-          </button>
-        );
-        return collapsed
-          ? <Tooltip key={item.key} title={item.label} placement="right">{node}</Tooltip>
-          : node;
-      })}
+    <nav id="admin-navigation" className="sb-nav" aria-label={t.layout.mainNav}>
+      {visibleGroups.map(group => (
+        <div key={group.key} className="sb-group">
+          {group.label && (
+            collapsed ? (
+              <Tooltip title={group.label} placement="right" trigger={['hover', 'focus']}>
+                <span className="sb-group-anchor">
+                  <Dropdown placement="rightTop" autoFocus trigger={['click']} menu={{
+                    items: group.items,
+                    selectedKeys: [selectedKey],
+                    onClick: ({ key }) => onSelect(key),
+                  }}>
+                    <button type="button" className="sb-group-trigger" aria-haspopup="menu" aria-label={group.label}>
+                      {group.icon}
+                    </button>
+                  </Dropdown>
+                </span>
+              </Tooltip>
+            ) : <div className="sb-group-label">{group.label}</div>
+          )}
+          <ul className={`sb-list${group.label ? ' sb-list--nested' : ''}`}>
+            {group.items.map(item => {
+              const button = (
+                <button type="button" className="sb-item" aria-label={item.label}
+                  aria-current={selectedKey === item.key ? 'page' : undefined} onClick={() => onSelect(item.key)}>
+                  <span className="sb-icon" aria-hidden="true">{item.icon}</span>
+                  <span className="sb-label" aria-hidden={collapsed}>{item.label}</span>
+                </button>
+              );
+              return (
+                <li key={item.key}>
+                  {collapsed
+                    ? <Tooltip title={item.label} placement="right" trigger={['hover', 'focus']}>{button}</Tooltip>
+                    : button}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      {visibleGroups.length === 0 && <p className="sb-empty" role="status">{t.layout.noMatchingPages}</p>}
     </nav>
-    </LayoutGroup>
   );
 }
 
 export default function MainLayout() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarPreference, setSidebarPreference] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_PREFERENCE);
+    return saved === null ? null : saved === 'true';
+  });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [pageQuery, setPageQuery] = useState('');
+  const searchRef = useRef(null);
+  const focusSearch = useRef(false);
+  const mobileToggleRef = useRef(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const [changePassOpen, setChangePassOpen] = useState(false);
@@ -504,26 +482,34 @@ export default function MainLayout() {
   const isPhone  = screens.sm === false;
 
   const PAGE_TITLES = {
-    '/app/dashboard':          { label: t.layout.pageTitle.dashboard,        icon: <AppstoreFilled /> },
+    '/app/dashboard':          { label: t.layout.pageTitle.dashboard,        icon: <AppstoreOutlined /> },
     '/app/personnel':          { label: t.layout.pageTitle.personnel,         icon: <TeamOutlined /> },
-    '/app/departments':        { label: t.layout.pageTitle.departments,       icon: <BankFilled /> },
-    '/app/duty-schedule':      { label: t.layout.pageTitle.dutySchedule,      icon: <CalendarFilled /> },
-    '/app/work-assignment':    { label: t.layout.pageTitle.workAssignment,    icon: <CheckSquareFilled /> },
-    '/app/training':           { label: t.layout.pageTitle.training,          icon: <BookFilled /> },
-    '/app/buddhist-followers': { label: t.layout.pageTitle.buddhistFollowers, icon: <HeartFilled /> },
+    '/app/departments':        { label: t.layout.pageTitle.departments,       icon: <BankOutlined /> },
+    '/app/duty-schedule':      { label: t.layout.pageTitle.dutySchedule,      icon: <CalendarOutlined /> },
+    '/app/work-assignment':    { label: t.layout.pageTitle.workAssignment,    icon: <CheckSquareOutlined /> },
+    '/app/training':           { label: t.layout.pageTitle.training,          icon: <BookOutlined /> },
+    '/app/buddhist-followers': { label: t.layout.pageTitle.buddhistFollowers, icon: <HeartOutlined /> },
     '/app/ceremonies':         { label: t.layout.pageTitle.ceremonies,        icon: <FireOutlined /> },
     '/app/library':            { label: t.layout.pageTitle.library,           icon: <DharmaWheel size="1em" /> },
     '/app/donations':          { label: t.layout.pageTitle.donations,          icon: <DollarCircleOutlined /> },
     '/app/finance':            { label: t.layout.pageTitle.finance,            icon: <AccountBookOutlined /> },
-    '/app/reward-discipline':  { label: t.layout.pageTitle.rewardDiscipline,  icon: <TrophyFilled /> },
-    '/app/news':               { label: t.layout.pageTitle.news,              icon: <NotificationFilled /> },
-    '/app/users':              { label: t.layout.pageTitle.users,             icon: <SafetyCertificateFilled /> },
+    '/app/reward-discipline':  { label: t.layout.pageTitle.rewardDiscipline,  icon: <TrophyOutlined /> },
+    '/app/news':               { label: t.layout.pageTitle.news,              icon: <NotificationOutlined /> },
+    '/app/users':              { label: t.layout.pageTitle.users,             icon: <SafetyCertificateOutlined /> },
     '/app/backup':             { label: t.layout.pageTitle.backup,            icon: <CloudServerOutlined /> },
   };
 
+  const collapsed = !isMobile && (sidebarPreference ?? isTablet);
   useEffect(() => {
-    if (isMobile || isTablet) setCollapsed(true);
-  }, [isMobile, isTablet]);
+    if (!isMobile) setDrawerOpen(false);
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!collapsed && focusSearch.current) {
+      focusSearch.current = false;
+      searchRef.current?.focus();
+    }
+  }, [collapsed]);
 
   // Sub-pages (e.g. /app/library/5, /app/personnel/4) belong to their section's menu item and title
   const sectionPath = location.pathname.split('/').slice(0, 3).join('/');
@@ -533,31 +519,37 @@ export default function MainLayout() {
   }, [sectionPath, t]);
 
 
-  const showFullLabel = isMobile || !collapsed;
-
-  const menuItems = [
-    { key: '/app/dashboard',          icon: <AppstoreFilled />,       label: t.nav.dashboard },
-    { key: '/app/personnel',          icon: <TeamOutlined />,         label: t.nav.personnel },
-    { key: '/app/departments',        icon: <BankFilled />,           label: t.nav.departments },
-    { key: '/app/duty-schedule',      icon: <CalendarFilled />,       label: t.nav.dutySchedule },
-    { key: '/app/work-assignment',    icon: <CheckSquareFilled />,    label: t.nav.workAssignment },
-    { key: '/app/training',           icon: <BookFilled />,           label: t.nav.training },
-    { key: '/app/buddhist-followers', icon: <HeartFilled />,          label: t.nav.buddhistFollowers },
-    { key: '/app/ceremonies',         icon: <FireOutlined />,         label: t.nav.ceremonies },
-    { key: '/app/library',            icon: <span className="anticon"><DharmaWheel size="1em" /></span>, label: t.nav.library },
-    ...(['admin', 'truotri', 'thuki'].includes(user?.role) ? [
-      { key: '/app/donations', icon: <DollarCircleOutlined />, label: t.nav.donations },
-    ] : []),
-    ...(['admin', 'truotri', 'thuki'].includes(user?.role) ? [
-      { key: '/app/finance', icon: <AccountBookOutlined />, label: t.nav.finance },
-    ] : []),
-    { key: '/app/reward-discipline',  icon: <TrophyFilled />,         label: t.nav.rewardDiscipline },
-    { key: '/app/news',               icon: <NotificationFilled />,   label: t.nav.news },
-    ...(user?.role === 'admin' ? [
-      { type: 'divider' },
-      { key: '/app/users', icon: <SafetyCertificateFilled />, label: t.nav.users },
-      { key: '/app/backup', icon: <CloudServerOutlined />, label: t.nav.backup },
-    ] : []),
+  const groups = t.layout.navGroups;
+  const menuGroups = [
+    { key: 'overview', items: [
+      { key: '/app/dashboard', icon: <AppstoreOutlined />, label: t.nav.dashboard },
+    ] },
+    { key: 'operations', label: groups.operations, icon: <SettingOutlined />, items: [
+      { key: '/app/personnel', icon: <TeamOutlined />, label: t.nav.personnel },
+      { key: '/app/departments', icon: <BankOutlined />, label: t.nav.departments },
+      { key: '/app/duty-schedule', icon: <CalendarOutlined />, label: t.nav.dutySchedule },
+      { key: '/app/work-assignment', icon: <CheckSquareOutlined />, label: t.nav.workAssignment },
+      { key: '/app/reward-discipline', icon: <TrophyOutlined />, label: t.nav.rewardDiscipline },
+    ] },
+    { key: 'community', label: groups.community, icon: <BookOutlined />, items: [
+      { key: '/app/buddhist-followers', icon: <HeartOutlined />, label: t.nav.buddhistFollowers },
+      { key: '/app/ceremonies', icon: <FireOutlined />, label: t.nav.ceremonies },
+      { key: '/app/training', icon: <BookOutlined />, label: t.nav.training },
+      { key: '/app/library', icon: <span className="anticon"><DharmaWheel size="1em" /></span>, label: t.nav.library },
+      { key: '/app/news', icon: <NotificationOutlined />, label: t.nav.news },
+    ] },
+    ...(['admin', 'truotri', 'thuki'].includes(user?.role) ? [{
+      key: 'finance', label: groups.finance, icon: <DollarCircleOutlined />, items: [
+        { key: '/app/donations', icon: <DollarCircleOutlined />, label: t.nav.donations },
+        { key: '/app/finance', icon: <AccountBookOutlined />, label: t.nav.finance },
+      ],
+    }] : []),
+    ...(user?.role === 'admin' ? [{
+      key: 'admin', label: groups.admin, icon: <SafetyCertificateOutlined />, items: [
+        { key: '/app/users', icon: <SafetyCertificateOutlined />, label: t.nav.users },
+        { key: '/app/backup', icon: <CloudServerOutlined />, label: t.nav.backup },
+      ],
+    }] : []),
   ];
 
   const userMenuItems = [
@@ -568,6 +560,7 @@ export default function MainLayout() {
   ];
 
   const handleUserMenu = async ({ key }) => {
+    if (isMobile) closeDrawer();
     if (key === 'logout') { logout(); return; }
     if (key === 'profile') {
       setProfileData(null);
@@ -599,175 +592,159 @@ export default function MainLayout() {
   const displayName = user?.personnel?.dharmName || user?.personnel?.fullName || user?.username;
   const initials = displayName?.charAt(0)?.toUpperCase() || 'U';
 
-  const goTo = (path) => {
-    if (path !== location.pathname) navigate(path);
-    if (isMobile) setCollapsed(true);
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setPageQuery('');
   };
 
-  const handleLogoClick = () => goTo('/app/dashboard');
+  const goTo = (path) => {
+    if (path !== location.pathname) navigate(path);
+    setPageQuery('');
+    if (isMobile) closeDrawer();
+  };
 
-  const headerHeight = 56;
+  const saveCollapsed = (next) => {
+    setSidebarPreference(next);
+    localStorage.setItem(SIDEBAR_PREFERENCE, String(next));
+    if (next) setPageQuery('');
+  };
+
+  const toggleLabel = isMobile || !collapsed ? t.layout.collapseMenu : t.layout.expandMenu;
+  const accountButton = (
+    <button type="button" className="sb-account" aria-label={t.layout.accountMenu} aria-haspopup="menu">
+      <span className="hdr-avatar" aria-hidden="true">{initials}</span>
+      <span className="sb-account__text" aria-hidden={collapsed}>
+        <strong>{displayName}</strong>
+        <small>{t.roles[user?.role] || user?.role}</small>
+      </span>
+      <DownOutlined className="sb-account__chevron" aria-hidden="true" />
+    </button>
+  );
+
   const sidebarContent = (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={t.layout.goHome}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLogoClick(); } }}
-        style={{ height: headerHeight, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: showFullLabel ? 'flex-start' : 'center', padding: showFullLabel ? '0 16px' : 0, borderBottom: '1px solid #ece1d1', cursor: 'pointer', gap: 10 }}
-        onClick={handleLogoClick}
-      >
-        {/* Logo Buddha circle */}
-        {(() => {
-          const sz = showFullLabel ? 42 : 36;
-          return (
-            <div style={{
-              width: sz, height: sz, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-              border: '2px solid #fff',
-              boxShadow: '0 0 0 1.5px rgba(214,160,96,.6), 0 4px 12px rgba(196,127,54,.25)',
-            }}>
-              <img src="/pagoda-tab.svg" alt="" style={{
-                width: '100%', height: '100%',
-                objectFit: 'cover', objectPosition: 'center 18%',
-                display: 'block',
-              }}/>
-            </div>
-          );
-        })()}
-        {showFullLabel && (
-          <div style={{ whiteSpace: 'nowrap' }}>
-            <Text style={{ color: '#a2652a', fontWeight: 800, fontSize: 13.5, letterSpacing: 0.3 }}>{t.app.title1} </Text>
-            <Text style={{ color: '#6f5a49', fontWeight: 600, fontSize: 13 }}>{t.app.title2}</Text>
-          </div>
-        )}
+    <div className={`sb-panel admin-nav-glass${collapsed ? ' sb-panel--compact' : ''}`}>
+      <div className="sb-top">
+        <Tooltip title={collapsed ? t.layout.goHome : null} placement="right" trigger={['hover', 'focus']}>
+          <button type="button" className="sb-brand" aria-label={t.layout.goHome}
+            onClick={() => goTo('/app/dashboard')}>
+            <img src="/pagoda-tab.svg" alt="" className="sb-brand__logo" />
+            <span className="sb-brand__text" aria-hidden={collapsed}>{t.app.title1} <strong>{t.app.title2}</strong></span>
+          </button>
+        </Tooltip>
+        <button type="button" className="sb-toggle" aria-label={toggleLabel}
+          aria-expanded={isMobile ? drawerOpen : !collapsed} aria-controls="admin-navigation"
+          onClick={() => isMobile ? closeDrawer() : saveCollapsed(!collapsed)}>
+          {isMobile ? <CloseOutlined /> : collapsed ? <RightOutlined /> : <LeftOutlined />}
+        </button>
+        <div className="sb-search">
+          {collapsed ? (
+            <Tooltip title={t.layout.findPage} placement="right" trigger={['hover', 'focus']}>
+              <button type="button" className="sb-search-trigger" aria-label={t.layout.findPage}
+                onClick={() => { focusSearch.current = true; saveCollapsed(false); }}>
+                <SearchOutlined />
+              </button>
+            </Tooltip>
+          ) : (
+            <Input ref={searchRef} value={pageQuery} onChange={event => setPageQuery(event.target.value)}
+              prefix={<SearchOutlined />} allowClear placeholder={t.layout.findPage} aria-label={t.layout.findPage}
+              onPressEnter={() => {
+                const match = menuGroups.flatMap(group => group.items)
+                  .find(item => normalizePageName(item.label).includes(normalizePageName(pageQuery.trim())));
+                if (pageQuery.trim() && match) goTo(match.key);
+              }} />
+          )}
+        </div>
       </div>
 
-      <SidebarMenu
-        items={menuItems}
-        selectedKey={sectionPath}
-        onSelect={goTo}
-        collapsed={collapsed && !isMobile}
-      />
+      <SidebarMenu groups={menuGroups} selectedKey={sectionPath} onSelect={goTo}
+        collapsed={collapsed} query={pageQuery} />
 
+      <div className="sb-bottom">
+        <Tooltip title={collapsed ? t.layout.accountMenu : null} placement="right" trigger={['hover', 'focus']}>
+          <div>
+            <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenu }}
+              placement={isMobile ? 'topLeft' : 'rightBottom'} autoFocus trigger={['click']}>
+              {accountButton}
+            </Dropdown>
+          </div>
+        </Tooltip>
+      </div>
     </div>
   );
 
-  const sidebarWidth = 240;
-  const collapsedSidebarWidth = 80;
-
   return (
-    <Layout className="app-shell" style={{ overflow: 'hidden' }}>
+    <Layout className={`app-shell admin-shell admin-shell--navigation${isMobile ? ' admin-shell--mobile' : ''}${collapsed ? ' admin-shell--compact' : ''}`}>
       <a className="app-skip" href="#app-content" onClick={(event) => {
         event.preventDefault();
         contentRef.current?.focus({ preventScroll: true });
       }}>{t.layout.skipToContent}</a>
-      {!isMobile && (
-        <Sider trigger={null} collapsible collapsed={collapsed} width={sidebarWidth} collapsedWidth={collapsedSidebarWidth}
-          style={{ background: SIDEBAR_BG, boxShadow: '1px 0 0 #ece1d1', position: 'relative', overflow: 'hidden' }}>
-          {sidebarContent}
-        </Sider>
-      )}
+      <Header className="admin-nav-glass admin-header" style={{ padding: isPhone ? '0 10px' : '0 16px', height: 56 }}>
 
-      <Drawer
-        rootClassName="app-drawer"
-        open={isMobile && !collapsed}
-        onClose={() => setCollapsed(true)}
-        placement="left"
-        width={240}
-        closable={false}
-        styles={{ body: { padding: 0, background: SIDEBAR_BG, overflow: 'hidden', height: '100%' } }}
-      >
-        {sidebarContent}
-      </Drawer>
+        {/* ── Navigation progress bar ── */}
+        <div className="hdr-nav-progress" aria-hidden="true" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div style={{
+            height: '100%',
+            background: 'linear-gradient(90deg, #e7b35a 0%, #c47f36 55%, #e98a6a 100%)',
+            width:   navState === 1 ? '80%' : navState === 2 ? '100%' : '0%',
+            opacity: navState === 0 ? 0 : 1,
+            transition: reduceMotion ? 'none' : navState === 1
+              ? 'width 0.32s cubic-bezier(0.1,0.5,0.5,1), opacity 0.05s'
+              : navState === 2
+                ? 'width 0.14s ease-out, opacity 0.22s ease 0.1s'
+                : 'opacity 0.18s ease',
+          }} />
+        </div>
 
-      <Layout className="app-shell" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Header style={{ background: '#ffffff', padding: isPhone ? '0 10px' : '0 16px', height: headerHeight, minHeight: headerHeight, lineHeight: `${headerHeight}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #ece1d1', boxShadow: '0 1px 0 rgba(120,90,50,.02)', zIndex: 10, position: 'relative', flexShrink: 0 }}>
-
-          {/* ── Navigation progress bar ── */}
-          <div className="hdr-nav-progress" aria-hidden="true" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, overflow: 'hidden', pointerEvents: 'none' }}>
-            <div style={{
-              height: '100%',
-              background: 'linear-gradient(90deg, #e7b35a 0%, #c47f36 55%, #e98a6a 100%)',
-              width:   navState === 1 ? '80%' : navState === 2 ? '100%' : '0%',
-              opacity: navState === 0 ? 0 : 1,
-              transition: reduceMotion ? 'none' : navState === 1
-                ? 'width 0.32s cubic-bezier(0.1,0.5,0.5,1), opacity 0.05s'
-                : navState === 2
-                  ? 'width 0.14s ease-out, opacity 0.22s ease 0.1s'
-                  : 'opacity 0.18s ease',
-            }} />
-          </div>
-
-          <div className="hdr-left">
+        <div className="hdr-left">
+          {isMobile && (
             <button
               type="button"
               className="hdr-toggle"
-              onClick={() => setCollapsed(!collapsed)}
-              aria-label={collapsed ? t.layout.expandMenu : t.layout.collapseMenu}
-              aria-expanded={!collapsed}
+              ref={mobileToggleRef}
+              onClick={() => setDrawerOpen(true)}
+              aria-label={t.layout.expandMenu}
+              aria-expanded={drawerOpen}
             >
-              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              <MenuUnfoldOutlined />
             </button>
-            <span className="hdr-page-compact">
-              {PAGE_TITLES[sectionPath]?.label || t.layout.defaultPageTitle}
-            </span>
-          </div>
+          )}
+          <span className="hdr-page-compact">
+            {PAGE_TITLES[sectionPath]?.label || t.layout.defaultPageTitle}
+          </span>
+        </div>
 
-          <div className="hdr-actions">
-            {/* Language switch */}
-            <LangToggle />
+        <div className="hdr-actions">
+          <LangToggle />
 
-            <NotificationBell />
+          <NotificationBell />
+        </div>
+      </Header>
+      {!isMobile && <aside className="sb-rail">{sidebarContent}</aside>}
+      {isMobile && (
+        <Drawer rootClassName="app-drawer" open={drawerOpen} onClose={closeDrawer}
+          placement="left" width="min(280px, calc(100vw - 24px))" closable={false}
+          aria-label={t.layout.mainNav}
+          afterOpenChange={visible => { if (!visible) mobileToggleRef.current?.focus({ preventScroll: true }); }}
+          styles={{ body: { padding: 0 } }}>
+          {sidebarContent}
+        </Drawer>
+      )}
 
-            <span className="hdr-divider" aria-hidden="true" />
-
-            <Dropdown
-              menu={{ items: userMenuItems, onClick: handleUserMenu }}
-              placement="bottomRight"
-              trigger={['click']}
-              popupRender={(menu) => (
-                <div className="hdr-menu">
-                  <div className="hdr-menu__profile">
-                    <div className="hdr-avatar hdr-avatar--lg">{initials}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div className="hdr-menu__name">{displayName}</div>
-                      <div className="hdr-menu__user">@{user?.username}</div>
-                      <span className="hdr-role">{t.roles[user?.role] || user?.role}</span>
-                    </div>
-                  </div>
-                  {menu}
-                </div>
-              )}
-            >
-              <button type="button" className="hdr-user" aria-label={t.layout.accountMenu}>
-                <span className="hdr-avatar">
-                  {initials}
-                  <i className="hdr-avatar__status" />
-                </span>
-                {!isMobile && (
-                  <span className="hdr-user__text">
-                    <span className="hdr-user__name">{displayName}</span>
-                    <span className="hdr-user__role">{t.roles[user?.role] || user?.role}</span>
-                  </span>
-                )}
-                <DownOutlined className="hdr-user__chevron" />
-              </button>
-            </Dropdown>
-          </div>
-        </Header>
-
-        <Content ref={contentRef} id="app-content" tabIndex={-1} className="app-content"
-          style={{ margin: isMobile ? '8px' : '16px', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
-          <Fade
-            key={location.pathname}
-            className="app-route"
-            initialOpacity={0.9}
-            style={{ minHeight: '100%', paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom, 0px))' : 0 }}
-          >
-            {outlet}
-          </Fade>
-        </Content>
-      </Layout>
+      <Content ref={contentRef} id="app-content" tabIndex={-1} className="app-content"
+        style={{ margin: 'var(--admin-inset)', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
+        <Fade
+          key={location.pathname}
+          className="app-route"
+          initialOpacity={0.9}
+          style={{ minHeight: '100%', paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom, 0px))' : 0 }}
+        >
+          {outlet}
+          <footer className="admin-glass admin-footer">
+            <span>{t.app.siteName}</span>
+            <span>{t.login.brandSubtitle}</span>
+          </footer>
+        </Fade>
+      </Content>
 
       <Modal open={profileOpen} onCancel={() => setProfileOpen(false)} footer={null}
         title={<span style={{ color: '#5a3a22', fontWeight: 700 }}>{t.auth.profile}</span>} width={480}>
@@ -796,7 +773,7 @@ export default function MainLayout() {
         )}
       </Modal>
 
-      <Modal open={changePassOpen} onCancel={() => guardedClose(changePassForm, () => setChangePassOpen(false), t)} onOk={() => changePassForm.submit()}
+      <FormDialog open={changePassOpen} onCancel={() => guardedClose(changePassForm, () => setChangePassOpen(false), t)} onOk={() => changePassForm.submit()}
         okText={t.common.confirm} cancelText={t.common.cancel} maskClosable={false} destroyOnClose
         confirmLoading={changePassLoading}
         title={<span style={{ color: '#5a3a22', fontWeight: 700 }}>{t.auth.changePassword}</span>} width={400}>
@@ -823,7 +800,7 @@ export default function MainLayout() {
           {/* Lets Enter submit even though the OK button lives in the modal footer */}
           <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
         </Form>
-      </Modal>
+      </FormDialog>
     </Layout>
   );
 }

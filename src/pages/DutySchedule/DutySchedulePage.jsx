@@ -241,7 +241,7 @@ export default function DutySchedulePage() {
         </div>
         {canCreate && (
           <div className="pp-hero__actions">
-            <Button type="primary" icon={<PlusOutlined />} className="pp-hero__btn" onClick={() => openModal()}>
+            <Button type="primary" icon={<PlusOutlined />} className="add-action pp-hero__btn" onClick={() => openModal()}>
               {D.addNew}
             </Button>
           </div>

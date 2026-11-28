@@ -7,6 +7,7 @@ import {
   Table, Button, Select, Modal, Form, Input, InputNumber, DatePicker, Row, Col,
   Avatar, Tooltip, Popconfirm, Segmented, message,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, SearchOutlined,
   BookOutlined, HomeOutlined, SafetyCertificateOutlined, RiseOutlined, AppstoreOutlined,
@@ -279,7 +280,7 @@ export default function TrainingPage() {
           </div>
         </div>
         {canManage() && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="tr-hero__btn">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="add-action tr-hero__btn">
             {T.addNew}
           </Button>
         )}
@@ -366,11 +367,13 @@ export default function TrainingPage() {
       </section>
 
       {/* ── Course form ── */}
-      <Modal
+      <FormDialog
+        sections={[['overview', t.common.formOverview], ['schedule', t.common.formSchedule], ['description', t.common.description]]}
         title={editRecord ? T.editTitle : T.addTitle}
         open={modalOpen}
         onCancel={() => guardedClose(form, () => setModalOpen(false), t)}
         onOk={() => form.submit()}
+        isAdding={!editRecord}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         confirmLoading={saving}
@@ -380,6 +383,7 @@ export default function TrainingPage() {
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} className="tr-form">
           <HiddenSubmit />
+          <FormSectionHeading section="overview">{t.common.formOverview}</FormSectionHeading>
           <Form.Item name="name" label={T.colName} rules={[{ ...R.required(T.colName.toLowerCase()), whitespace: true }]}>
             <Input />
           </Form.Item>
@@ -395,6 +399,7 @@ export default function TrainingPage() {
               })}
             </Select>
           </Form.Item>
+          <FormSectionHeading section="schedule">{t.common.formSchedule}</FormSectionHeading>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="startDate" label={T.fieldStartDate} rules={[R.select(T.fieldStartDate.toLowerCase())]}>
@@ -443,11 +448,12 @@ export default function TrainingPage() {
               </Form.Item>
             </Col>
           </Row>
+          <FormSectionHeading section="description">{t.common.description}</FormSectionHeading>
           <Form.Item name="description" label={t.common.description} style={{ marginBottom: 0 }}>
             <Input.TextArea rows={3} />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormDialog>
 
       {/* ── Participants ── */}
       <Modal
@@ -499,7 +505,7 @@ export default function TrainingPage() {
                     || (selectedPersonnelIds.length >= seatsLeft && !selectedPersonnelIds.includes(p.id)),
                 }))}
               />
-              <Button type="primary" icon={<PlusOutlined />} onClick={addParticipants} disabled={!selectedPersonnelIds.length || seatsLeft <= 0}>
+              <Button className="add-action" type="primary" icon={<PlusOutlined />} onClick={addParticipants} disabled={!selectedPersonnelIds.length || seatsLeft <= 0}>
                 {T.addParticipantsBtn}
               </Button>
             </div>

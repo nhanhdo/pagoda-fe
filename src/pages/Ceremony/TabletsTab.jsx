@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Table, Button, Modal, Form, Input, InputNumber, Select, Segmented, Tooltip, Popconfirm, message, AutoComplete, DatePicker, Avatar,
+  Table, Button, Form, Input, InputNumber, Select, Segmented, Tooltip, Popconfirm, message, AutoComplete, DatePicker, Avatar,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   SearchOutlined, EditOutlined, DeleteOutlined, UnorderedListOutlined, AppstoreOutlined, PlusOutlined,
 } from '@ant-design/icons';
@@ -38,13 +39,15 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
   };
 
   return (
-    <Modal
+    <FormDialog
+      sections={[['spirit', C.spiritSection], ['location', C.locationSection], ['worshipper', C.worshipperSection]]}
       open={open} onCancel={() => guardedClose(form, onClose, t)} maskClosable={false} onOk={() => form.submit()} confirmLoading={saving} width={640} destroyOnClose
       title={record ? `${C.editTablet} · ${record.code}` : C.addTablet}
+      isAdding={!record}
       okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
     >
       <Form form={form} layout="vertical" onFinish={submit}>
-        <div className="cer-section">{C.spiritSection}</div>
+        <FormSectionHeading section="spirit" className="cer-section">{C.spiritSection}</FormSectionHeading>
         <Form.Item name="spiritName" label={C.fields.spiritName} rules={[{ required: true, message: C.fields.nameRequired }]}><Input /></Form.Item>
         <div className="cer-form-row">
           <Form.Item name="birthYear" label={C.fields.birthYear}><InputNumber min={1850} max={dayjs().year()} style={{ width: '100%' }} /></Form.Item>
@@ -59,7 +62,7 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
           </Form.Item>
         </div>
 
-        <div className="cer-section">{C.locationSection}</div>
+        <FormSectionHeading section="location" className="cer-section">{C.locationSection}</FormSectionHeading>
         <div className="cer-form-row">
           <Form.Item name="area" label={C.fields.area} rules={[{ required: true, message: C.fields.areaRequired }]} style={{ flex: 2 }}>
             <AutoComplete options={areas.map(a => ({ value: a }))} placeholder={C.fields.areaPlaceholder} filterOption={(input, opt) => String(opt?.value ?? '').toLowerCase().includes(input.toLowerCase())} />
@@ -74,7 +77,7 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
           </Form.Item>
         </div>
 
-        <div className="cer-section">{C.worshipperSection}</div>
+        <FormSectionHeading section="worshipper" className="cer-section">{C.worshipperSection}</FormSectionHeading>
         <Form.Item name="buddhistFollowerId" label={C.fields.follower}>
           <Select
             allowClear showSearch placeholder={C.fields.followerPlaceholder}
@@ -91,7 +94,7 @@ function TabletModal({ C, t, open, record, preset, areas, followers, onClose, on
         </div>
         <Form.Item name="notes" label={t.common.notes} style={{ marginBottom: 0 }}><Input.TextArea rows={2} /></Form.Item>
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
 
@@ -126,7 +129,7 @@ function LayoutView({ C, layout, canCreate, onAdd, onOpen }) {
                         );
                       }
                       return canCreate ? (
-                        <button type="button" key={`${r}-${s}`} className="cer-slot" onClick={() => onAdd({ area: a.area, rowNo: r + 1, slotNo: s + 1 })} aria-label={`${a.area} · ${C.fields.rowNo} ${r + 1} · ${C.fields.slotNo} ${s + 1}`}>
+                        <button type="button" key={`${r}-${s}`} className="cer-slot add-action" onClick={() => onAdd({ area: a.area, rowNo: r + 1, slotNo: s + 1 })} aria-label={`${a.area} · ${C.fields.rowNo} ${r + 1} · ${C.fields.slotNo} ${s + 1}`}>
                           <PlusOutlined />
                         </button>
                       ) : <span key={`${r}-${s}`} className="cer-slot is-empty" />;

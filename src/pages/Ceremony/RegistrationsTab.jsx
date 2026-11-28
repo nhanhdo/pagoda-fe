@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Table, Button, Modal, Form, Input, InputNumber, Select, Segmented, Tooltip, Popconfirm, message, Avatar,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined, PrinterOutlined, SearchOutlined, MinusCircleOutlined,
   FileTextOutlined, UserOutlined, LockOutlined,
@@ -92,9 +93,11 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
   };
 
   return (
-    <Modal
+    <FormDialog
+      sections={[['registrant', C.registrantSection], ['entries', kind === 'cầu_siêu' ? C.spiritsSection : C.peopleSection], ['offering', C.offeringSection]]}
       open={open} onCancel={() => guardedClose(form, onClose, t)} maskClosable={false} onOk={() => form.submit()} confirmLoading={saving} width={760} destroyOnClose
       title={<span>{record ? C.editRegistration : C.addRegistration}<span className="cer-modal-sub"> · {ceremony?.name}</span></span>}
+      isAdding={!record}
       okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
     >
       <Form form={form} layout="vertical" onFinish={submit} className="cer-reg-form">
@@ -102,7 +105,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
           <Segmented block onChange={onKindChange} options={allowedKinds.map(k => ({ value: k, label: C.types[k] }))} />
         </Form.Item>
 
-        <div className="cer-section">{C.registrantSection}</div>
+        <FormSectionHeading section="registrant" className="cer-section">{C.registrantSection}</FormSectionHeading>
         <Form.Item name="buddhistFollowerId" label={C.fields.follower} extra={C.fields.followerHint}>
           <Select
             allowClear showSearch placeholder={C.fields.followerPlaceholder} onChange={onPickFollower}
@@ -123,7 +126,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
         </div>
         <Form.Item name="registrantAddress" label={C.fields.address}><Input /></Form.Item>
 
-        <div className="cer-section">{kind === 'cầu_siêu' ? C.spiritsSection : C.peopleSection}</div>
+        <FormSectionHeading section="entries" className="cer-section">{kind === 'cầu_siêu' ? C.spiritsSection : C.peopleSection}</FormSectionHeading>
         <Form.List name="entries">
           {(fields, { add, remove }) => (
             <div className="cer-entries">
@@ -161,7 +164,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
                 </div>
               ))}
               {(kind !== 'cầu_siêu' || canAddSpirit) && (
-                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add(emptyEntry(kind))}>
+                <Button className="add-action" type="dashed" block icon={<PlusOutlined />} onClick={() => add(emptyEntry(kind))}>
                   {kind === 'cầu_siêu' ? C.addSpirit : C.addPerson}
                 </Button>
               )}
@@ -169,7 +172,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
           )}
         </Form.List>
 
-        <div className="cer-section">{C.offeringSection}</div>
+        <FormSectionHeading section="offering" className="cer-section">{C.offeringSection}</FormSectionHeading>
         <Form.Item
           name="offeringAmount" label={C.fields.offeringAmount}
           extra={lockLower ? C.lowerLockedHint.replace('{amount}', vnd(prevOffering)) : C.fields.offeringHint}
@@ -199,7 +202,7 @@ function RegistrationModal({ C, t, lang, open, record, ceremony, funds, follower
         </div>
         <Form.Item name="notes" label={t.common.notes} style={{ marginBottom: 0 }}><Input.TextArea rows={2} /></Form.Item>
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
 

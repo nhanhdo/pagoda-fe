@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Button, Modal, Form, Input, InputNumber, Select, Switch, DatePicker, Dropdown, Tooltip, message, Segmented,
 } from 'antd';
+import FormDialog from '../../components/FormDialog/FormDialog';
 import {
   EditOutlined, DeleteOutlined, EllipsisOutlined, EnvironmentOutlined, LockOutlined, UnlockOutlined,
   TeamOutlined, ArrowRightOutlined, CalendarOutlined,
@@ -77,10 +78,10 @@ function CeremonyModal({ C, t, open, record, funds, onClose, onSaved }) {
   };
 
   return (
-    <Modal
+    <FormDialog
       open={open} onCancel={() => guardedClose(form, onClose, t)} maskClosable={false} onOk={() => form.submit()} confirmLoading={saving}
       okButtonProps={{ disabled: !!previewErr }}
-      title={record ? C.editCeremony : C.addCeremony} okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
+      title={record ? C.editCeremony : C.addCeremony} isAdding={!record} okText={record ? t.common.update : t.common.add} cancelText={t.common.cancel}
       width={600} destroyOnClose
     >
       {!record && (
@@ -132,7 +133,7 @@ function CeremonyModal({ C, t, open, record, funds, onClose, onSaved }) {
         <Form.Item name="registrationOpen" label={C.fields.registrationOpen} valuePropName="checked"><Switch /></Form.Item>
         <Form.Item name="notes" label={t.common.notes} style={{ marginBottom: 0 }}><Input.TextArea rows={2} /></Form.Item>
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
 

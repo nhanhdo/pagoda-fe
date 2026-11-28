@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Table, Button, Input, Select, DatePicker, Modal, Form, InputNumber, Segmented, Tooltip, Popconfirm, message,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   SearchOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, PrinterOutlined,
   WalletOutlined, BankOutlined, EllipsisOutlined, InfoCircleOutlined,
@@ -281,12 +282,14 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       />
 
       {/* Create / edit */}
-      <Modal
+      <FormDialog
+        sections={[['overview', t.common.formOverview], ['payment', t.common.formPayment]]}
         open={!!editing}
         title={editing && editing !== 'new' ? `${F.editExpense} · ${editing.code}` : F.addExpense}
         onCancel={() => guardedClose(form, () => setEditing(null), t)}
         maskClosable={false}
         onOk={() => form.submit()}
+        isAdding={editing === 'new'}
         okText={editing && editing !== 'new' ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         confirmLoading={saving}
@@ -295,6 +298,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
       >
         <div className="fin-note"><InfoCircleOutlined /> {F.approvalNote}</div>
         <Form form={form} layout="vertical" onFinish={save}>
+          <FormSectionHeading section="overview">{t.common.formOverview}</FormSectionHeading>
           <Form.Item name="fundId" label={F.fieldFund} rules={[{ required: true, message: F.fundRequired }]}>
             <Select options={funds.map(f => ({
               value: f.id,
@@ -336,15 +340,16 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
           </div>
           <Form.Item name="payee" label={F.fieldPayee}><Input /></Form.Item>
           <Form.Item name="description" label={F.fieldDescription}><Input placeholder={F.descriptionPlaceholder} /></Form.Item>
+          <FormSectionHeading section="payment">{t.common.formPayment}</FormSectionHeading>
           <Form.Item name="paymentMethod" label={F.fieldMethod}>
             <Segmented block options={Object.keys(METHOD_ICON).map(k => ({ value: k, label: <span className="dn-seg">{METHOD_ICON[k]}{t.donation.methods[k]}</span> }))} />
           </Form.Item>
           <Form.Item name="notes" label={F.fieldNotes} style={{ marginBottom: 0 }}><Input.TextArea rows={2} /></Form.Item>
         </Form>
-      </Modal>
+      </FormDialog>
 
       {/* Reject */}
-      <Modal
+      <FormDialog
         open={!!rejecting}
         title={`${F.rejectTitle} · ${rejecting?.code || ''}`}
         onCancel={() => setRejecting(null)}
@@ -360,7 +365,7 @@ export default function ExpensesTab({ F, t, admin, funds, allFunds, createSignal
             <Input.TextArea rows={3} autoFocus />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormDialog>
     </section>
   );
 }

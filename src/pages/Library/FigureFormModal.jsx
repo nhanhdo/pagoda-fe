@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, InputNumber, Radio, Upload, Button, Tabs, message } from 'antd';
+import { Form, Input, InputNumber, Radio, Upload, Button, Tabs, message } from 'antd';
+import FormDialog from '../../components/FormDialog/FormDialog';
 import { CameraOutlined, DeleteOutlined, PlusOutlined, MinusCircleOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -154,7 +155,7 @@ export default function FigureFormModal({ open, record, onClose, onSaved }) {
               </div>
             ))}
             {fields.length < 8 && (
-              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({})} className="lib-feast-add">{L.addFeast}</Button>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({})} className="add-action lib-feast-add">{L.addFeast}</Button>
             )}
           </div>
         )}
@@ -189,7 +190,7 @@ export default function FigureFormModal({ open, record, onClose, onSaved }) {
               </div>
             ))}
             {fields.length < 30 && (
-              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ heading: '', body: '' })} className="lib-feast-add">{L.addSection}</Button>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ heading: '', body: '' })} className="add-action lib-feast-add">{L.addSection}</Button>
             )}
           </div>
         )}
@@ -218,7 +219,7 @@ export default function FigureFormModal({ open, record, onClose, onSaved }) {
               </div>
             ))}
             {fields.length < 60 && (
-              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ text: '' })} className="lib-feast-add">{L.addVow}</Button>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ text: '' })} className="add-action lib-feast-add">{L.addVow}</Button>
             )}
           </div>
         )}
@@ -241,18 +242,18 @@ export default function FigureFormModal({ open, record, onClose, onSaved }) {
   );
 
   return (
-    <Modal
+    <FormDialog
       title={record ? L.editTitle : L.addTitle}
       open={open}
       onCancel={() => guardedClose(form, onClose, t)}
       onOk={() => form.submit()}
+      isAdding={!record}
       okText={record ? t.common.update : t.common.add}
       cancelText={t.common.cancel}
       confirmLoading={saving}
       maskClosable={false}
       width={800}
       destroyOnClose
-      styles={{ body: { maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingRight: 4 } }}
     >
       <Form
         form={form}
@@ -273,6 +274,6 @@ export default function FigureFormModal({ open, record, onClose, onSaved }) {
           ]}
         />
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }

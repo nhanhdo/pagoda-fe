@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Modal, Form, Input, Select, DatePicker, Button, Row, Col, Upload, Radio, message,
+  Form, Input, Select, DatePicker, Button, Row, Col, Upload, Radio, message,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   UserOutlined, PhoneOutlined, ApartmentOutlined, ReadOutlined, CameraOutlined, FileTextOutlined, ScissorOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { guardedClose, rules as makeRules } from '../../utils/formGuard';
+import { guardedClose, initializeForm, rules as makeRules } from '../../utils/formGuard';
 import { POSITIONS, positionLabel, imgSrc, initialOf } from './personnelShared';
 import AvatarCropModal from '../../components/AvatarCrop/AvatarCropModal';
 import './peopleShared.css';
@@ -23,10 +24,10 @@ export const HiddenSubmit = () => (
     style={{ position: 'absolute', width: 0, height: 0, padding: 0, border: 0, opacity: 0, pointerEvents: 'none' }} />
 );
 
-function Section({ icon, title, children }) {
+function Section({ section, icon, title, children }) {
   return (
     <div className="pp-form-section">
-      <div className="pp-form-section__title">{icon}{title}</div>
+      <FormSectionHeading section={section} className="pp-form-section__title">{icon}{title}</FormSectionHeading>
       {children}
     </div>
   );
@@ -36,7 +37,7 @@ function Section({ icon, title, children }) {
  * Add / edit personnel in a modal. Shared by the list and the detail page.
  * Props: open, record (null = create), onClose(), onSaved(savedRecord?)
  */
-export default function PersonnelFormModal({ open, record, onClose, onSaved, afterClose }) {
+export default function PersonnelFormModal({ open, record, onClose, onSaved, afterClose, initialDepartmentId }) {
   const { t } = useLanguage();
   const P = t.personnel;
   const F = P.form;
@@ -72,8 +73,9 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved, aft
       form.setFields(Object.keys(v).map(name => ({ name, touched: false })));
     } else {
       form.resetFields();
+      if (initialDepartmentId != null) initializeForm(form, { departmentId: initialDepartmentId });
     }
-  }, [open, record, form]);
+  }, [open, record, form, initialDepartmentId]);
 
   // Release blob previews
   useEffect(() => () => { if (photoUrl?.startsWith('blob:')) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
@@ -130,32 +132,35 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved, aft
   const deptOptions = useMemo(() => departments.map(d => ({ value: d.id, label: d.name })), [departments]);
 
   return (
-    <Modal
+    <FormDialog
       className="personnel-dialog"
       title={record ? P.editTitle : P.addTitle}
       open={open}
       onCancel={close}
       onOk={() => form.submit()}
+      isAdding={!record}
       okText={record ? t.common.update : t.common.add}
       cancelText={t.common.cancel}
       confirmLoading={saving}
       maskClosable={false}
       width={760}
-      centered
+      sections={[
+        ['basic', F.sectionBasic], ['contact', F.sectionContact], ['work', F.sectionWork],
+        ['study', P.tabStudyInfo], ['notes', t.common.notes],
+      ]}
       keyboard={!saving}
       cancelButtonProps={{ disabled: saving }}
       focusTriggerAfterClose={!afterClose}
       afterClose={afterClose}
       afterOpenChange={(visible) => { if (visible) form.getFieldInstance('fullName')?.focus({ preventScroll: true }); }}
       destroyOnClose
-      styles={{ body: { maxHeight: 'min(640px, calc(100dvh - 150px))', overflowY: 'auto', paddingRight: 4 } }}
     >
       <Form form={form} layout="vertical" scrollToFirstError={{ focus: true }} onFinish={onFinish} className="pp-form"
         initialValues={{ status: 'đang_hoạt_động' }}>
         <HiddenSubmit />
 
         {/* ── Basic ── */}
-        <Section icon={<UserOutlined />} title={F.sectionBasic}>
+        <Section section="basic" icon={<UserOutlined />} title={F.sectionBasic}>
           <div className="pp-photo">
             <div className="pp-photo__preview">
               {photoUrl ? <img src={photoUrl} alt="" /> : initialOf(fullName || '')}
@@ -208,7 +213,7 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved, aft
         </Section>
 
         {/* ── Contact ── */}
-        <Section icon={<PhoneOutlined />} title={F.sectionContact}>
+        <Section section="contact" icon={<PhoneOutlined />} title={F.sectionContact}>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="phone" label={P.colPhone} rules={[R.phone]}><Input inputMode="tel" /></Form.Item>
@@ -232,7 +237,7 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved, aft
         </Section>
 
         {/* ── Work ── */}
-        <Section icon={<ApartmentOutlined />} title={F.sectionWork}>
+        <Section section="work" icon={<ApartmentOutlined />} title={F.sectionWork}>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="departmentId" label={F.department}>
@@ -253,7 +258,7 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved, aft
         </Section>
 
         {/* ── Practice ── */}
-        <Section icon={<ReadOutlined />} title={P.tabStudyInfo}>
+        <Section section="study" icon={<ReadOutlined />} title={P.tabStudyInfo}>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="ordinationDate" label={F.ordinationDate} rules={[R.notFuture]}>
@@ -276,7 +281,7 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved, aft
         </Section>
 
         {/* ── Notes ── */}
-        <Section icon={<FileTextOutlined />} title={t.common.notes}>
+        <Section section="notes" icon={<FileTextOutlined />} title={t.common.notes}>
           <Form.Item name="notes" style={{ marginBottom: 0 }}><Input.TextArea rows={3} /></Form.Item>
         </Section>
       </Form>
@@ -293,6 +298,6 @@ export default function PersonnelFormModal({ open, record, onClose, onSaved, aft
           form.setFields([{ name: 'fullName', touched: true }]); // count as an unsaved change
         }}
       />
-    </Modal>
+    </FormDialog>
   );
 }

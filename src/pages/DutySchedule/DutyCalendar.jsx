@@ -186,7 +186,7 @@ export default function DutyCalendar({
                     {canCreate && !outside && (
                       <button
                         type="button"
-                        className="dc-cell__add"
+                        className="dc-cell__add add-action"
                         aria-label={D.addShift}
                         onClick={(e) => { e.stopPropagation(); onAdd(day); }}
                       >
@@ -266,7 +266,7 @@ export default function DutyCalendar({
               </div>
             </div>
             {canCreate && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => onAdd(selected)} className="dc-agenda__add">
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => onAdd(selected)} className="add-action dc-agenda__add">
                 {D.addShift}
               </Button>
             )}

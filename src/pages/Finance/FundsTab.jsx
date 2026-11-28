@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Modal, Form, Input, InputNumber, Switch, Popconfirm, Tooltip, message } from 'antd';
+import { Button, Form, Input, InputNumber, Switch, Popconfirm, Tooltip, message } from 'antd';
+import FormDialog from '../../components/FormDialog/FormDialog';
 import { PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import api from '../../api/axios';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -61,7 +62,7 @@ export default function FundsTab({ F, funds, onChanged }) {
     <section className="fin-card section-anim section-d2">
       <header className="fin-card__head">
         {F.fundsTitle}
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => open()} style={{ marginLeft: 'auto' }}>{F.addFund}</Button>
+        <Button className="add-action" type="primary" icon={<PlusOutlined />} onClick={() => open()} style={{ marginLeft: 'auto' }}>{F.addFund}</Button>
       </header>
       <ul className="fin-fundlist">
         {funds.map(f => {
@@ -103,12 +104,13 @@ export default function FundsTab({ F, funds, onChanged }) {
         })}
       </ul>
 
-      <Modal
+      <FormDialog
         open={!!editing}
         title={editing && editing !== 'new' ? F.editFund : F.addFund}
         onCancel={() => guardedClose(form, () => setEditing(null), t)}
         onOk={() => form.submit()}
         maskClosable={false}
+        isAdding={editing === 'new'}
         okText={editing && editing !== 'new' ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         confirmLoading={saving}
@@ -129,7 +131,7 @@ export default function FundsTab({ F, funds, onChanged }) {
             <Form.Item name="isActive" label={F.fieldActive} valuePropName="checked"><Switch /></Form.Item>
           )}
         </Form>
-      </Modal>
+      </FormDialog>
     </section>
   );
 }

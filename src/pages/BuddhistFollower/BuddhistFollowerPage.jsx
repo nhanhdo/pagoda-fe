@@ -3,9 +3,10 @@ import React, { useMemo, useState } from 'react';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import CountUp from '../../components/CountUp/CountUp';
 import {
-  Table, Button, Input, Select, Space, Modal, Form, Avatar, Tooltip,
+  Table, Button, Input, Select, Space, Form, Avatar, Tooltip,
   Popconfirm, Row, Col, DatePicker, InputNumber,
 } from 'antd';
+import FormDialog, { FormSectionHeading } from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, SearchOutlined, DeleteOutlined, EditOutlined,
   HeartOutlined, TeamOutlined, FireOutlined, SmileOutlined, TrophyOutlined,
@@ -316,7 +317,7 @@ export default function BuddhistFollowerPage() {
           </div>
         </div>
         {canManage() && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="bf-hero__btn">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()} className="add-action bf-hero__btn">
             {B.addNew}
           </Button>
         )}
@@ -479,19 +480,25 @@ export default function BuddhistFollowerPage() {
       </section>
 
       {/* ── Modal ── */}
-      <Modal
+      <FormDialog
         title={editRecord ? B.editTitle : B.addTitle}
         open={modalOpen}
         onCancel={() => guardedClose(form, () => setModalOpen(false), t)}
         maskClosable={false}
         confirmLoading={saving}
         onOk={() => form.submit()}
+        isAdding={!editRecord}
         okText={editRecord ? t.common.update : t.common.add}
         cancelText={t.common.cancel}
         width={680}
+        sections={[
+          ['basic', B.formSections.basic], ['contact', B.formSections.contact],
+          ['participation', B.formSections.participation], ['notes', t.common.notes],
+        ]}
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <FormSectionHeading section="basic">{B.formSections.basic}</FormSectionHeading>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="fullName" label={t.common.name} rules={[{ ...rules(t).required(t.common.name), whitespace: true }]}>
@@ -525,14 +532,17 @@ export default function BuddhistFollowerPage() {
                 </Select>
               </Form.Item>
             </Col>
+          </Row>
+          <FormSectionHeading section="contact">{B.formSections.contact}</FormSectionHeading>
+          <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="phone" label={B.form.phone} rules={[rules(t).phone]}>
-                <Input />
+                <Input inputMode="tel" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item name="email" label={t.common.email} rules={[rules(t).email]}>
-                <Input />
+                <Input inputMode="email" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -545,6 +555,14 @@ export default function BuddhistFollowerPage() {
                 <Input />
               </Form.Item>
             </Col>
+            <Col span={24}>
+              <Form.Item name="address" label={B.form.address}>
+                <Input.TextArea rows={2} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <FormSectionHeading section="participation">{B.formSections.participation}</FormSectionHeading>
+          <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item name="preceptDate" label={B.form.preceptDate}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
@@ -569,19 +587,13 @@ export default function BuddhistFollowerPage() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={24}>
-              <Form.Item name="address" label={B.form.address}>
-                <Input.TextArea rows={2} />
-              </Form.Item>
-            </Col>
-            <Col span={24}>
-              <Form.Item name="notes" label={t.common.notes}>
-                <Input.TextArea rows={2} />
-              </Form.Item>
-            </Col>
           </Row>
+          <FormSectionHeading section="notes">{t.common.notes}</FormSectionHeading>
+          <Form.Item name="notes" style={{ marginBottom: 0 }}>
+            <Input.TextArea rows={2} aria-label={t.common.notes} />
+          </Form.Item>
         </Form>
-      </Modal>
+      </FormDialog>
     </div>
   );
 }

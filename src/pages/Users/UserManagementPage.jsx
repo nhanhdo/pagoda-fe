@@ -3,9 +3,10 @@ import PageSpinner from '../../components/PageSpinner/PageSpinner';
 import CountUp from '../../components/CountUp/CountUp';
 import LotusEmpty from '../../components/LotusEmpty/LotusEmpty';
 import {
-  Table, Button, Modal, Form, Input, Select, message, Popconfirm, Switch,
+  Table, Button, Form, Input, Select, message, Popconfirm, Switch,
   Tooltip, Avatar,
 } from 'antd';
+import FormDialog from '../../components/FormDialog/FormDialog';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined, UserOutlined,
   LockOutlined, UnlockOutlined, SearchOutlined, CrownOutlined,
@@ -65,7 +66,7 @@ function ResetPasswordModal({ open, user, onClose }) {
   };
 
   return (
-    <Modal
+    <FormDialog
       title={
         <div className="um-modal-title">
           <span className="um-modal-title__icon" style={{ color: '#4d8fc7', background: '#e9f1fb' }}><KeyOutlined /></span>
@@ -111,7 +112,7 @@ function ResetPasswordModal({ open, user, onClose }) {
           <Input.Password prefix={<LockOutlined style={{ color: '#c9b49a' }} />} placeholder={U.confirmPasswordPlaceholder} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
 
@@ -167,7 +168,7 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
   };
 
   return (
-    <Modal
+    <FormDialog
       title={
         <div className="um-modal-title">
           <span className="um-modal-title__icon"><UserOutlined /></span>
@@ -178,6 +179,7 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
       onCancel={() => guardedClose(form, onClose, t)}
       maskClosable={false}
       onOk={() => form.submit()}
+      isAdding={!editRecord}
       okText={editRecord ? t.common.update : U.addNew}
       cancelText={t.common.cancel}
       confirmLoading={loading}
@@ -241,7 +243,7 @@ function UserFormModal({ open, editRecord, personnelList, users, currentUserId, 
           <Switch checkedChildren={U.active} unCheckedChildren={U.locked} disabled={isSelf} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
 
@@ -422,7 +424,7 @@ export default function UserManagementPage() {
           </div>
         </div>
         {admin && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} className="um-hero__btn">
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} className="add-action um-hero__btn">
             {U.addNew}
           </Button>
         )}

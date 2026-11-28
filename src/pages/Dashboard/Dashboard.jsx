@@ -1,13 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { Avatar, Tooltip, Result, Button, Alert } from 'antd';
+import { Avatar, Tooltip, Result, Button, Alert, Dropdown } from 'antd';
 import PageSpinner from '../../components/PageSpinner/PageSpinner';
-import { Shine } from '../../components/AnimateUI/Effects';
 import {
   TeamOutlined, HeartOutlined, BookOutlined, CheckSquareOutlined,
   ArrowRightOutlined, ScheduleOutlined, SolutionOutlined,
   UsergroupAddOutlined, FileTextOutlined, StarFilled, BellFilled,
   CalendarOutlined, EnvironmentOutlined, ClockCircleOutlined, PieChartOutlined,
-  PlusOutlined,
+  PlusOutlined, DownOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -40,11 +39,11 @@ function SectionCard({ icon, title, count, action, children, className = '' }) {
   return (
     <section className={`db-card ${className}`}>
       <header className="db-card__head">
-        <div className="db-card__title">
+        <h2 className="db-card__title">
           <span className="db-card__icon">{icon}</span>
           {title}
           {count > 0 && <span className="db-card__count">{count}</span>}
-        </div>
+        </h2>
         {action}
       </header>
       <div className="db-card__body">{children}</div>
@@ -58,7 +57,7 @@ function EmptyState({ icon, text, actionLabel, onAction }) {
       <span className="db-empty__icon">{icon}</span>
       <span className="db-empty__text">{text}</span>
       {actionLabel && onAction && (
-        <button type="button" className="db-link" onClick={onAction}>
+        <button type="button" className="db-link add-action" onClick={onAction}>
           <PlusOutlined /> {actionLabel}
         </button>
       )}
@@ -66,18 +65,17 @@ function EmptyState({ icon, text, actionLabel, onAction }) {
   );
 }
 
-function KpiTile({ label, value, tone, icon, foot, footTone, onClick, delay }) {
+function KpiTile({ label, value, tone, icon, foot, onClick, delay }) {
   const a = ACCENT[tone];
   const shown = Math.round(useCountUp(value));
   return (
     <button type="button" className={`db-kpi kpi-anim kpi-anim-d${delay}`} onClick={onClick} style={{ '--kpi-accent': a.c, '--kpi-soft': a.s }}>
-      <Shine />
       <div className="db-kpi__top">
         <span className="db-kpi__label">{label}</span>
         <span className="db-kpi__icon">{icon}</span>
       </div>
       <div className="db-kpi__value">{shown}</div>
-      <div className={`db-kpi__foot${footTone ? ` is-${footTone}` : ''}`}>
+      <div className="db-kpi__foot">
         <span>{foot}</span>
         <ArrowRightOutlined className="db-kpi__arrow" />
       </div>
@@ -223,18 +221,20 @@ export default function Dashboard() {
   const trainings = stats?.trainings ?? 0;
   const pending = stats?.pendingWork ?? 0;
 
-  // Only offer shortcuts the backend lets this role create; ?create=1 opens the form directly.
-  const MGR = ['admin', 'truotri', 'thuki'];
+  // Keep the same creation permissions for shortcuts and empty states.
+  const managerRoles = ['admin', 'truotri', 'thuki'];
   const quickActions = [
-    { label: d.addPersonnel, icon: <UsergroupAddOutlined />, path: '/app/personnel',         tone: 'amber',    roles: MGR },
-    { label: d.createDuty,   icon: <ScheduleOutlined />,     path: '/app/duty-schedule',     tone: 'sky',      roles: DUTY_CREATE_ROLES },
-    { label: d.assignWork,   icon: <SolutionOutlined />,     path: '/app/work-assignment',   tone: 'sage',     roles: MGR },
-    { label: d.addFollower,  icon: <HeartOutlined />,        path: '/app/buddhist-followers', tone: 'rose',    roles: MGR },
-    { label: d.createCourse, icon: <BookOutlined />,         path: '/app/training',          tone: 'teal',     roles: MGR },
-    { label: d.postNews,     icon: <FileTextOutlined />,     path: '/app/news',              tone: 'lavender' },
-  ].filter(a => !a.roles || a.roles.includes(role));
-  // Empty-state shortcuts follow the same permissions as the quick actions
-  const createAction = (path) => (quickActions.some(a => a.path === path) ? () => navigate(`${path}?create=1`) : undefined);
+    { path: '/app/duty-schedule', label: d.createDuty, icon: <ScheduleOutlined />, roles: DUTY_CREATE_ROLES, featured: true },
+    { path: '/app/work-assignment', label: d.assignWork, icon: <SolutionOutlined />, roles: managerRoles, featured: true },
+    { path: '/app/personnel', label: d.addPersonnel, icon: <UsergroupAddOutlined />, roles: managerRoles },
+    { path: '/app/buddhist-followers', label: d.addFollower, icon: <HeartOutlined />, roles: managerRoles },
+    { path: '/app/training', label: d.createCourse, icon: <BookOutlined />, roles: managerRoles },
+    { path: '/app/news', label: d.postNews, icon: <FileTextOutlined /> },
+  ].filter(action => !action.roles || action.roles.includes(role));
+  const featuredActions = quickActions.filter(action => action.featured);
+  const otherActions = quickActions.filter(action => !action.featured);
+
+  const createAction = (path) => (quickActions.some(action => action.path === path) ? () => navigate(`${path}?create=1`) : undefined);
 
   const breakdown = [
     { label: d.tangNi,         value: p.tangNi ?? 0,         color: ACCENT.amber.c },
@@ -294,20 +294,6 @@ export default function Dashboard() {
               ))}
             </div>
           )}
-          <div className="db-actions">
-            {quickActions.map(a => (
-              <button
-                key={a.path}
-                type="button"
-                className="db-action"
-                onClick={() => navigate(`${a.path}?create=1`)}
-                style={{ '--act-accent': ACCENT[a.tone].c, '--act-soft': ACCENT[a.tone].s }}
-              >
-                <span className="db-action__icon">{a.icon}</span>
-                {a.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="db-lunar" aria-label={d.lunarLabel}>
@@ -316,37 +302,61 @@ export default function Dashboard() {
           <div className="db-lunar__month">{d.lunarMonth} {lunar.month}{lunar.leap ? ` (${d.leapMonth})` : ''}</div>
           <div className="db-lunar__year">{lunar.yearName}</div>
         </div>
+        <div className="db-actions">
+          {featuredActions.map(action => (
+            <button
+              key={action.path}
+              type="button"
+              className="db-action add-action"
+              onClick={createAction(action.path)}
+            >
+              {action.icon}{action.label}
+            </button>
+          ))}
+          {otherActions.length > 0 && (
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: otherActions.map(a => ({ key: a.path, label: a.label, icon: a.icon })),
+                onClick: ({ key }) => createAction(key)?.(),
+              }}
+            >
+              <button type="button" className="db-action" aria-haspopup="menu">
+                {d.otherActions}<DownOutlined aria-hidden="true" />
+              </button>
+            </Dropdown>
+          )}
+        </div>
       </section>
 
       {/* ── KPIs ── */}
       <div className="db-kpis">
-        <KpiTile delay={0} label={d.totalPersonnel} value={total} tone="amber" icon={<TeamOutlined />}
+        <KpiTile delay={0} label={d.pendingWork} value={pending} tone={pending ? 'gold' : 'sage'} icon={<CheckSquareOutlined />}
+          foot={d.viewPendingWork}
+          onClick={() => navigate('/app/work-assignment')} />
+        <KpiTile delay={1} label={d.totalPersonnel} value={total} tone="amber" icon={<TeamOutlined />}
           foot={total ? `${d.tangNi} ${p.tangNi ?? 0} · ${d.cuSi} ${p.cuSi ?? 0}` : d.noData}
           onClick={() => navigate('/app/personnel')} />
-        <KpiTile delay={1} label={d.followers} value={followers} tone="rose" icon={<HeartOutlined />}
+        <KpiTile delay={2} label={d.followers} value={followers} tone="rose" icon={<HeartOutlined />}
           foot={followers ? d.viewDetails : d.noData}
           onClick={() => navigate('/app/buddhist-followers')} />
-        <KpiTile delay={2} label={d.activeTrainings} value={trainings} tone="sky" icon={<BookOutlined />}
+        <KpiTile delay={3} label={d.activeTrainings} value={trainings} tone="sky" icon={<BookOutlined />}
           foot={trainings ? d.viewDetails : d.noData}
           onClick={() => navigate('/app/training')} />
-        <KpiTile delay={3} label={d.pendingWork} value={pending} tone={pending ? 'gold' : 'sage'} icon={<CheckSquareOutlined />}
-          foot={pending ? `${pending} ${d.needsAction}` : d.allDone} footTone={pending ? 'warn' : 'ok'}
-          onClick={() => navigate('/app/work-assignment')} />
       </div>
 
-      {/* ── Main grid: left stack (duty + events/holidays), right breakdown ── */}
       <div className="db-grid">
-        <div className="db-stack">
-          <SectionCard
-            icon={<ScheduleOutlined />}
-            title={d.todayDuty}
-            count={dutyToday.length}
-            action={viewAll('/app/duty-schedule')}
-          >
-            {dutyToday.length === 0 ? (
-              <EmptyState icon={<ScheduleOutlined />} text={d.noDutyToday} actionLabel={d.createDuty} onAction={createAction('/app/duty-schedule')} />
-            ) : (
-              <>
+        <SectionCard
+          className="db-duty-card"
+          icon={<ScheduleOutlined />}
+          title={d.todayDuty}
+          count={dutyToday.length}
+          action={viewAll('/app/duty-schedule')}
+        >
+          {dutyToday.length === 0 ? (
+            <EmptyState icon={<ScheduleOutlined />} text={d.noDutyToday} actionLabel={d.createDuty} onAction={createAction('/app/duty-schedule')} />
+          ) : (
+            <>
               <ul className="db-duty">
                 {(showAllDuty ? dutyToday : dutyToday.slice(0, DUTY_LIMIT)).map(r => {
                   const person = r.personnel?.dharmName || r.personnel?.fullName || '—';
@@ -367,95 +377,94 @@ export default function Dashboard() {
               </ul>
               {dutyToday.length > DUTY_LIMIT && (
                 <div className="list-toggle-row">
-                  <button type="button" className="list-toggle" onClick={() => setShowAllDuty(v => !v)}>
+                  <button type="button" className="list-toggle" aria-expanded={showAllDuty} onClick={() => setShowAllDuty(v => !v)}>
                     {showAllDuty ? t.common.showLess : t.common.showAllN.replace('{n}', dutyToday.length)}
                     <span className={`list-toggle__chev${showAllDuty ? ' is-up' : ''}`}>›</span>
                   </button>
                 </div>
               )}
-              </>
-            )}
-          </SectionCard>
+            </>
+          )}
+        </SectionCard>
 
-          <div className="db-pair">
-            <SectionCard
-              icon={<CalendarOutlined />}
-              title={d.upcomingEvents}
-              count={upcomingEvents.length}
-              action={viewAll('/app/news?tab=event')}
-            >
-              {upcomingEvents.length === 0 ? (
-                <EmptyState icon={<CalendarOutlined />} text={d.noUpcomingEvents} actionLabel={d.postNews} onAction={createAction('/app/news')} />
-              ) : (
-                <div className="db-events">
-                  {upcomingEvents.slice(0, 4).map(ev => {
-                    const day = ev.eventDate ? dayjs(ev.eventDate) : null;
-                    const diff = day ? day.startOf('day').diff(dayjs().startOf('day'), 'day') : null;
-                    const isToday = diff === 0;
-                    return (
-                      <button type="button" key={ev.id} className={`db-event${isToday ? ' is-today' : ''}`} onClick={() => navigate(`/app/news?post=${ev.id}`)}>
-                        <div className="db-event__tile">
-                          <span>{day ? day.toDate().toLocaleDateString(dateLocale, { month: 'short' }) : ''}</span>
-                          <strong>{day ? day.format('DD') : '—'}</strong>
-                        </div>
-                        <div className="db-event__info">
-                          <Tooltip title={ev.title}><div className="db-event__title">{ev.title}</div></Tooltip>
-                          <div className="db-event__meta">
-                            {ev.eventTime && <span><ClockCircleOutlined /> {ev.eventTime}</span>}
-                            {ev.eventLocation && <span className="db-event__loc"><EnvironmentOutlined /> {ev.eventLocation}</span>}
-                          </div>
-                        </div>
-                        {diff != null && (
-                          <span className={`db-event__when${isToday ? ' is-today' : ''}`}>
-                            {isToday ? d.today : d.inDays.replace('{n}', diff)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </SectionCard>
-
-            <SectionCard icon={<StarFilled />} title={d.upcomingHolidays} count={upcomingHolidays.length}>
-              {upcomingHolidays.length === 0 ? (
-                <EmptyState icon={<StarFilled />} text={d.noHolidays} />
-              ) : (
-                <ul className="db-holy">
-                  {upcomingHolidays.map(h => (
-                    <li key={h.key} className={`db-holy__row${h.major ? ' is-major' : ''}${h.diff === 0 ? ' is-today' : ''}`}>
-                      <div className="db-holy__tile">
-                        <strong>{h.date.format('DD')}</strong>
-                        <span>{h.date.toDate().toLocaleDateString(dateLocale, { month: 'short' })}</span>
-                      </div>
-                      <div className="db-holy__info">
-                        <div className="db-holy__name">
-                          {h.major ? <StarFilled className="db-holy__star" /> : <BellFilled className="db-holy__bell" />}
-                          <span>{h.names[0]}</span>
-                          {h.names.length > 1 && (
-                            <Tooltip title={h.names.slice(1).join(' · ')}><span className="db-holy__extra">+{h.names.length - 1}</span></Tooltip>
-                          )}
-                        </div>
-                        <div className="db-holy__lunar">{d.lunarShort} {h.lunar.day}/{h.lunar.month} · {h.date.toDate().toLocaleDateString(dateLocale, { weekday: 'long' })}</div>
-                      </div>
-                      <span className={`db-event__when${h.diff === 0 ? ' is-today' : ''}`}>
-                        {h.diff === 0 ? d.today : d.inDays.replace('{n}', h.diff)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </SectionCard>
-          </div>
-        </div>
-
-        <SectionCard className="db-card--fill" icon={<PieChartOutlined />} title={d.personnelBreakdown}>
+        <SectionCard className="db-personnel-card" icon={<PieChartOutlined />} title={d.personnelBreakdown}>
           {breakdownTotal === 0 ? (
             <EmptyState icon={<TeamOutlined />} text={d.noData} actionLabel={d.addPersonnel} onAction={createAction('/app/personnel')} />
           ) : (
             <Breakdown data={breakdown} total={breakdownTotal} totalLabel={t.common.total} />
           )}
         </SectionCard>
+
+        <div className="db-pair">
+          <SectionCard
+            icon={<CalendarOutlined />}
+            title={d.upcomingEvents}
+            count={upcomingEvents.length}
+            action={viewAll('/app/news?tab=event')}
+          >
+            {upcomingEvents.length === 0 ? (
+              <EmptyState icon={<CalendarOutlined />} text={d.noUpcomingEvents} actionLabel={d.postNews} onAction={createAction('/app/news')} />
+            ) : (
+              <div className="db-events">
+                {upcomingEvents.slice(0, 4).map(ev => {
+                  const day = ev.eventDate ? dayjs(ev.eventDate) : null;
+                  const diff = day ? day.startOf('day').diff(dayjs().startOf('day'), 'day') : null;
+                  const isToday = diff === 0;
+                  return (
+                    <button type="button" key={ev.id} className={`db-event${isToday ? ' is-today' : ''}`} onClick={() => navigate(`/app/news?post=${ev.id}`)}>
+                      <div className="db-event__tile">
+                        <span>{day ? day.toDate().toLocaleDateString(dateLocale, { month: 'short' }) : ''}</span>
+                        <strong>{day ? day.format('DD') : '—'}</strong>
+                      </div>
+                      <div className="db-event__info">
+                        <Tooltip title={ev.title}><div className="db-event__title">{ev.title}</div></Tooltip>
+                        <div className="db-event__meta">
+                          {ev.eventTime && <span><ClockCircleOutlined /> {ev.eventTime}</span>}
+                          {ev.eventLocation && <span className="db-event__loc"><EnvironmentOutlined /> {ev.eventLocation}</span>}
+                        </div>
+                      </div>
+                      {diff != null && (
+                        <span className={`db-event__when${isToday ? ' is-today' : ''}`}>
+                          {isToday ? d.today : d.inDays.replace('{n}', diff)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard icon={<StarFilled />} title={d.upcomingHolidays} count={upcomingHolidays.length}>
+            {upcomingHolidays.length === 0 ? (
+              <EmptyState icon={<StarFilled />} text={d.noHolidays} />
+            ) : (
+              <ul className="db-holy">
+                {upcomingHolidays.map(h => (
+                  <li key={h.key} className={`db-holy__row${h.major ? ' is-major' : ''}${h.diff === 0 ? ' is-today' : ''}`}>
+                    <div className="db-holy__tile">
+                      <strong>{h.date.format('DD')}</strong>
+                      <span>{h.date.toDate().toLocaleDateString(dateLocale, { month: 'short' })}</span>
+                    </div>
+                    <div className="db-holy__info">
+                      <div className="db-holy__name">
+                        {h.major ? <StarFilled className="db-holy__star" /> : <BellFilled className="db-holy__bell" />}
+                        <span>{h.names[0]}</span>
+                        {h.names.length > 1 && (
+                          <Tooltip title={h.names.slice(1).join(' · ')}><span className="db-holy__extra">+{h.names.length - 1}</span></Tooltip>
+                        )}
+                      </div>
+                      <div className="db-holy__lunar">{d.lunarShort} {h.lunar.day}/{h.lunar.month} · {h.date.toDate().toLocaleDateString(dateLocale, { weekday: 'long' })}</div>
+                    </div>
+                    <span className={`db-event__when${h.diff === 0 ? ' is-today' : ''}`}>
+                      {h.diff === 0 ? d.today : d.inDays.replace('{n}', h.diff)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </div>
       </div>
     </div>
   );

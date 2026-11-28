@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Modal, Form, Select, DatePicker, TimePicker, Input, Row, Col, Segmented, message,
+  Form, Select, DatePicker, TimePicker, Input, Row, Col, Segmented, message,
 } from 'antd';
+import FormDialog from '../../components/FormDialog/FormDialog';
 import { WarningOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '../../api/axios';
@@ -122,11 +123,12 @@ export default function DutyFormModal({ open, record, defaultDate, personnel, t,
   });
 
   return (
-    <Modal
+    <FormDialog
       title={record ? D.editTitle : D.addTitle}
       open={open}
       onCancel={() => guardedClose(form, onClose, t)}
       onOk={() => form.submit()}
+      isAdding={!record}
       okText={record ? t.common.update : t.common.add}
       cancelText={t.common.cancel}
       confirmLoading={saving}
@@ -188,6 +190,6 @@ export default function DutyFormModal({ open, record, defaultDate, personnel, t,
           <Input.TextArea rows={2} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormDialog>
   );
 }
