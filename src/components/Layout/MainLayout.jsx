@@ -386,8 +386,25 @@ function normalizePageName(text) {
   return text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replaceAll('đ', 'd');
 }
 
-function SidebarMenu({ groups, selectedKey, onSelect, collapsed, query }) {
+function SidebarMenu({ groups, selectedKey, onSelect, collapsed, query, mobile }) {
   const { t } = useLanguage();
+  const navRef = useRef(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+
+  const updateScrollHint = () => {
+    const nav = navRef.current;
+    if (nav) setMoreBelow(nav.scrollHeight - nav.clientHeight - nav.scrollTop > 2);
+  };
+
+  useEffect(() => {
+    if (!mobile) return;
+    const nav = navRef.current;
+    const observer = new ResizeObserver(updateScrollHint);
+    observer.observe(nav);
+    Array.from(nav.children).forEach(group => observer.observe(group));
+    updateScrollHint();
+    return () => observer.disconnect();
+  }, [mobile, query, groups.length, t]);
   const search = normalizePageName(query.trim());
   const visibleGroups = groups
     .map(group => ({
@@ -396,8 +413,9 @@ function SidebarMenu({ groups, selectedKey, onSelect, collapsed, query }) {
     }))
     .filter(group => group.items.length > 0);
 
-  return (
-    <nav id="admin-navigation" className="sb-nav" aria-label={t.layout.mainNav}>
+  const navigation = (
+    <nav ref={navRef} id="admin-navigation" className="sb-nav" aria-label={t.layout.mainNav}
+      onScroll={mobile ? updateScrollHint : undefined}>
       {visibleGroups.map(group => (
         <div key={group.key} className="sb-group">
           {group.label && (
@@ -440,6 +458,9 @@ function SidebarMenu({ groups, selectedKey, onSelect, collapsed, query }) {
       {visibleGroups.length === 0 && <p className="sb-empty" role="status">{t.layout.noMatchingPages}</p>}
     </nav>
   );
+  return mobile ? (
+    <div className="sb-nav-frame" data-more-below={moreBelow}>{navigation}</div>
+  ) : navigation;
 }
 
 export default function MainLayout() {
@@ -447,6 +468,7 @@ export default function MainLayout() {
     localStorage.getItem(SIDEBAR_PREFERENCE) !== 'false'
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerViewport, setDrawerViewport] = useState(null);
   const [pageQuery, setPageQuery] = useState('');
   const searchRef = useRef(null);
   const focusSearch = useRef(false);
@@ -499,8 +521,34 @@ export default function MainLayout() {
 
   const collapsed = !isMobile && sidebarPreference;
   useEffect(() => {
-    if (!isMobile) setDrawerOpen(false);
+    if (!isMobile) {
+      setDrawerOpen(false);
+      setDrawerViewport(null);
+    }
   }, [isMobile]);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!isMobile || !drawerOpen || !viewport) return;
+
+    const fitDrawer = () => {
+      if (Math.abs(viewport.scale - 1) > .01) {
+        setDrawerViewport(null);
+        return;
+      }
+      const height = Math.floor(viewport.height);
+      const top = Math.round(viewport.offsetTop);
+      setDrawerViewport(current => current?.height === height && current?.top === top ? current : { height, top });
+    };
+
+    fitDrawer();
+    viewport.addEventListener('resize', fitDrawer);
+    viewport.addEventListener('scroll', fitDrawer);
+    return () => {
+      viewport.removeEventListener('resize', fitDrawer);
+      viewport.removeEventListener('scroll', fitDrawer);
+    };
+  }, [drawerOpen, isMobile]);
 
   useEffect(() => {
     if (!collapsed && focusSearch.current) {
@@ -592,6 +640,7 @@ export default function MainLayout() {
 
   const closeDrawer = () => {
     setDrawerOpen(false);
+    setDrawerViewport(null);
     setPageQuery('');
   };
 
@@ -655,7 +704,7 @@ export default function MainLayout() {
       </div>
 
       <SidebarMenu groups={menuGroups} selectedKey={sectionPath} onSelect={goTo}
-        collapsed={collapsed} query={pageQuery} />
+        collapsed={collapsed} query={pageQuery} mobile={isMobile} />
 
       <div className="sb-bottom">
         <Tooltip title={collapsed ? t.layout.accountMenu : null} placement="right" trigger={['hover', 'focus']}>
@@ -720,7 +769,12 @@ export default function MainLayout() {
       {!isMobile && <aside className="sb-rail">{sidebarContent}</aside>}
       {isMobile && (
         <Drawer rootClassName="app-drawer" open={drawerOpen} onClose={closeDrawer}
-          placement="left" width="min(280px, calc(100vw - 24px))" closable={false}
+          placement="left" width="min(288px, calc(100vw - 44px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))"
+          closable={false}
+          rootStyle={drawerViewport ? {
+            '--sb-visible-height': `${drawerViewport.height}px`,
+            '--sb-visible-top': `${drawerViewport.top}px`,
+          } : undefined}
           aria-label={t.layout.mainNav}
           afterOpenChange={visible => { if (!visible) mobileToggleRef.current?.focus({ preventScroll: true }); }}
           styles={{ body: { padding: 0 } }}>
@@ -729,7 +783,7 @@ export default function MainLayout() {
       )}
 
       <Content ref={contentRef} id="app-content" tabIndex={-1} className="app-content"
-        style={{ margin: 'var(--admin-inset)', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
+        style={{ margin: 'var(--admin-inset)', overflowY: isMobile && drawerOpen ? 'hidden' : 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', position: 'relative', zIndex: 1, flex: 1, minHeight: 0 }}>
         <Fade
           key={location.pathname}
           className="app-route"
