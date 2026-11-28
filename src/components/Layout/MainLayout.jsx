@@ -443,10 +443,9 @@ function SidebarMenu({ groups, selectedKey, onSelect, collapsed, query }) {
 }
 
 export default function MainLayout() {
-  const [sidebarPreference, setSidebarPreference] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_PREFERENCE);
-    return saved === null ? null : saved === 'true';
-  });
+  const [sidebarPreference, setSidebarPreference] = useState(() =>
+    localStorage.getItem(SIDEBAR_PREFERENCE) !== 'false'
+  );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [pageQuery, setPageQuery] = useState('');
   const searchRef = useRef(null);
@@ -478,7 +477,6 @@ export default function MainLayout() {
 
   const screens = useBreakpoint();
   const isMobile = screens.md === false;
-  const isTablet = screens.md === true && screens.lg === false;
   const isPhone  = screens.sm === false;
 
   const PAGE_TITLES = {
@@ -499,7 +497,7 @@ export default function MainLayout() {
     '/app/backup':             { label: t.layout.pageTitle.backup,            icon: <CloudServerOutlined /> },
   };
 
-  const collapsed = !isMobile && (sidebarPreference ?? isTablet);
+  const collapsed = !isMobile && sidebarPreference;
   useEffect(() => {
     if (!isMobile) setDrawerOpen(false);
   }, [isMobile]);
